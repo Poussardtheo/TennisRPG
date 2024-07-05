@@ -1,0 +1,24 @@
+Listes des choses à prendre en compte dans le projet de Tennis RPG:
+
+- Classe Personnage :
+	- Blessure (Faire un dictionnaire de blessure possible)
+	- Associer à chaque blessure un degré de gravité (1-5) [Regarder pour augmenter la plage de gravité]
+	- Faire en sorte que les blessures prennent plus ou moins de temps à guérir
+		→ une blessure 1 devrait prendre 1 semaine de guérison
+		→ Blessure 2 devrait prendre entre 1 et 2 semaines de guérisons
+		→ Blessure 3 : de 2 à 4 semaines de guérisons
+		→ Blessure 7 : de 4 à 6 mois de guérisons (17 à 26 semaines) ex: rupture des ligaments
+	- Imaginer une logique de gestion de la fatigue (Faire en sorte que l'on puisse avoir plusieurs semaines d'exercice d'affilé)
+
+- Classe Calendrier:
+	- Gérer le cas des tournois qui dure plusieurs semaines (Masters 1000 et Grd Chelem)
+
+- Autre :
+	- Faire une liste de joueur fictif en utilisant Faker
+	- Faire un dico de blessure/Maladie et de Tournois
+	- Faire une classe de joueur pour l'archétype de joueur
+	- Faire une classe pour chaque catégorie de tournoi (250; 500; 1000 et Grd Chelem)
+	- Penser à quel classement ATP pour jouer quel tournoi
+	- Faire en sorte que tel ou tel archétype de joueur soit avantager sur une surface en particulier
+		-> Sur terre battue, les joueurs endurant sont avantagé par exemple
+
