@@ -42,7 +42,7 @@ while True:
 					f"\n'i pour avoir les informations sur votre {joueurs_sexe}"
 					f"\n'e' pour affecter des points AP à votre {joueurs_sexe}\n")
 	
-	if action.lower == 'q':
+	if action.lower() == 'q':
 		break
 	elif action.lower() == 'c':
 		classement.afficher_classement()
