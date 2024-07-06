@@ -94,7 +94,7 @@ class Personnage:
         self.sexe = sexe
         self.nom = nom
         self.prenom = prenom
-        self.taille = taille or (random.randint(160, 200) if self.sexe == 'M' else random.randint(155, 185))
+        self.taille = taille or (random.randint(160, 200) if self.sexe.lower() == 'm' else random.randint(155, 185))
         self.main_dominante = "Gauche" if random.random() < 0.15 else "Droite"
         self.revers = "Une main" if random.random() < 0.11 else "Deux mains"
         self.country = country
