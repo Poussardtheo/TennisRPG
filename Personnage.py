@@ -90,10 +90,11 @@ class Personnage:
         "Endurance": -0.2,  # Impact négatif modéré
     }
     
-    def __init__(self, prenom, nom, country, taille=None, lvl=1, archetype=None):
+    def __init__(self, sexe, prenom, nom, country, taille=None, lvl=1, archetype=None):
+        self.sexe = sexe
         self.nom = nom
         self.prenom = prenom
-        self.taille = taille or random.randint(160, 200)
+        self.taille = taille or (random.randint(160, 200) if self.sexe == 'M' else random.randint(155, 185))
         self.main_dominante = "Gauche" if random.random() < 0.15 else "Droite"
         self.revers = "Une main" if random.random() < 0.11 else "Deux mains"
         self.country = country
@@ -295,26 +296,34 @@ class Personnage:
 locale = ["fr_FR", "en_US", "es_ES", "de_DE", "it_IT", "ru_RU"]
 
 
-def generer_pnj(nombre):
+def generer_pnj(nombre, sexe):
     personnages_dico = {}
     for _ in range(nombre):
         random_locale = random.choice(locale)
         fake = Faker(random_locale)
-        prenom = fake.first_name_male()
+
+        if sexe.lower() == 'm':
+            prenom = fake.first_name_male()
+            taille_min, taille_max = 160, 200
+        elif sexe.lower() == 'f':
+            prenom = fake.first_name_female()
+            taille_min, taille_max = 155, 185
+        else:
+            raise ValueError("Le sexe doit être 'M' ou 'F'")
         nom = fake.last_name()
         country = fake.current_country()
-        taille = random.randint(160, 200)
+        taille = random.randint(taille_min, taille_max)
         lvl = random.randint(1, 25)
 
         if random_locale == "ru_RU":
             prenom = translit(prenom, "ru", reversed=True)
             nom = translit(nom, "ru", reversed=True)
 
-        personnage = Personnage(prenom, nom, country, taille, lvl)
+        personnage = Personnage(sexe, prenom, nom, country, taille, lvl)
         personnage.generer_statistique()
         personnages_dico[f"{personnage.prenom} {personnage.nom}"] = personnage
 
     return personnages_dico
 
 
-personnage = Personnage("Théo", "Poussard", "France")
+#personnage = Personnage("Théo", "Poussard", "France")

@@ -61,7 +61,7 @@ class Classement:
             self.classement_elo = classement
 
 
-from Personnage import generer_pnj
-
-POOL = generer_pnj(100)
-classement = Classement(POOL)
+# from Personnage import generer_pnj
+#
+# POOL = generer_pnj(100)
+# classement = Classement(POOL)
