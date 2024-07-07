@@ -1,6 +1,7 @@
 import random
 from faker import Faker
 from transliterate import translit
+from unidecode import unidecode
 
 SURFACE_IMPACTS = {
     "Hard": {
@@ -292,13 +293,52 @@ class Personnage:
         print("└" + "─" * (largeur - 2) + "┘")
 
 
-locale = ["fr_FR", "en_US", "es_ES", "de_DE", "it_IT", "ru_RU"]
+pays_locales = {
+    "France": ["fr_FR"],
+    "United States": ["en_US"],
+    "Spain": ["es_ES"],
+    "Germany": ["de_DE"],
+    "Italy": ["it_IT"],
+    "Russia": ["ru_RU"],
+    "United Kingdom": ["en_GB"],
+    "Australia": ["en_AU"],
+    "Netherlands": ["nl_NL"],
+    "Belgium": ["nl_BE", "fr_BE"],
+    "Brazil": ["pt_BR"],
+    "Argentina": ["es_AR"],
+    "Canada": ["en_CA", "fr_CA"],
+    "Switzerland": ["de_CH", "fr_CH", "it_CH"],
+    "Poland": ["pl_PL"],
+    "Croatia": ["hr_HR"],
+    "Greece": ["el_GR"],
+    "Chile": ["es_CL"],
+    "Denmark": ["da_DK"],
+    "Sweden": ["sv_SE"],
+    "Bulgaria": ["bg_BG"],
+    "Czech Republic": ["cs_CZ"],
+    "Austria": ["de_AT"],
+    "Portugal": ["pt_PT"],
+    "Finland": ["fi_FI"],
+    "India": ["hi_IN", "en_IN"],
+    "Colombia": ["es_CO"],
+    "Slovakia": ["sk_SK"],
+    "Slovenia": ["sl_SI"],
+    "Bosnia and Herzegovina": ["bs_BA"],
+    "China": ["zh_CN"],
+    "Japan": ["ja_JP"]
+}
 
 
 def generer_pnj(nombre, sexe):
     personnages_dico = {}
     for _ in range(nombre):
-        random_locale = random.choice(locale)
+        country = random.choice(list(pays_locales.keys()))
+
+        if len(pays_locales[country]) > 1:
+            random_locale = random.choice(pays_locales[country])
+        else:
+            random_locale = pays_locales[country][0]
+
         fake = Faker(random_locale)
 
         if sexe.lower() == 'm':
@@ -310,11 +350,17 @@ def generer_pnj(nombre, sexe):
         else:
             raise ValueError("Le sexe doit être 'M' ou 'F'")
         nom = fake.last_name()
-        country = fake.current_country()
         taille = random.randint(taille_min, taille_max) # todo: La taille doit suivre une gaussienne
         lvl = random.randint(1, 25)
 
+        # Traduction for Russian and Greek Name (Soon, will add chinese and Japanese)
         if random_locale == "ru_RU":
+            prenom = translit(prenom, "ru", reversed=True)
+            nom = translit(nom, "ru", reversed=True)
+        elif random_locale in ["el_GR","zh_CN", "ja_JP"]:
+            prenom = unidecode(prenom)
+            nom = unidecode(nom)
+        elif random_locale == "bg_BG": # If Bulgaria translate the name and fix the Country problem
             prenom = translit(prenom, "ru", reversed=True)
             nom = translit(nom, "ru", reversed=True)
 
