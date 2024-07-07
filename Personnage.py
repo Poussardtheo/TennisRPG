@@ -194,6 +194,7 @@ class Personnage:
                 )
                 if points > self.ap_points:
                     print("vous n'avez pas assez de AP points")
+                    continue
                 if self.stats[attr] + points > 100:
                     print("L'attribut ne peut pas dépasser 100.")
                     continue
