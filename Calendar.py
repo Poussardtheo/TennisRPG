@@ -66,7 +66,8 @@ class Calendar:
     @staticmethod
     def entrainement(joueur):
         exp_gagnee = random.randint(50, 100)
-        print(f"\n{joueur.prenom} s'est entraîné cette semaine.")
+        accord = "e" if joueur.sexe.lower() == 'f' else ""
+        print(f"\n{joueur.prenom} s'est entraîné{accord} cette semaine.")
         joueur.gagner_experience(exp_gagnee)
 
     def choisir_tournoi(self):
@@ -93,8 +94,8 @@ class Calendar:
             tournoi_choisi = self.choisir_tournoi()
         else:
             tournoi_choisi = tournois_semaine[0]
-            
-        print(f"\n{joueur.prenom} a participé au tournoi : {tournoi_choisi.nom}.")
+        accord = "e" if joueur.sexe.lower() == 'f' else ""
+        print(f"\n{joueur.prenom} a participé{accord} au tournoi : {tournoi_choisi.nom}.")
         
         joueurs_disponible = set(joueurs.values())
         
@@ -157,7 +158,8 @@ class Calendar:
     @staticmethod
     def repos(joueur):
         recuperation = random.randint(1, 3)
-        print(f"\n{joueur.prenom} s'est reposé cette semaine.")
+        accord = "e" if joueur.sexe.lower() == 'f' else ""
+        print(f"\n{joueur.prenom} s'est reposé{accord} cette semaine.")
 
 
 calendar = Calendar(2024)

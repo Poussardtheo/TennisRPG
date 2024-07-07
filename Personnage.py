@@ -148,17 +148,12 @@ class Personnage:
                     self.stats[attr] += 1
                 else:
                     # Si attribut déjà à 70, on choisit un autre attribut de la même catégorie
-                    try:
-                        autres_attrs = [a for a in attrs if self.stats[a] < 70]
-                        if autres_attrs:
-                            self.stats[random.choice(autres_attrs)] += 1
-                        else:
-                            # Si tous les attributs de la catégorie sont à 70, on passe à la catégorie suivante
-                            break
-                    except NameError:
-                        print(self.archetype)
-                        print(attrs)
-                        print(self.id_card())
+                    autres_attrs = [a for a in attrs if self.stats[a] < 70]
+                    if autres_attrs:
+                        self.stats[random.choice(autres_attrs)] += 1
+                    else:
+                        # Si tous les attributs de la catégorie sont à 70, on passe à la catégorie suivante
+                        break
             
             self.ap_points -= points
         self.elo = self.calculer_elo()
@@ -176,7 +171,8 @@ class Personnage:
             self.xp_points -= self.calculer_experience_requise()
             self.lvl += 1
             self.ap_points += self.POINTS_BASE
-            print(f"{self.prenom} est passé au niveau {self.lvl}!")
+            accord = "e" if self.sexe.lower() == 'f' else "" # Si le personnage est une femme, on accorde le message au féminin
+            print(f"{self.prenom} est passé{accord} au niveau {self.lvl}!")
             print(f"{self.prenom} a gagné {self.POINTS_BASE} AP points.")
             
     def attribuer_ap_points_manuellement(self):
@@ -231,7 +227,8 @@ class Personnage:
         print(f"Niveau de fatigue actuel {self.fatigue}")
 
         if self.fatigue >= 80:
-            print("Attention ! Le joueur est très fatigué et risque de se blesser. ")
+            accord = "la joueuse est très fatiguée" if self.sexe.lower() == 'f' else "Le joueur est très fatigué"
+            print(f"Attention ! {accord} et risque de se blesser. ")
             if (
                 random.random() < 1 - self.fatigue / 100
             ):  # Chance de se blesser en fct de la fatigue
@@ -242,8 +239,9 @@ class Personnage:
             self.blessure = random.randint(
                 1, 5
             )  # Todo: modifier pour que la gravité dépende de la fatigue
+            accord = "e" if self.sexe.lower() == 'f' else ""
             print(
-                f"{self.prenom} s'est blessé ! Gravité de la blessure: {self.blessure}"
+                f"{self.prenom} s'est blessé{accord} ! Gravité de la blessure: {self.blessure}"
             )
 
     def repos(self):
@@ -312,7 +310,7 @@ def generer_pnj(nombre, sexe):
             raise ValueError("Le sexe doit être 'M' ou 'F'")
         nom = fake.last_name()
         country = fake.current_country()
-        taille = random.randint(taille_min, taille_max)
+        taille = random.randint(taille_min, taille_max) # todo: La taille doit suivre une gaussienne
         lvl = random.randint(1, 25)
 
         if random_locale == "ru_RU":
