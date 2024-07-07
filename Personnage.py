@@ -1,6 +1,7 @@
 import random
 from faker import Faker
 from transliterate import translit
+from unidecode import unidecode
 
 SURFACE_IMPACTS = {
     "Hard": {
@@ -353,6 +354,9 @@ def generer_pnj(nombre, sexe):
         if random_locale == "ru_RU":
             prenom = translit(prenom, "ru", reversed=True)
             nom = translit(nom, "ru", reversed=True)
+        elif random_locale == "el_GR":
+            prenom = unidecode(prenom)
+            nom = unidecode(nom)
 
         personnage = Personnage(sexe, prenom, nom, country, taille, lvl)
         personnage.generer_statistique()
