@@ -329,6 +329,8 @@ locale = [
     "sk_SK",  # Slovaquie
     "sl_SI",  # Slovénie
     "bs_BA",  # Bosnie-Herzégovine
+    "zh_CN",  # Chine (continentale)
+    "ja_JP",  # Japonais
 ]
 
 
@@ -351,12 +353,17 @@ def generer_pnj(nombre, sexe):
         taille = random.randint(taille_min, taille_max) # todo: La taille doit suivre une gaussienne
         lvl = random.randint(1, 25)
 
+        # Traduction for Russian and Greek Name (Soon, will add chinese and Japanese)
         if random_locale == "ru_RU":
             prenom = translit(prenom, "ru", reversed=True)
             nom = translit(nom, "ru", reversed=True)
-        elif random_locale == "el_GR":
+        elif random_locale in ["el_GR","zh_CN", "ja_JP"]:
             prenom = unidecode(prenom)
             nom = unidecode(nom)
+        elif random_locale == "bg_BG": # If Bulgaria translate the name and fix the Country problem
+            prenom = translit(prenom, "ru", reversed=True)
+            nom = translit(nom, "ru", reversed=True)
+            country = "Bulgaria"
 
         personnage = Personnage(sexe, prenom, nom, country, taille, lvl)
         personnage.generer_statistique()
