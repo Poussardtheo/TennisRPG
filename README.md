@@ -4,14 +4,14 @@ ce repo vise à créer un jeu de tennis réaliste en mode RPG.
 
 Plongez dans le monde passionnant du circuit ATP. \
 Créez votre joueur et vivez votre propre histoire sur le circuit dans ce RPG textuel. \
-Parcourez la terre entière et faites les bons choix pour faire de votre joueur une **Légende** \
+Parcourez la terre entière et faites les bons choix pour faire de votre joueur une **Légende**
 
 Ferez vous mieux que Nadal, Federer ou Djokovic ? 
 
 ## V.0:
 Ce jeu est une version alpha. 
 Pour l'instant, vous pouvez créer votre joueur et faire vos choix sur les tournois auquels vous participer. 
-C'est tout. \
+C'est tout. 
 
 Le seul choix que vous avez est l'activité à effectuer pendant la semaine. \
 A la fin de chaque semaine, vous découvrirez qui a gagné les tournois de la semaine. \
