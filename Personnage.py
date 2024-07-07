@@ -292,7 +292,43 @@ class Personnage:
         print("└" + "─" * (largeur - 2) + "┘")
 
 
-locale = ["fr_FR", "en_US", "es_ES", "de_DE", "it_IT", "ru_RU"]
+locale = [
+    "fr_FR",  # France
+    "en_US",  # États-Unis
+    "es_ES",  # Espagne
+    "de_DE",  # Allemagne
+    "it_IT",  # Italie
+    "ru_RU",  # Russie
+    "en_GB",  # Grande-Bretagne
+    "en_AU",  # Australie
+    "nl_NL",  # Pays-Bas
+    "nl_BE",  # Belgique (néerlandais)
+    "fr_BE",  # Belgique (français)
+    "pt_BR",  # Brésil
+    "es_AR",  # Argentine
+    "en_CA",  # Canada (anglais)
+    "fr_CA",  # Canada (français)
+    "de_CH",  # Suisse (allemand)
+    "fr_CH",  # Suisse (français)
+    "it_CH",  # Suisse (italien)
+    "pl_PL",  # Pologne
+    "hr_HR",  # Croatie
+    "el_GR",  # Grèce
+    "es_CL",  # Chili
+    "da_DK",  # Danemark
+    "sv_SE",  # Suède
+    "bg_BG",  # Bulgarie
+    "cs_CZ",  # République tchèque
+    "de_AT",  # Autriche
+    "pt_PT",  # Portugal
+    "fi_FI",  # Finlande
+    "en_IN",  # Inde (anglais)
+    "en_NZ",  # Nouvelle-Zélande
+    "es_CO",  # Colombie
+    "sk_SK",  # Slovaquie
+    "sl_SI",  # Slovénie
+    "bs_BA",  # Bosnie-Herzégovine
+]
 
 
 def generer_pnj(nombre, sexe):
