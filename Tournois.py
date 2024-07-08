@@ -189,8 +189,8 @@ class Tournoi:
         qualifies_b = self.selectionner_qualifies(resultats_poule_b)
         
         # Demi finales
-        demi_finale_1 = self.simuler_match(qualifies_a[0][0], qualifies_b[1][0])
-        demi_finale_2 = self.simuler_match(qualifies_b[0][0], qualifies_a[1][0])
+        demi_finale_1 = self.simuler_match(qualifies_a[0], qualifies_b[1])
+        demi_finale_2 = self.simuler_match(qualifies_b[0], qualifies_a[1])
         
         # Finale
         vainqueur = self.simuler_match(demi_finale_1, demi_finale_2)
@@ -210,7 +210,8 @@ class Tournoi:
                 resultats[perdant]["confrontations"][gagnant] = 'D'
         return resultats
     
-    def selectionner_qualifies(self, resultats_poule):
+    @staticmethod
+    def selectionner_qualifies(resultats_poule):
         joueurs_tries = sorted(resultats_poule.items(), key=lambda x: x[1]['victoires'], reverse=True)
         
         # Si pas d'égalité pour les deux premières places
