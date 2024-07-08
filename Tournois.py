@@ -183,21 +183,28 @@ class Tournoi:
         # Simuler les matchs de poules
         resultats_poule_a = self.simuler_matchs_poule(poule_a)
         resultats_poule_b = self.simuler_matchs_poule(poule_b)
-        
+
+        for poule in [resultats_poule_a, resultats_poule_b]:
+            for joueur, resultat in poule.items():
+                joueur.atp_points += resultat["victoires"] * 200  # +200 pts par victoire en poule
+
         # Sélectionner les deux meilleurs de chaque poule
         qualifies_a = self.selectionner_qualifies(resultats_poule_a)
         qualifies_b = self.selectionner_qualifies(resultats_poule_b)
-        
+
         # Demi finales
         demi_finale_1 = self.simuler_match(qualifies_a[0], qualifies_b[1])
         demi_finale_2 = self.simuler_match(qualifies_b[0], qualifies_a[1])
-        
+
+        demi_finale_1.atp_points += 400  # +400pts si victoire en demi finale
+        demi_finale_2.atp_points += 400
+
         # Finale
         vainqueur = self.simuler_match(demi_finale_1, demi_finale_2)
-        
+        vainqueur.atp_points += 500  # +500pts si victoire en finale
         print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
         
-        # Todo: add a logic for the atp points attributed
+
         
     def simuler_matchs_poule(self, poule):
         resultats = {joueur: {'victoires': 0, 'confrontations': {}} for joueur in poule}
@@ -228,9 +235,9 @@ class Tournoi:
                     return [joueurs_tries[0][0], joueurs_a_egalite[0]]
                 else:
                     return [joueurs_tries[0][0], joueurs_a_egalite[1]]
-            else:
-                # Todo: il faudra implémenter une logique pour une égalité à 3:
-                return [joueurs_tries[0][0], joueurs_tries[1][0]]
+        else:
+            # Todo: il faudra implémenter une logique pour une égalité à 3:
+            return [joueurs_tries[0][0], joueurs_tries[1][0]]
         
     def attribuer_points_atp(self, joueur, dernier_tour):
         points = self.POINTS_ATP.get(self.categorie, {}).get(dernier_tour, 0)
