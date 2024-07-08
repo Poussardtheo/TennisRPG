@@ -120,6 +120,9 @@ class Calendar:
         classement.update_classement("atp")
         classement.update_classement("elo")
         
+        if tournoi_choisi.categorie in ["GrandSlam", "ATP1000 #7"]:
+            self.avancer_semaine()
+        
     def simuler_tournois_semaine(self, joueurs, classement):
         tournois_semaine = self.obtenir_tournois_semaine()
         joueurs_disponible = set(
