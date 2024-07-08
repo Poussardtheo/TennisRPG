@@ -204,8 +204,6 @@ class Tournoi:
         vainqueur.atp_points += 500  # +500pts si victoire en finale
         print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
         
-
-        
     def simuler_matchs_poule(self, poule):
         resultats = {joueur: {'victoires': 0, 'confrontations': {}} for joueur in poule}
         for i in range(len(poule)):
