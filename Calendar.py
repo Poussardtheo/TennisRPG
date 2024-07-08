@@ -146,6 +146,7 @@ class Calendar:
     def importance_tournoi(tournoi):
         importance = {
             "GrandSlam": 5,
+            "ATP Finals": 5,
             "ATP1000 #7": 4,
             "ATP1000 #6": 4,
             "ATP500 #6": 3,
