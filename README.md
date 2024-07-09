@@ -30,9 +30,9 @@ Chaque Semaine, vous pourrez affecter vos points de compétence et voir comment 
 - Intégrer plus de nation possible pour les joueurs du POOL ✔️
 - Intégrer logique avec tournois sur deux semaines (Tournois en 7 tours) ✔️ 
 - Intégrer la logique pour l'ATP Finals (Match avec poule puis élimination directe) ✔
-- Intégrer une logique sur les tournois jouables par le perso jouable (pj)
+- Intégrer une logique sur les tournois jouables par le perso jouable (pj) ✔
   - ATP500 demande d'être dans le Top100 par exemple
-- Les pnj auront, eux aussi, une progression (pour rendre le jeu un peu plus intéressant.)
+- Les pnj auront, eux aussi, une progression (pour rendre le jeu un peu plus intéressant.) 
 
 #### V.0.2:
 - Un système de Blessure sera mis en place pour rendre l'impact sur les choix plus important
