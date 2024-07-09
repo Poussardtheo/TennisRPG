@@ -1,6 +1,6 @@
 import random
 
-from Tournois import tournoi, selectionner_joueurs_pour_tournoi
+from Tournois import tournoi, selectionner_joueurs_pour_tournoi, est_eligible_pour_tournoi
 
 
 class Calendar:
@@ -23,18 +23,21 @@ class Calendar:
 
     def choisir_activite(self, joueur, joueurs, classement):
         print(f"\nSemaine : {self.current_week} de l'année {self.current_year}")
-        tournois_disponible = self.obtenir_tournois_semaine()
-
+        tournois_semaines = self.obtenir_tournois_semaine()
+        tournois_elligible = [t for t in tournois_semaines if est_eligible_pour_tournoi(joueur, t, classement)]
+        
+        activites_possibles = [act for act in self.ACTIVITES if act != "Tournoi"]
         # Garde-fou pour empêcher de sélectionner Tournoi s'il n'y en a pas
-        if tournois_disponible:
-            print(
-                f"Tournois disponible : {[tournoi.nom for tournoi in tournois_disponible]}\n"
-            )
+        if tournois_elligible and tournois_semaines:
+            print(f"Tournois cette semaine : {[tournoi.nom for tournoi in tournois_semaines]}\n")
+            print(f"Tournois accessible : {[tournoi.nom for tournoi in tournois_elligible]}\n")
             activites_possibles = self.ACTIVITES
+        elif tournois_semaines:
+            print(f"Tournois cette semaine : {[tournoi.nom for tournoi in tournois_semaines]}\n")
+            print(f"Aucun Tournoi accessible cette semaine\n")
         else:
-            print("Tournois disponible : Pas de Tournois\n")
-            activites_possibles = [act for act in self.ACTIVITES if act != "Tournoi"]
-
+            print("Pas de Tournois cette semaine\n")
+        
         for i, activite in enumerate(activites_possibles, 1):
             print(f"{i}. {activite}")
 
@@ -70,30 +73,31 @@ class Calendar:
         print(f"\n{joueur.prenom} s'est entraîné{accord} cette semaine.")
         joueur.gagner_experience(exp_gagnee)
 
-    def choisir_tournoi(self):
-        tournois = self.obtenir_tournois_semaine()
+    @staticmethod
+    def choisir_tournoi(tournois_eligibles):
         print("\nTournoi disponible cette semaine:")
-        for i, tournoi in enumerate(tournois, 1):
+        for i, tournoi in enumerate(tournois_eligibles, 1):
             print(f"{i}. {tournoi.nom}")
 
         while True:
             choix = input(
-                f"\nChoisissez votre tournoi cette semaine (1-{len(tournois)}):"
+                f"\nChoisissez votre tournoi cette semaine (1-{len(tournois_eligibles)}):"
             )
-            if choix.isdigit() and 1 <= int(choix) <= len(tournois):
-                tournoi_choisi = tournois[int(choix) - 1]
+            if choix.isdigit() and 1 <= int(choix) <= len(tournois_eligibles):
+                tournoi_choisi = tournois_eligibles[int(choix) - 1]
                 return tournoi_choisi
             else:
                 print("\nChoix invalide, veuillez réessayer")
 
     def participer_tournoi(self, joueur, joueurs, classement):
         tournois_semaine = self.obtenir_tournois_semaine()
+        tournois_eligibles = [t for t in tournois_semaine if est_eligible_pour_tournoi(joueur, t, classement)]
         
         # ne laisse le choix de la sélection du tournoi que s'il y a plusieurs tournois
         if len(self.obtenir_tournois_semaine()) != 1:
-            tournoi_choisi = self.choisir_tournoi()
+            tournoi_choisi = self.choisir_tournoi(tournois_eligibles)
         else:
-            tournoi_choisi = tournois_semaine[0]
+            tournoi_choisi = tournois_eligibles[0]
         accord = "e" if joueur.sexe.lower() == 'f' else ""
         print(f"\n{joueur.prenom} a participé{accord} au tournoi : {tournoi_choisi.nom}.")
         

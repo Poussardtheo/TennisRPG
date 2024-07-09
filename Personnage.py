@@ -265,7 +265,7 @@ class Personnage:
             self.blessure < 3
         )  # Le joueur ne peut pas jouer si la gravité de la blessure est >= 3
 
-    def id_card(self):
+    def id_card(self, classement):
         largeur = 46
 
         print("┌" + "─" * (largeur - 2) + "┐")
@@ -274,10 +274,16 @@ class Personnage:
         print(f"│ Nom     : {self.nom:<32} │")
         print(f"│ Prénom  : {self.prenom:<32} │")
         print(f"│ Taille  : {self.taille} cm{' ' * 26} │")
-        print(f"│ Niveau  : {self.lvl:<32} │")
         print(f"│ Nationalité  : {self.country:<27} │")
         print(f"│ Main    : {self.main_dominante:<32} │")
         print(f"│ Revers  : {self.revers:<32} │")
+        print("├" + "─" * (largeur - 2) + "┤")
+        print("│" + " SITUATION ".center(largeur - 2) + "│")
+        print("├" + "─" * (largeur - 2) + "┤")
+        print(f"│ Classement  ATP  : {classement.obtenir_rang(self,'atp'):<23} │")
+        print(f"│ Points ATP  : {self.atp_points:<28} │")
+        print(f"│ ELO     : {int(self.elo):<32} │")
+        print(f"│ Niveau  : {self.lvl:<32} │")
         print(f"│ Fatigue : {self.fatigue:<32} │")
         print(f"│ Blessure: {self.blessure:<32} │")
         print("├" + "─" * (largeur - 2) + "┤")
@@ -371,4 +377,4 @@ def generer_pnj(nombre, sexe):
     return personnages_dico
 
 
-#personnage = Personnage("Théo", "Poussard", "France")
+personnage = Personnage("m", "Théo", "Poussard", "France")

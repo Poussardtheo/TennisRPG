@@ -39,20 +39,20 @@ while True:
 					"\nEntrée pour continuer"
 					"\n'q' pour quitter"
 					"\n'c' pour afficher le classement"
-					f"\n'i pour avoir les informations sur votre {joueurs_sexe}"
-					f"\n'e' pour affecter des points AP à votre {joueurs_sexe}\n")
+					f"\n'i pour voir la carte d'identité de votre {joueurs_sexe}"
+					f"\n'e' pour affecter des points d'attributs à votre {joueurs_sexe}\n")
 	
 	if action.lower() == 'q':
 		break
 	elif action.lower() == 'c':
 		classement.afficher_classement()
 	elif action.lower() == 'i':
-		joueur_principal.id_card()
+		joueur_principal.id_card(classement)
 	elif action.lower() == 'e':
 		joueur_principal.attribuer_ap_points_manuellement()
 	elif action == '':  # Si le joueur à appuyer sur entrée
 		calendar.choisir_activite(joueur_principal, POOL_JOUEURS, classement)
 
 print("\nMerci d'avoir joué ! Voici vos statistiques finales : ")
-joueur_principal.id_card()
+joueur_principal.id_card(classement)
 
