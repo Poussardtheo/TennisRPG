@@ -4,17 +4,21 @@ import math
 import random
 
 
-def determiner_placement(tours_joues, total_tours):
-    if tours_joues == total_tours:
-        return "Vainqueur"
-    elif tours_joues == total_tours - 1:
-        return "Finaliste"
-    elif tours_joues == total_tours - 2:
-        return "Demi-finaliste"
-    elif tours_joues == total_tours - 3:
-        return "Quart de finaliste"
-    else:
-        return f"Éliminé au tour {tours_joues}"
+def est_eligible_pour_tournoi(joueur, tournoi, classement):
+    seuils = {
+        "GrandSlam": 100,  # Top 100 pour les Grands Chelems
+        "ATP Finals": 8,  # Top 8 pour l'ATP Finals
+        "ATP1000 #6": 50,  # Top 50 pour les Masters 1000 à 6 tours
+        "ATP1000 #7": 50,  # Top 50 pour les Masters 1000 à 7 tours
+        "ATP500 #6": 150,  # Top 50 pour les ATP 500 à 6 tours
+        "ATP500 #5": 150,  # Top 50 pour les ATP 500 à 5 tours
+        "ATP250 #6": 200,  # Top 50 pour les ATP 250 à 6 tours
+        "ATP250 #5": 200,  # Top 50 pour les ATP 250 à 5 tours
+    }
+    
+    classement_joueur = classement.obtenir_rang(joueur, type="atp")
+    
+    return classement_joueur <= seuils.get(tournoi.categorie)
 
 
 def seed(n):
@@ -78,9 +82,12 @@ class Tournoi:
         self.nb_joueurs = nb_joueurs
         self.surface = surface
         #self.vainqueurs = {}
-
+    
     # We need to update the Calendar function to be able to use this function
     def jouer(self, joueur, participants, classement, type="atp"):
+        # Si le joueur n'a pas le droit de jouer le tournoi, on renvoie une erreur
+        if not est_eligible_pour_tournoi(joueur, self, classement):
+            raise ValueError(f"{joueur.prenom} {joueur.nom} n'est pas éligible pour participer à {self.nom}")
         # Si le joueur n'est pas dans la liste des participants, ont l'ajoute et on retire un participants
         if joueur not in participants:
             participants.append(joueur)
