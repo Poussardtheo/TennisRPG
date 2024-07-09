@@ -136,7 +136,7 @@ class Tournoi:
             for match in tableau:
                 joueur1, joueur2 = match
                 if joueur1 and joueur2:
-                    gagnant = self.simuler_match(joueur1, joueur2)
+                    gagnant = self.simuler_match(joueur1, joueur2)[0]
                     perdant = joueur2 if gagnant == joueur1 else joueur1
                     derniers_tours[perdant] = tour
                     prochain_tour.append(gagnant)
@@ -193,25 +193,29 @@ class Tournoi:
         qualifies_b = self.selectionner_qualifies(resultats_poule_b)
 
         # Demi finales
-        demi_finale_1 = self.simuler_match(qualifies_a[0], qualifies_b[1])
-        demi_finale_2 = self.simuler_match(qualifies_b[0], qualifies_a[1])
+        demi_finale_1 = self.simuler_match(qualifies_a[0], qualifies_b[1])[0]
+        demi_finale_2 = self.simuler_match(qualifies_b[0], qualifies_a[1])[0]
 
-        demi_finale_1.atp_points += 400  # +400pts si victoire en demi finale
+        demi_finale_1.atp_points += 400  # +400pts si victoire en demi-finale
         demi_finale_2.atp_points += 400
 
         # Finale
-        vainqueur = self.simuler_match(demi_finale_1, demi_finale_2)
+        vainqueur = self.simuler_match(demi_finale_1, demi_finale_2)[0]
         vainqueur.atp_points += 500  # +500pts si victoire en finale
         print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
         
     def simuler_matchs_poule(self, poule):
-        resultats = {joueur: {'victoires': 0, 'confrontations': {}} for joueur in poule}
+        resultats = {joueur: {'victoires': 0, 'sets_gagnes': 0, 'confrontations': {}} for joueur in poule}
         for i in range(len(poule)):
             for j in range(i+1, len(poule)):
-                gagnant = self.simuler_match(poule[i], poule[j])
-                perdant = poule[j] if gagnant == poule[i] else poule[i]
+                gagnant, perdant, sets_gagnant, sets_perdant = self.simuler_match(poule[i], poule[j])
+                # Update infos sur le gagnant
                 resultats[gagnant]['victoires'] += 1
+                resultats[gagnant]['sets_gagnes'] += sets_gagnant
                 resultats[gagnant]["confrontations"][perdant] = 'V'
+                
+                # Update infos sur le perdant
+                resultats[perdant]['sets_gagnes'] += sets_perdant
                 resultats[perdant]["confrontations"][gagnant] = 'D'
         return resultats
     
@@ -226,6 +230,7 @@ class Tournoi:
         # En cas d'égalités
         joueurs_a_egalite = [j for j, r in joueurs_tries if r['victoires'] == joueurs_tries[1][1]['victoires']]
         
+        # À 2
         if len(joueurs_a_egalite) == 2:
             # On compare les confrontations directes
             if resultats_poule[joueurs_a_egalite[0]]["confrontations"][joueurs_a_egalite[1]] == 'V':
@@ -233,8 +238,9 @@ class Tournoi:
                     return [joueurs_tries[0][0], joueurs_a_egalite[0]]
                 else:
                     return [joueurs_tries[0][0], joueurs_a_egalite[1]]
+        # À 3
         else:
-            # Todo: il faudra implémenter une logique pour une égalité à 3:
+            
             return [joueurs_tries[0][0], joueurs_tries[1][0]]
         
     def attribuer_points_atp(self, joueur, dernier_tour):
@@ -246,19 +252,34 @@ class Tournoi:
         elo2 = joueur2.calculer_elo(surface=self.surface)
 
         proba1 = 1 / (1 + 10 ** ((elo2 - elo1) / 400))
-
-        if random.random() < proba1:
+        
+        # Logique sur le score du match.
+        # Note: On pourra se servir de cela pour simuler la fatigue d'un joueur
+        #  (plus un match est long et plus les joueurs seront fatigués)
+        sets_necessaires = 3 if self.categorie == "GrandSlam" else 2
+        sets_joueur1, sets_joueur2 = 0, 0
+        
+        while max(sets_joueur1, sets_joueur2) < sets_necessaires:
+            if random.random() < proba1:
+                sets_joueur1 += 1
+            else:
+                sets_joueur2 += 1
+            
+        if sets_joueur1 > sets_joueur2:
             gagnant, perdant = joueur1, joueur2
+            sets_gagnant, sets_perdant = sets_joueur1, sets_joueur2
         else:
             gagnant, perdant = joueur2, joueur1
-
+            sets_gagnant, sets_perdant = sets_joueur2, sets_joueur1
+        
+        # Mise à jour des Elo
         k = 32
         elo_change = k * (1 - 1 / (1 + 10 ** ((perdant.elo - gagnant.elo) / 400)))
 
         gagnant.elo += elo_change
         perdant.elo -= elo_change
 
-        return gagnant
+        return gagnant, perdant, sets_gagnant, sets_perdant
     
 
 tournoi = {
