@@ -6,12 +6,12 @@ import random
 
 def est_eligible_pour_tournoi(joueur, tournoi, classement):
     seuils = {
-        "GrandSlam": 100,  # Top 100 pour les Grands Chelems
+        "GrandSlam": 128,  # Top 128 pour les Grands Chelems
         "ATP Finals": 8,  # Top 8 pour l'ATP Finals
-        "ATP1000 #6": 50,  # Top 50 pour les Masters 1000 à 6 tours
-        "ATP1000 #7": 50,  # Top 50 pour les Masters 1000 à 7 tours
-        "ATP500 #6": 150,  # Top 50 pour les ATP 500 à 6 tours
-        "ATP500 #5": 150,  # Top 50 pour les ATP 500 à 5 tours
+        "ATP1000 #6": 60,  # Top 50 pour les Masters 1000 à 6 tours
+        "ATP1000 #7": 100,  # Top 50 pour les Masters 1000 à 7 tours
+        "ATP500 #6": 100,  # Top 50 pour les ATP 500 à 6 tours
+        "ATP500 #5": 100,  # Top 50 pour les ATP 500 à 5 tours
         "ATP250 #6": 200,  # Top 50 pour les ATP 250 à 6 tours
         "ATP250 #5": 200,  # Top 50 pour les ATP 250 à 5 tours
     }
