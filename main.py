@@ -37,7 +37,7 @@ while True:
 	
 	action = input("\nAppuyer sur: "
 					"\nEntrée pour continuer"
-					"\n'q' pour quitter :"
+					"\n'q' pour quitter"
 					"\n'c' pour afficher le classement"
 					f"\n'i pour avoir les informations sur votre {joueurs_sexe}"
 					f"\n'e' pour affecter des points AP à votre {joueurs_sexe}\n")

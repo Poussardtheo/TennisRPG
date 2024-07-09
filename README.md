@@ -28,7 +28,7 @@ Chaque Semaine, vous pourrez affecter vos points de compétence et voir comment 
 #### V.0.1: 
 - Possibilité de créer un circuit masculin ou féminin en fonction du sexe de votre joueur ✔️
 - Intégrer plus de nation possible pour les joueurs du POOL ✔️
-- Intégrer logique avec tournois sur deux semaines (Tournois en 7 tours)
+- Intégrer logique avec tournois sur deux semaines (Tournois en 7 tours) ✔️ 
 - Intégrer la logique pour l'ATP Finals (Match avec poule puis élimination directe)
 - Intégrer une logique sur les tournois jouables par le perso jouable (pj)
   - ATP500 demande d'être dans le Top100 par exemple
@@ -55,7 +55,6 @@ Chaque Semaine, vous pourrez affecter vos points de compétence et voir comment 
 
 - Intégrer une idée de résidence (Le transport coûtera moins cher, ou sera moins fatiguant s'il est cours)
 - Avoir une rotation des joueurs sur le circuit et donc un système d'âge
-Dans de futures versions, Voici les améliorations qui seront ajoutées au jeu :
 - Intégrer un système de sponsor/ d'équipement --> V.1/V.2
 - Avoir un vrai système de jeu de match --> V.1/V.2
 
@@ -65,7 +64,7 @@ Dans de futures versions, Voici les améliorations qui seront ajoutées au jeu 
   - Avoir une map du monde avec les tournois disponible sur la semaine
   - Avoir dans la sélection de tournois des images pour rendre la sélection un peu plus agréable
   - Avoir tout le temps la carte d'identité du joueur sur une colonne pour rendre l'expérience plus agréable
-
+- Avoir historique de confrontations entre joueurs (pour moral) 
 
 
 
