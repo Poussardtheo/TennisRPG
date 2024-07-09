@@ -39,8 +39,8 @@ while True:
 					"\nEntrée pour continuer"
 					"\n'q' pour quitter"
 					"\n'c' pour afficher le classement"
-					f"\n'i pour avoir les informations sur votre {joueurs_sexe}"
-					f"\n'e' pour affecter des points AP à votre {joueurs_sexe}\n")
+					f"\n'i pour voir la carte d'identité de votre {joueurs_sexe}"
+					f"\n'e' pour affecter des points d'attributs à votre {joueurs_sexe}\n")
 	
 	if action.lower() == 'q':
 		break
