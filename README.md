@@ -40,6 +40,8 @@ Chaque Semaine, vous pourrez affecter vos points de compétence et voir comment 
     - Rendra le jeu un peu plus vivant
     - Pourra suivre le système de blessure
 - Revoir le système de points d'XP pour qu'il colle à la réalité (Pas lvl max au bout d'un an) 
+- Ajouter l'âge des joueurs (avec une évolution). 
+    - Le niveau du joueur à sa création dépendra de son âge. 
 
 #### V.0.3
 - Possibilité de sauvegarder la progression pour faire perdurer le jeu dans le temps
