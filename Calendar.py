@@ -68,7 +68,7 @@ class Calendar:
 
     @staticmethod
     def entrainement(joueur):
-        exp_gagnee = random.randint(50, 100)
+        exp_gagnee = random.randint(3, 7)
         accord = "e" if joueur.sexe.lower() == 'f' else ""
         print(f"\n{joueur.prenom} s'est entraîné{accord} cette semaine.")
         joueur.gagner_experience(exp_gagnee)
@@ -117,9 +117,10 @@ class Calendar:
                 tournoi.simuler_tournoi(participants, classement, type="atp")
             
             joueurs_disponible -= set(participants)
-            
-        exp_gagnee = random.randint(150, 300)
-        joueur.gagner_experience(exp_gagnee)
+        
+        # Déjà pris en compte dans simuler_tournoi
+        # exp_gagnee = random.randint(150, 300)
+        # joueur.gagner_experience(exp_gagnee)
     
         classement.update_classement("atp")
         classement.update_classement("elo")

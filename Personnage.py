@@ -91,7 +91,7 @@ class Personnage:
         "Endurance": -0.2,  # Impact négatif modéré
     }
     
-    def __init__(self, sexe, prenom, nom, country, taille=None, lvl=1, archetype=None):
+    def __init__(self, sexe, prenom, nom, country, taille=None, lvl=1, archetype=None, principal = False):
         self.sexe = sexe
         self.nom = nom
         self.prenom = prenom
@@ -100,6 +100,7 @@ class Personnage:
         self.revers = "Une main" if random.random() < 0.11 else "Deux mains"
         self.country = country
         self.archetype = archetype or random.choice(list(ARCHETYPES.keys()))
+        self.principal = principal  # Indique si le joueur est le personnage_principal ou un pnj
         
         self.lvl = lvl
         self.xp_points = 0
@@ -160,8 +161,11 @@ class Personnage:
         self.elo = self.calculer_elo()
 
     def gagner_experience(self, earned_xp):
-        self.xp_points += earned_xp
-        print(f"\n{self.prenom} a gagné {earned_xp} points d'expérience.")
+        facteur_niveau = max(1 - (self.lvl/30) * 0.6, 0.4)
+        xp_ajuste = int(earned_xp * facteur_niveau)
+        self.xp_points += xp_ajuste
+        if self.principal:
+            print(f"\n{self.prenom} a gagné {xp_ajuste} points d'expérience.")
         self.level_up()
 
     def calculer_experience_requise(self):
@@ -172,9 +176,11 @@ class Personnage:
             self.xp_points -= self.calculer_experience_requise()
             self.lvl += 1
             self.ap_points += self.POINTS_BASE
-            accord = "e" if self.sexe.lower() == 'f' else "" # Si le personnage est une femme, on accorde le message au féminin
-            print(f"{self.prenom} est passé{accord} au niveau {self.lvl}!")
-            print(f"{self.prenom} a gagné {self.POINTS_BASE} AP points.")
+            # Si le personnage est une femme, on accorde le message au féminin
+            accord = "e" if self.sexe.lower() == 'f' else ""
+            if self.principal:
+                print(f"{self.prenom} est passé{accord} au niveau {self.lvl}!")
+                print(f"{self.prenom} a gagné {self.POINTS_BASE} AP points.")
             
     def attribuer_ap_points_manuellement(self):
         while self.ap_points > 0:
@@ -226,11 +232,13 @@ class Personnage:
         self.fatigue = min(
             100, self.fatigue + fatigue_ajoutee
         )  # La fatigue ne peut pas dépasser 100
-        print(f"Niveau de fatigue actuel {self.fatigue}")
+        if self.principal:
+            print(f"Niveau de fatigue actuel {self.fatigue}")
 
         if self.fatigue >= 80:
             accord = "la joueuse est très fatiguée" if self.sexe.lower() == 'f' else "Le joueur est très fatigué"
-            print(f"Attention ! {accord} et risque de se blesser. ")
+            if self.principal:
+                print(f"Attention ! {accord} et risque de se blesser. ")
             if (
                 random.random() < 1 - self.fatigue / 100
             ):  # Chance de se blesser en fct de la fatigue
@@ -242,9 +250,10 @@ class Personnage:
                 1, 5
             )  # Todo: modifier pour que la gravité dépende de la fatigue
             accord = "e" if self.sexe.lower() == 'f' else ""
-            print(
-                f"{self.prenom} s'est blessé{accord} ! Gravité de la blessure: {self.blessure}"
-            )
+            if self.principal:
+                print(
+                    f"{self.prenom} s'est blessé{accord} ! Gravité de la blessure: {self.blessure}"
+                )
 
     def repos(self):
         recuperation = random.randint(10, 20)
@@ -253,12 +262,13 @@ class Personnage:
         if self.blessure > 0:
             recuperation_blessure = random.randint(1, 2)
             self.blessure = max(0, self.blessure - recuperation_blessure)
-            print(
-                f"{self.prenom} récupère de sa blessure. Gravité actuelle: {self.blessure}"
-            )
+            if self.principal:
+                print(
+                    f"{self.prenom} récupère de sa blessure. Gravité actuelle: {self.blessure}"
+                )
 
-        print(f"{self.prenom} s'est reposé.")
-        print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
+            print(f"{self.prenom} s'est reposé.")
+            print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
 
     def peut_jouer(self):
         return (

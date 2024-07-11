@@ -1,6 +1,5 @@
 from Calendar import *
 from Personnage import *
-from Tournois import *
 from Classement import Classement
 
 annee_debut = 2024
@@ -20,7 +19,7 @@ tennis_sexe = "tennisman" if sexe.lower() == 'm' else "tenniswoman"
 prenom = input(f"Entrez le prénom de votre {joueurs_sexe} : ")
 nom = input(f"\nEntrez le nom de votre {joueurs_sexe} : ")
 pays = input(f"\nEntrez le pays de votre {joueurs_sexe} : ")
-joueur_principal = Personnage(sexe, prenom, nom, pays)
+joueur_principal = Personnage(sexe, prenom, nom, pays, principal=True)
 
 # Creating the player POOL
 POOL_JOUEURS = generer_pnj(130, sexe)
