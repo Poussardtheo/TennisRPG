@@ -75,16 +75,16 @@ class Tournoi:
         "ATP250 #5": {1: 0, 2: 25, 3: 50, 4: 100, 5: 165, "Vainqueur": 250},
     }
     
-    # Todo: Ajuster le tableau pour avoir quelque chose de cohérent
+    # Todo: Ajuster le tableau pour avoir quelque chose de cohérent (Mieux mais pas encore sûr de la cohérence)
     XP_PAR_TOUR = {
-        "GrandSlam": {1: 10, 2: 20, 3: 40, 4: 80, 5: 160, 6: 320, 7: 640, "Vainqueur": 1280},
-        "ATP1000 #7": {1: 5, 2: 10, 3: 20, 4: 40, 5: 80, 6: 160, 7: 320, "Vainqueur": 640},
-        "ATP1000 #6": {1: 5, 2: 10, 3: 20, 4: 40, 5: 80, 6: 160, "Vainqueur": 320},
-        "ATP500 #6": {1: 3, 2: 6, 3: 12, 4: 24, 5: 48, 6: 96, "Vainqueur": 192},
-        "ATP500 #5": {1: 3, 2: 6, 3: 12, 4: 24, 5: 48, "Vainqueur": 96},
-        "ATP250 #6": {1: 2, 2: 4, 3: 8, 4: 16, 5: 32, 6: 64, "Vainqueur": 128},
-        "ATP250 #5": {1: 2, 2: 4, 3: 8, 4: 16, 5: 32, "Vainqueur": 64},
-        "ATP Finals": {1: 20, 2: 40, 3: 80, "Vainqueur": 160}  # Ajusté pour l'ATP Finals
+        "GrandSlam": {1: 100, 2: 200, 3: 400, 4: 600, 5: 750, 6: 900, 7: 1000, "Vainqueur": 1250},
+        "ATP1000 #7": {1: 30, 2: 60, 3: 100, 4: 125, 5: 150, 6: 200, 7: 225, "Vainqueur": 250},
+        "ATP1000 #6": {1: 30, 2: 60, 3: 100, 4: 125, 5: 150, 6: 200, "Vainqueur": 250},
+        "ATP500 #6": {1: 25, 2: 50, 3: 75, 4: 100, 5: 125, 6: 130, "Vainqueur": 150},
+        "ATP500 #5": {1: 25, 2: 50, 3: 75, 4: 100, 5: 125, "Vainqueur": 150},
+        "ATP250 #6": {1: 10, 2: 20, 3: 40, 4: 80, 5: 100, 6: 110, "Vainqueur": 120},
+        "ATP250 #5": {1: 10, 2: 20, 3: 40, 4: 80, 5: 100, "Vainqueur": 110},
+        "ATP Finals": {1: 250, 2: 400, 3: 500, "Vainqueur": 1000}  # Ajusté pour l'ATP Finals
     }
     
     def __init__(self, categorie, nom, emplacement, nb_joueurs, surface):
