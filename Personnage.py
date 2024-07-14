@@ -162,14 +162,14 @@ class Personnage:
 
     def gagner_experience(self, earned_xp):
         facteur_niveau = max(1 - (self.lvl/30) * 0.6, 0.4)
-        xp_ajuste = int(earned_xp * facteur_niveau)
+        xp_ajuste = round(earned_xp * facteur_niveau)
         self.xp_points += xp_ajuste
         if self.principal:
             print(f"\n{self.prenom} a gagné {xp_ajuste} points d'expérience.")
         self.level_up()
 
     def calculer_experience_requise(self):
-        return int(200 * (self.lvl - 1) ** 1.2)
+        return int(200 * self.lvl ** 1.2)
 
     def level_up(self):
         while self.xp_points >= self.calculer_experience_requise():
@@ -181,6 +181,7 @@ class Personnage:
             if self.principal:
                 print(f"{self.prenom} est passé{accord} au niveau {self.lvl}!")
                 print(f"{self.prenom} a gagné {self.POINTS_BASE} AP points.")
+            # Todo: Add a logic to add directly the ap points to the non principal players
             
     def attribuer_ap_points_manuellement(self):
         while self.ap_points > 0:
