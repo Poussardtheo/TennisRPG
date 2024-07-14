@@ -169,7 +169,7 @@ class Personnage:
         self.level_up()
 
     def calculer_experience_requise(self):
-        return int(200 * (self.lvl + 1) ** 1.2)
+        return int(200 * (self.lvl - 1) ** 1.2)
 
     def level_up(self):
         while self.xp_points >= self.calculer_experience_requise():
@@ -277,6 +277,11 @@ class Personnage:
 
     def id_card(self, classement):
         largeur = 46
+        xp_requis = self.calculer_experience_requise()
+        xp_actuel = self.xp_points
+        max_barre = 20
+        barre_xp = "▓" * int(xp_actuel * max_barre / xp_requis)
+        espace_xp = "░" * (max_barre - len(barre_xp))
 
         print("┌" + "─" * (largeur - 2) + "┐")
         print("│" + " ID CARD ".center(largeur - 2) + "│")
@@ -294,13 +299,13 @@ class Personnage:
         print(f"│ Points ATP  : {self.atp_points:<28} │")
         print(f"│ ELO     : {int(self.elo):<32} │")
         print(f"│ Niveau  : {self.lvl:<32} │")
+        print(f"│ XP      : {barre_xp}{espace_xp} {' ' * 2} {xp_actuel}/{xp_requis} {' ' * 3}│")
         print(f"│ Fatigue : {self.fatigue:<32} │")
         print(f"│ Blessure: {self.blessure:<32} │")
         print("├" + "─" * (largeur - 2) + "┤")
         print("│" + " STATISTIQUES ".center(largeur - 2) + "│")
         print("├" + "─" * (largeur - 2) + "┤")
 
-        max_barre = 20
         for attr, valeur in self.stats.items():
             barre = "▓" * int(valeur * max_barre / 100)
             espace = " " * (max_barre - len(barre))
@@ -386,5 +391,7 @@ def generer_pnj(nombre, sexe):
 
     return personnages_dico
 
+from Classement import Classement
 
 personnage = Personnage("m", "Théo", "Poussard", "France")
+classement = Classement({"Titou" : personnage})
