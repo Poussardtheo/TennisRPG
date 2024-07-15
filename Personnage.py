@@ -91,7 +91,7 @@ class Personnage:
         "Endurance": -0.2,  # Impact négatif modéré
     }
     
-    def __init__(self, sexe, prenom, nom, country, taille=None, lvl=1, archetype=None):
+    def __init__(self, sexe, prenom, nom, country, taille=None, lvl=1, archetype=None, principal=False):
         self.sexe = sexe
         self.nom = nom
         self.prenom = prenom
@@ -100,6 +100,7 @@ class Personnage:
         self.revers = "Une main" if random.random() < 0.11 else "Deux mains"
         self.country = country
         self.archetype = archetype or random.choice(list(ARCHETYPES.keys()))
+        self.principal = principal  # Indique si le joueur est le personnage_principal ou un pnj
         
         self.lvl = lvl
         self.xp_points = 0
@@ -160,21 +161,29 @@ class Personnage:
         self.elo = self.calculer_elo()
 
     def gagner_experience(self, earned_xp):
-        self.xp_points += earned_xp
-        print(f"\n{self.prenom} a gagné {earned_xp} points d'expérience.")
+        facteur_niveau = max(1 - (self.lvl/30) * 0.6, 0.4)
+        xp_ajuste = round(earned_xp * facteur_niveau)
+        self.xp_points += xp_ajuste
+        if self.principal:
+            print(f"\n{self.prenom} a gagné {xp_ajuste} points d'expérience.")
         self.level_up()
 
     def calculer_experience_requise(self):
-        return int(200 * (self.lvl + 1) ** 1.2)
+        return int(200 * self.lvl ** 1.2)
 
     def level_up(self):
-        while self.xp_points >= self.calculer_experience_requise():
+        # Tant que l'on a assez d'xp pour passer au niveau suivant et qu'on n'est pas au niveau max
+        while self.xp_points >= self.calculer_experience_requise() and self.lvl < self.LVL_MAX:
             self.xp_points -= self.calculer_experience_requise()
             self.lvl += 1
             self.ap_points += self.POINTS_BASE
-            accord = "e" if self.sexe.lower() == 'f' else "" # Si le personnage est une femme, on accorde le message au féminin
-            print(f"{self.prenom} est passé{accord} au niveau {self.lvl}!")
-            print(f"{self.prenom} a gagné {self.POINTS_BASE} AP points.")
+            # Si le personnage est une femme, on accorde le message au féminin
+            accord = "e" if self.sexe.lower() == 'f' else ""
+            if self.principal:
+                print(f"{self.prenom} est passé{accord} au niveau {self.lvl}!")
+                print(f"{self.prenom} a gagné {self.POINTS_BASE} AP points.")
+            else:
+                self.attribuer_ap_points_automatiquement()
             
     def attribuer_ap_points_manuellement(self):
         while self.ap_points > 0:
@@ -226,11 +235,13 @@ class Personnage:
         self.fatigue = min(
             100, self.fatigue + fatigue_ajoutee
         )  # La fatigue ne peut pas dépasser 100
-        print(f"Niveau de fatigue actuel {self.fatigue}")
+        if self.principal:
+            print(f"Niveau de fatigue actuel {self.fatigue}")
 
         if self.fatigue >= 80:
             accord = "la joueuse est très fatiguée" if self.sexe.lower() == 'f' else "Le joueur est très fatigué"
-            print(f"Attention ! {accord} et risque de se blesser. ")
+            if self.principal:
+                print(f"Attention ! {accord} et risque de se blesser. ")
             if (
                 random.random() < 1 - self.fatigue / 100
             ):  # Chance de se blesser en fct de la fatigue
@@ -242,9 +253,10 @@ class Personnage:
                 1, 5
             )  # Todo: modifier pour que la gravité dépende de la fatigue
             accord = "e" if self.sexe.lower() == 'f' else ""
-            print(
-                f"{self.prenom} s'est blessé{accord} ! Gravité de la blessure: {self.blessure}"
-            )
+            if self.principal:
+                print(
+                    f"{self.prenom} s'est blessé{accord} ! Gravité de la blessure: {self.blessure}"
+                )
 
     def repos(self):
         recuperation = random.randint(10, 20)
@@ -253,12 +265,13 @@ class Personnage:
         if self.blessure > 0:
             recuperation_blessure = random.randint(1, 2)
             self.blessure = max(0, self.blessure - recuperation_blessure)
-            print(
-                f"{self.prenom} récupère de sa blessure. Gravité actuelle: {self.blessure}"
-            )
+            if self.principal:
+                print(
+                    f"{self.prenom} récupère de sa blessure. Gravité actuelle: {self.blessure}"
+                )
 
-        print(f"{self.prenom} s'est reposé.")
-        print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
+            print(f"{self.prenom} s'est reposé.")
+            print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
 
     def peut_jouer(self):
         return (
@@ -267,7 +280,6 @@ class Personnage:
 
     def id_card(self, classement):
         largeur = 46
-
         print("┌" + "─" * (largeur - 2) + "┐")
         print("│" + " ID CARD ".center(largeur - 2) + "│")
         print("├" + "─" * (largeur - 2) + "┤")
@@ -284,13 +296,24 @@ class Personnage:
         print(f"│ Points ATP  : {self.atp_points:<28} │")
         print(f"│ ELO     : {int(self.elo):<32} │")
         print(f"│ Niveau  : {self.lvl:<32} │")
+        
+        xp_requis = self.calculer_experience_requise()
+        xp_actuel = self.xp_points
+        max_barre = 20
+        barre_xp = "▓" * int(xp_actuel * max_barre / xp_requis)
+        espace_xp = "░" * (max_barre - len(barre_xp))
+        xp_values = f"{xp_actuel}/{xp_requis}"
+        xp_space = len(xp_values)
+        left_space = largeur - 11 - max_barre - 2
+        middle_space = max(0, left_space - xp_space)
+        
+        print(f"│ XP      : {barre_xp}{espace_xp}{' ' * (middle_space-1)}{xp_values} │")
         print(f"│ Fatigue : {self.fatigue:<32} │")
         print(f"│ Blessure: {self.blessure:<32} │")
         print("├" + "─" * (largeur - 2) + "┤")
         print("│" + " STATISTIQUES ".center(largeur - 2) + "│")
         print("├" + "─" * (largeur - 2) + "┤")
 
-        max_barre = 20
         for attr, valeur in self.stats.items():
             barre = "▓" * int(valeur * max_barre / 100)
             espace = " " * (max_barre - len(barre))
@@ -356,7 +379,7 @@ def generer_pnj(nombre, sexe):
         else:
             raise ValueError("Le sexe doit être 'M' ou 'F'")
         nom = fake.last_name()
-        taille = random.randint(taille_min, taille_max) # todo: La taille doit suivre une gaussienne
+        taille = random.randint(taille_min, taille_max)  # todo: La taille doit suivre une gaussienne
         lvl = random.randint(1, 25)
 
         # Traduction for Russian and Greek Name (Soon, will add chinese and Japanese)

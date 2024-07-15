@@ -75,6 +75,18 @@ class Tournoi:
         "ATP250 #5": {1: 0, 2: 25, 3: 50, 4: 100, 5: 165, "Vainqueur": 250},
     }
     
+    # Todo: Ajuster le tableau pour avoir quelque chose de cohérent (Mieux mais pas encore sûr de la cohérence)
+    XP_PAR_TOUR = {
+        "GrandSlam": {1: 100, 2: 200, 3: 400, 4: 600, 5: 750, 6: 900, 7: 1000, "Vainqueur": 1250},
+        "ATP1000 #7": {1: 30, 2: 60, 3: 100, 4: 125, 5: 150, 6: 200, 7: 225, "Vainqueur": 250},
+        "ATP1000 #6": {1: 30, 2: 60, 3: 100, 4: 125, 5: 150, 6: 200, "Vainqueur": 250},
+        "ATP500 #6": {1: 25, 2: 50, 3: 75, 4: 100, 5: 125, 6: 130, "Vainqueur": 150},
+        "ATP500 #5": {1: 25, 2: 50, 3: 75, 4: 100, 5: 125, "Vainqueur": 150},
+        "ATP250 #6": {1: 10, 2: 20, 3: 40, 4: 80, 5: 100, 6: 110, "Vainqueur": 120},
+        "ATP250 #5": {1: 10, 2: 20, 3: 40, 4: 80, 5: 100, "Vainqueur": 110},
+        "ATP Finals": {1: 250, 2: 400, 3: 500, "Vainqueur": 1000}  # Ajusté pour l'ATP Finals
+    }
+    
     def __init__(self, categorie, nom, emplacement, nb_joueurs, surface):
         self.categorie = categorie
         self.nom = nom
@@ -169,7 +181,9 @@ class Tournoi:
 
         for joueur, dernier_tour in derniers_tours.items():
             self.attribuer_points_atp(joueur, dernier_tour)
-        
+            xp_gagne = self.XP_PAR_TOUR[self.categorie].get(dernier_tour, 0)
+            joueur.gagner_experience(xp_gagne)
+            
         # Note the return will be useful when we'll save the info in a database
         # Return vainqueur, dernier_tour
     
@@ -179,7 +193,7 @@ class Tournoi:
             raise ValueError("L'ATP Finals nécessite exactement 8 participants")
         
         # Trier les joueurs par classement
-        # Todo: remplacer atp par atp race quand je l'aurai implémenter
+        # Todo: remplacer atp par atp race quand je l'aurai implémenté
         joueurs_tries = sorted(participants, key=lambda j: classement.obtenir_rang(j, "atp"))
         
         # répartir les joueurs en deux poules
@@ -211,6 +225,18 @@ class Tournoi:
         vainqueur.atp_points += 500  # +500pts si victoire en finale
         print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
         
+        # Progression des joueurs
+        for joueur in participants:
+            if joueur == vainqueur:
+                xp_gagne = self.XP_PAR_TOUR["ATP Finals"]["Vainqueur"]
+            elif joueur in [demi_finale_1, demi_finale_2]:
+                xp_gagne = self.XP_PAR_TOUR["ATP Finals"][3]
+            elif joueur in qualifies_a + qualifies_b:
+                xp_gagne = self.XP_PAR_TOUR["ATP Finals"][2]
+            else:
+                xp_gagne = self.XP_PAR_TOUR["ATP Finals"][1]
+            joueur.gagner_experience(xp_gagne)
+            
     def simuler_matchs_poule(self, poule):
         resultats = {joueur: {'victoires': 0, 'sets_gagnes': 0, 'confrontations': {}} for joueur in poule}
         for i in range(len(poule)):
