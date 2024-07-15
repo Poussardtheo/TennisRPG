@@ -1,6 +1,7 @@
-from Calendar import *
-from Personnage import *
-from Classement import Classement
+from TennisRPG.Calendar import *
+from TennisRPG.Personnage import *
+from TennisRPG.Classement import Classement
+
 
 def main():
 	annee_debut = 2024
@@ -17,7 +18,7 @@ def main():
 	tennis_sexe = "tennisman" if sexe.lower() == 'm' else "tenniswoman"
 
 	# Create your player
-	prenom = input(f"Entrez le prénom de votre {joueurs_sexe} : ")
+	prenom = input(f"\nEntrez le prénom de votre {joueurs_sexe} : ")
 	nom = input(f"\nEntrez le nom de votre {joueurs_sexe} : ")
 	pays = input(f"\nEntrez le pays de votre {joueurs_sexe} : ")
 	joueur_principal = Personnage(sexe, prenom, nom, pays, principal=True)

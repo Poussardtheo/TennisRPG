@@ -1,6 +1,6 @@
 import random
 
-from Tournois import tournoi, selectionner_joueurs_pour_tournoi, est_eligible_pour_tournoi
+from TennisRPG.Tournois import tournoi, selectionner_joueurs_pour_tournoi, est_eligible_pour_tournoi
 
 
 class Calendar:
