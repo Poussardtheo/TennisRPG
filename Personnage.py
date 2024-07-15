@@ -91,7 +91,7 @@ class Personnage:
         "Endurance": -0.2,  # Impact négatif modéré
     }
     
-    def __init__(self, sexe, prenom, nom, country, taille=None, lvl=1, archetype=None, principal = False):
+    def __init__(self, sexe, prenom, nom, country, taille=None, lvl=1, archetype=None, principal=False):
         self.sexe = sexe
         self.nom = nom
         self.prenom = prenom
@@ -182,7 +182,8 @@ class Personnage:
             if self.principal:
                 print(f"{self.prenom} est passé{accord} au niveau {self.lvl}!")
                 print(f"{self.prenom} a gagné {self.POINTS_BASE} AP points.")
-            # Todo: Add a logic to add directly the ap points to the non principal players
+            else:
+                self.attribuer_ap_points_automatiquement()
             
     def attribuer_ap_points_manuellement(self):
         while self.ap_points > 0:
@@ -279,12 +280,6 @@ class Personnage:
 
     def id_card(self, classement):
         largeur = 46
-        xp_requis = self.calculer_experience_requise()
-        xp_actuel = self.xp_points
-        max_barre = 20
-        barre_xp = "▓" * int(xp_actuel * max_barre / xp_requis)
-        espace_xp = "░" * (max_barre - len(barre_xp))
-
         print("┌" + "─" * (largeur - 2) + "┐")
         print("│" + " ID CARD ".center(largeur - 2) + "│")
         print("├" + "─" * (largeur - 2) + "┤")
@@ -301,8 +296,18 @@ class Personnage:
         print(f"│ Points ATP  : {self.atp_points:<28} │")
         print(f"│ ELO     : {int(self.elo):<32} │")
         print(f"│ Niveau  : {self.lvl:<32} │")
-        # Todo: Trouver fix pour longueur des espaces en fct du nb de chiffres affichés dans xp_actuel et xp_requis
-        print(f"│ XP      : {barre_xp}{espace_xp} {' ' * 2} {xp_actuel}/{xp_requis} {' ' * 3}│")
+        
+        xp_requis = self.calculer_experience_requise()
+        xp_actuel = self.xp_points
+        max_barre = 20
+        barre_xp = "▓" * int(xp_actuel * max_barre / xp_requis)
+        espace_xp = "░" * (max_barre - len(barre_xp))
+        xp_values = f"{xp_actuel}/{xp_requis}"
+        xp_space = len(xp_values)
+        left_space = largeur - 11 - max_barre - 2
+        middle_space = max(0, left_space - xp_space)
+        
+        print(f"│ XP      : {barre_xp}{espace_xp}{' ' * (middle_space-1)}{xp_values} │")
         print(f"│ Fatigue : {self.fatigue:<32} │")
         print(f"│ Blessure: {self.blessure:<32} │")
         print("├" + "─" * (largeur - 2) + "┤")
@@ -315,7 +320,6 @@ class Personnage:
             print(f"│ {attr:<10}: {barre}{espace} {valeur:>9} │")
 
         print("└" + "─" * (largeur - 2) + "┘")
-
 
 pays_locales = {
     "France": ["fr_FR"],
@@ -398,4 +402,4 @@ def generer_pnj(nombre, sexe):
 from Classement import Classement
 
 personnage = Personnage("m", "Théo", "Poussard", "France")
-classement = Classement({"Titou" : personnage})
+classement = Classement({"Titou": personnage})
