@@ -1,3 +1,6 @@
+import threading
+
+# Local import
 from TennisRPG.Calendar import *
 from TennisRPG.Personnage import *
 from TennisRPG.Classement import Classement
@@ -17,17 +20,22 @@ def main():
 	joueurs_sexe = "joueur" if sexe.lower() == 'm' else "joueuse"
 	tennis_sexe = "tennisman" if sexe.lower() == 'm' else "tenniswoman"
 
+	# Creating the player POOL
+	POOL_JOUEURS = {}
+	pool_thread = threading.Thread(target=generer_pnj_thread, args=(130, sexe, POOL_JOUEURS))
+	pool_thread.start()
+	
 	# Create your player
 	prenom = input(f"\nEntrez le prénom de votre {joueurs_sexe} : ")
 	nom = input(f"\nEntrez le nom de votre {joueurs_sexe} : ")
 	pays = input(f"\nEntrez le pays de votre {joueurs_sexe} : ")
 	joueur_principal = Personnage(sexe, prenom, nom, pays, principal=True)
-
-	# Creating the player POOL
-	POOL_JOUEURS = generer_pnj(130, sexe)
+	
+	# Wait for player POOL generation to complete
+	pool_thread.join()
 	POOL_JOUEURS[f"{prenom} {nom}"] = joueur_principal
 
-	# Initialiser le classement en fonction du POOL de Joueurs
+	# Initialize ranking with the player POOL
 	classement = Classement(POOL_JOUEURS)
 
 	# Main game
