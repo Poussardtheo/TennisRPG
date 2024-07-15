@@ -172,7 +172,8 @@ class Personnage:
         return int(200 * self.lvl ** 1.2)
 
     def level_up(self):
-        while self.xp_points >= self.calculer_experience_requise():
+        # Tant que l'on a assez d'xp pour passer au niveau suivant et qu'on n'est pas au niveau max
+        while self.xp_points >= self.calculer_experience_requise() and self.lvl < self.LVL_MAX:
             self.xp_points -= self.calculer_experience_requise()
             self.lvl += 1
             self.ap_points += self.POINTS_BASE
@@ -300,6 +301,7 @@ class Personnage:
         print(f"│ Points ATP  : {self.atp_points:<28} │")
         print(f"│ ELO     : {int(self.elo):<32} │")
         print(f"│ Niveau  : {self.lvl:<32} │")
+        # Todo: Trouver fix pour longueur des espaces en fct du nb de chiffres affichés dans xp_actuel et xp_requis
         print(f"│ XP      : {barre_xp}{espace_xp} {' ' * 2} {xp_actuel}/{xp_requis} {' ' * 3}│")
         print(f"│ Fatigue : {self.fatigue:<32} │")
         print(f"│ Blessure: {self.blessure:<32} │")
@@ -372,7 +374,7 @@ def generer_pnj(nombre, sexe):
         else:
             raise ValueError("Le sexe doit être 'M' ou 'F'")
         nom = fake.last_name()
-        taille = random.randint(taille_min, taille_max) # todo: La taille doit suivre une gaussienne
+        taille = random.randint(taille_min, taille_max)  # todo: La taille doit suivre une gaussienne
         lvl = random.randint(1, 25)
 
         # Traduction for Russian and Greek Name (Soon, will add chinese and Japanese)
@@ -391,6 +393,7 @@ def generer_pnj(nombre, sexe):
         personnages_dico[f"{personnage.prenom} {personnage.nom}"] = personnage
 
     return personnages_dico
+
 
 from Classement import Classement
 

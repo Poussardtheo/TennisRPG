@@ -193,7 +193,7 @@ class Tournoi:
             raise ValueError("L'ATP Finals nécessite exactement 8 participants")
         
         # Trier les joueurs par classement
-        # Todo: remplacer atp par atp race quand je l'aurai implémenter
+        # Todo: remplacer atp par atp race quand je l'aurai implémenté
         joueurs_tries = sorted(participants, key=lambda j: classement.obtenir_rang(j, "atp"))
         
         # répartir les joueurs en deux poules
