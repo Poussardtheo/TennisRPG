@@ -186,6 +186,8 @@ class Personnage:
 				self.attribuer_ap_points_automatiquement()
 			
 	def attribuer_ap_points_manuellement(self):
+		if self.ap_points == 0:
+			print("\n Pas de points AP à attribuer.")
 		while self.ap_points > 0:
 			print(f"\nAP Points disponible: {self.ap_points}")
 			for i, attr in enumerate(list(self.POIDS_BASE.keys()), 1):

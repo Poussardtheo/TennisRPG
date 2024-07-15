@@ -122,7 +122,13 @@ class Tournoi:
         
         nb_tours = math.ceil(math.log2(self.nb_joueurs))
         nb_tetes_de_serie = 2 ** (nb_tours - 2)
-
+        
+        noms_phases = {
+            nb_tours: "en finale",
+            nb_tours - 1: "en demi-finale",
+            nb_tours - 2: "en quart de finale"
+        }
+        
         joueurs_tries = sorted(
             participants, key=lambda j: classement.obtenir_rang(j, type)
         )
@@ -158,8 +164,10 @@ class Tournoi:
                     gagnant = self.simuler_match(joueur1, joueur2)[0]
                     perdant = joueur2 if gagnant == joueur1 else joueur1
                     derniers_tours[perdant] = tour
+                    if perdant.principal:
+                        phase = noms_phases.get(tour, f"au tour {tour}")
+                        print(f"\n{perdant.prenom} {perdant.nom} a été éliminé(e) {phase}")
                     prochain_tour.append(gagnant)
-        
                 elif joueur1:
                     prochain_tour.append(joueur1)
                 elif joueur2:
