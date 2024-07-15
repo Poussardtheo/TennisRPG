@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name='TennisRPG',
-	version='0.1',
+	version='0.1.1',
 	packages=find_packages(),
 	install_requires=[
 		'Faker>=25.8.0',
