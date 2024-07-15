@@ -321,6 +321,7 @@ class Personnage:
 
         print("└" + "─" * (largeur - 2) + "┘")
 
+
 pays_locales = {
     "France": ["fr_FR"],
     "United States": ["en_US"],
@@ -399,7 +400,4 @@ def generer_pnj(nombre, sexe):
     return personnages_dico
 
 
-from Classement import Classement
-
 personnage = Personnage("m", "Théo", "Poussard", "France")
-classement = Classement({"Titou": personnage})
