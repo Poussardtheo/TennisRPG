@@ -98,6 +98,7 @@ class Tournoi:
     # We need to update the Calendar function to be able to use this function
     def jouer(self, joueur, participants, classement, type="atp"):
         # Si le joueur n'a pas le droit de jouer le tournoi, on renvoie une erreur
+        # Todo: Si le joueur ne peut pas participer au tournoi, il doit être supprimé de la liste des participants.
         if not est_eligible_pour_tournoi(joueur, self, classement):
             raise ValueError(f"{joueur.prenom} {joueur.nom} n'est pas éligible pour participer à {self.nom}")
         # Si le joueur n'est pas dans la liste des participants, ont l'ajoute et on retire un participants
