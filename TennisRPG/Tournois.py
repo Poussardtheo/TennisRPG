@@ -288,6 +288,7 @@ class Tournoi:
     def attribuer_points_atp(self, joueur, dernier_tour):
         points = self.POINTS_ATP.get(self.categorie, {}).get(dernier_tour, 0)
         joueur.atp_points += points
+        joueur.atp_race_points += points
     
     def simuler_match(self, joueur1, joueur2):
         elo1 = joueur1.calculer_elo(surface=self.surface)
