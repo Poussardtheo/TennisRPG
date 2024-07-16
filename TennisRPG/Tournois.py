@@ -44,6 +44,10 @@ def selectionner_joueurs_pour_tournoi(
     joueur_tries = sorted(
         joueurs_eligibles, key=lambda j: classement.obtenir_rang(j, type)
     )
+    if tournoi.categorie == "ATP Finals":
+        joueur_tries = sorted(
+            joueurs_eligibles, key=lambda j: classement.obtenir_rang(j, "atp_race")
+        )
     return joueur_tries[: tournoi.nb_joueurs]
 
 
@@ -199,8 +203,7 @@ class Tournoi:
             raise ValueError("L'ATP Finals nécessite exactement 8 participants")
         
         # Trier les joueurs par classement
-        # Todo: remplacer atp par atp race quand je l'aurai implémenté
-        joueurs_tries = sorted(participants, key=lambda j: classement.obtenir_rang(j, "atp"))
+        joueurs_tries = sorted(participants, key=lambda j: classement.obtenir_rang(j, "atp_race"))
         
         # répartir les joueurs en deux poules
         # Todo: rajouter de l'aléatoire dans la création des poules
