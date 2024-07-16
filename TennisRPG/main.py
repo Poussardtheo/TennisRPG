@@ -48,7 +48,7 @@ def main():
 	POOL_JOUEURS[f"{prenom} {nom}"] = joueur_principal
 	classement = Classement(POOL_JOUEURS, preliminaire=False)
 	classement.reinitialiser_atp_race()
-	
+	calendar.current_atp_points.loc[f"{prenom} {nom}"] = 0  # Ensure that the main character is stored in the df
 	# Main game
 	print(f"\n\nBienvenue dans votre carrière de {tennis_sexe}, {prenom} {nom} !")
 	print(f"Votre aventure commence en {calendar.current_year}.\n")
@@ -58,7 +58,7 @@ def main():
 						"\nEntrée pour continuer"
 						"\n'q' pour quitter"
 						"\n'c' pour afficher le classement"
-		                "\n'a' pour afficher la colonne du dataframe correspondant au points à défendre"
+		                "\n'a' pour afficher les points à défendre cette semaine"
 						f"\n'i pour voir la carte d'identité de votre {joueurs_sexe}"
 						f"\n'e' pour affecter des points d'attributs à votre {joueurs_sexe}\n")
 
@@ -82,7 +82,7 @@ def main():
 			joueur_principal.id_card(classement)
 		elif action.lower() == 'a':
 			print(f"Current")
-			display(calendar.current_atp_points.loc[:, calendar.current_week].sort_values(ascending=False))
+			print(calendar.current_atp_points.loc[:, calendar.current_week].sort_values(ascending=False))
 		elif action.lower() == 'e':
 			joueur_principal.attribuer_ap_points_manuellement()
 		elif action == '':  # Si le joueur à appuyer sur entrée
