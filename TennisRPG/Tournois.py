@@ -40,8 +40,9 @@ def seed(n):
 def selectionner_joueurs_pour_tournoi(
     tournoi, joueurs_disponibles, classement, type="elo"
 ):
+    joueurs_eligibles = [j for j in joueurs_disponibles if est_eligible_pour_tournoi(j, tournoi, classement)]
     joueur_tries = sorted(
-        joueurs_disponibles, key=lambda j: classement.obtenir_rang(j, type)
+        joueurs_eligibles, key=lambda j: classement.obtenir_rang(j, type)
     )
     return joueur_tries[: tournoi.nb_joueurs]
 
@@ -97,10 +98,6 @@ class Tournoi:
     
     # We need to update the Calendar function to be able to use this function
     def jouer(self, joueur, participants, classement, type="atp"):
-        # Si le joueur n'a pas le droit de jouer le tournoi, on renvoie une erreur
-        # Todo: Si le joueur ne peut pas participer au tournoi, il doit être supprimé de la liste des participants.
-        if not est_eligible_pour_tournoi(joueur, self, classement):
-            raise ValueError(f"{joueur.prenom} {joueur.nom} n'est pas éligible pour participer à {self.nom}")
         # Si le joueur n'est pas dans la liste des participants, ont l'ajoute et on retire un participants
         if joueur not in participants:
             participants.append(joueur)
