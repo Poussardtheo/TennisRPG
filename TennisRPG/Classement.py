@@ -2,17 +2,22 @@ from collections import OrderedDict
 
 
 class Classement:
-    def __init__(self, joueurs):
+    def __init__(self, joueurs, preliminaire=False):
         self.joueurs = joueurs
         self.classement_elo = OrderedDict()
         self.classement_atp = OrderedDict()
         self.classement_atp_race = OrderedDict()
-        self.initialiser_classements()
+        self.initialiser_classements(preliminaire)
 
-    def initialiser_classements(self):
-        classement = sorted(
-            self.joueurs.values(), key=lambda joueur: joueur.elo, reverse=True
-        )
+    def initialiser_classements(self, preliminaire):
+        if preliminaire:
+            classement = sorted(
+                self.joueurs.values(), key=lambda joueur: joueur.elo, reverse=True
+            )
+        else:
+            classement = sorted(
+                self.joueurs.values(), key=lambda joueur: joueur.atp_points, reverse=True
+            )
         self.classement_elo = OrderedDict(
             (joueur, i) for i, joueur in enumerate(classement, 1)
         )
@@ -75,7 +80,14 @@ class Classement:
             self.classement_elo = classement
     
     def reinitialiser_atp_race(self):
-        self.classement_atp_race = OrderedDict((joueur, 0) for joueur in self.joueurs.values())
+        for joueur in self.joueurs.values():
+            joueur.atp_race_points = 0
+        classement = sorted(
+            self.joueurs.values(), key=lambda joueur: joueur.atp_points, reverse=True
+        )
+        self.classement_atp_race = OrderedDict(
+            (joueur, i) for i, joueur in enumerate(classement, 1)
+        )
 # from Personnage import generer_pnj
 #
 # POOL = generer_pnj(100)

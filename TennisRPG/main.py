@@ -6,6 +6,7 @@ from TennisRPG.Personnage import *
 from TennisRPG.Classement import Classement
 
 
+
 def main():
 	annee_debut = 2024
 	calendar = Calendar(annee_debut)
@@ -33,17 +34,23 @@ def main():
 	
 	# Wait for player POOL generation to complete
 	pool_thread.join()
+	
+	# Initialize ranking with the POOL of players
+	classement = Classement(POOL_JOUEURS, preliminaire=True)
+	for _ in range(1, 53):
+		calendar.simuler_tournois_semaine(POOL_JOUEURS, classement, preliminaire=True)
+		calendar.avancer_semaine(classement)
+	
+	# End of the preliminary period.
 	POOL_JOUEURS[f"{prenom} {nom}"] = joueur_principal
-
-	# Initialize ranking with the player POOL
-	classement = Classement(POOL_JOUEURS)
-
+	classement = Classement(POOL_JOUEURS, preliminaire=False)
+	classement.reinitialiser_atp_race()
+	
 	# Main game
 	print(f"\n\nBienvenue dans votre carrière de {tennis_sexe}, {prenom} {nom} !")
 	print(f"Votre aventure commence en {annee_debut}.\n")
 
 	while True:
-
 		action = input("\nAppuyer sur: "
 						"\nEntrée pour continuer"
 						"\n'q' pour quitter"
@@ -55,9 +62,17 @@ def main():
 			break
 		elif action.lower() == 'c':
 			print("\n")
+			ranking_type = ["atp", "atp_race"]
 			for i, type in enumerate(["atp", "atp_race"], 1):
 				print(f"{i}. {type}")
-			type = input("\nQuel classement souhaitez vous voir ?")
+				
+			while True:
+				choix = input("\nQuel classement souhaitez vous voir ?")
+				if choix.isdigit() and 1 <= int(choix) <= len(ranking_type):
+					type = ranking_type[int(choix) - 1]
+					break
+				else:
+					print("\nChoix invalide, veuillez réessayer")
 			classement.afficher_classement(type=type)
 		elif action.lower() == 'i':
 			joueur_principal.id_card(classement)

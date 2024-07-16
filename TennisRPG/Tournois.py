@@ -118,9 +118,9 @@ class Tournoi:
                 
         self.simuler_tournoi(participants, classement, type)  # On peut simuler le tournoi
 
-    def simuler_tournoi(self, participants, classement, type="elo"):
+    def simuler_tournoi(self, participants, classement, type="elo", preliminaire=False):
         if self.categorie == "ATP Finals":
-            return self.simuler_tournoi_finals(participants, classement)
+            return self.simuler_tournoi_finals(participants, classement, preliminaire)
         
         nb_tours = math.ceil(math.log2(self.nb_joueurs))
         nb_tetes_de_serie = 2 ** (nb_tours - 2)
@@ -186,8 +186,8 @@ class Tournoi:
 
         vainqueur = prochain_tour[0]
         derniers_tours[vainqueur] = "Vainqueur"
-
-        print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
+        if not preliminaire:
+            print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
 
         for joueur, dernier_tour in derniers_tours.items():
             self.attribuer_points_atp(joueur, dernier_tour)
@@ -197,7 +197,7 @@ class Tournoi:
         # Note the return will be useful when we'll save the info in a database
         # Return vainqueur, dernier_tour
     
-    def simuler_tournoi_finals(self, participants, classement):
+    def simuler_tournoi_finals(self, participants, classement, preliminaire=False):
         # Todo: add a logic for the players that are injured (add the two substitutes)
         if len(participants) != 8:
             raise ValueError("L'ATP Finals nécessite exactement 8 participants")
@@ -232,7 +232,8 @@ class Tournoi:
         # Finale
         vainqueur = self.simuler_match(demi_finale_1, demi_finale_2)[0]
         vainqueur.atp_points += 500  # +500pts si victoire en finale
-        print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
+        if not preliminaire:
+            print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
         
         # Progression des joueurs
         for joueur in participants:

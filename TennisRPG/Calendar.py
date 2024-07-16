@@ -126,7 +126,7 @@ class Calendar:
         if tournoi_choisi.categorie in ["GrandSlam", "ATP1000 #7"]:
             self.avancer_semaine(classement)
         
-    def simuler_tournois_semaine(self, joueurs, classement):
+    def simuler_tournois_semaine(self, joueurs, classement, preliminaire=False):
         tournois_semaine = self.obtenir_tournois_semaine()
         joueurs_disponible = set(
             joueurs.values()
@@ -141,7 +141,7 @@ class Calendar:
             participants = selectionner_joueurs_pour_tournoi(
                 tournoi, joueurs_disponible, classement
             )
-            tournoi.simuler_tournoi(participants, classement)
+            tournoi.simuler_tournoi(participants, classement, preliminaire=preliminaire)
 
             joueurs_disponible -= set(participants)
 
