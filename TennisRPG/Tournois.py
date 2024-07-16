@@ -92,12 +92,13 @@ class Tournoi:
         "ATP Finals": {1: 250, 2: 400, 3: 500, "Vainqueur": 1000}  # Ajusté pour l'ATP Finals
     }
     
-    def __init__(self, categorie, nom, emplacement, nb_joueurs, surface):
+    def __init__(self, categorie, nom, emplacement, nb_joueurs, surface, week):
         self.categorie = categorie
         self.nom = nom
         self.emplacement = emplacement
         self.nb_joueurs = nb_joueurs
         self.surface = surface
+        self.week = week
         #self.vainqueurs = {}
     
     # We need to update the Calendar function to be able to use this function
@@ -188,14 +189,16 @@ class Tournoi:
         derniers_tours[vainqueur] = "Vainqueur"
         if not preliminaire:
             print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
-
+        
+        resultats = {}
         for joueur, dernier_tour in derniers_tours.items():
             self.attribuer_points_atp(joueur, dernier_tour)
             xp_gagne = self.XP_PAR_TOUR[self.categorie].get(dernier_tour, 0)
+            resultats[joueur] = self.POINTS_ATP.get(self.categorie, {}).get(dernier_tour, 0)
             joueur.gagner_experience(xp_gagne)
             
         # Note the return will be useful when we'll save the info in a database
-        # Return vainqueur, dernier_tour
+        return resultats
     
     def simuler_tournoi_finals(self, participants, classement, preliminaire=False):
         # Todo: add a logic for the players that are injured (add the two substitutes)
@@ -213,11 +216,14 @@ class Tournoi:
         # Simuler les matchs de poules
         resultats_poule_a = self.simuler_matchs_poule(poule_a)
         resultats_poule_b = self.simuler_matchs_poule(poule_b)
-
+        
+        resultats = {}
         for poule in [resultats_poule_a, resultats_poule_b]:
             for joueur, resultat in poule.items():
-                joueur.atp_points += resultat["victoires"] * 200  # +200 pts par victoire en poule
-
+                points_victoires = resultat["victoires"] * 200  # +200 pts par victoire en poule
+                joueur.atp_points += points_victoires
+                resultats[joueur] = points_victoires
+                
         # Sélectionner les deux meilleurs de chaque poule
         qualifies_a = self.selectionner_qualifies(resultats_poule_a)
         qualifies_b = self.selectionner_qualifies(resultats_poule_b)
@@ -225,12 +231,14 @@ class Tournoi:
         # Demi finales
         demi_finale_1 = self.simuler_match(qualifies_a[0], qualifies_b[1])[0]
         demi_finale_2 = self.simuler_match(qualifies_b[0], qualifies_a[1])[0]
-
-        demi_finale_1.atp_points += 400  # +400pts si victoire en demi-finale
-        demi_finale_2.atp_points += 400
+        
+        for demi_finaliste in [demi_finale_1, demi_finale_2]:
+            resultats[demi_finaliste] += 400  # 400 points pour une victoire en demi-finale
+            demi_finaliste.atp_points += 400
 
         # Finale
         vainqueur = self.simuler_match(demi_finale_1, demi_finale_2)[0]
+        resultats[vainqueur] += 500
         vainqueur.atp_points += 500  # +500pts si victoire en finale
         if not preliminaire:
             print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
@@ -246,7 +254,9 @@ class Tournoi:
             else:
                 xp_gagne = self.XP_PAR_TOUR["ATP Finals"][1]
             joueur.gagner_experience(xp_gagne)
-            
+        
+        return resultats
+    
     def simuler_matchs_poule(self, poule):
         resultats = {joueur: {'victoires': 0, 'sets_gagnes': 0, 'confrontations': {}} for joueur in poule}
         for i in range(len(poule)):
@@ -328,112 +338,112 @@ class Tournoi:
 
 tournoi = {
     1: [
-        Tournoi("ATP250 #5", "Brisbane International", "Brisbane", 32, "Hard"),
+        Tournoi("ATP250 #5", "Brisbane International", "Brisbane", 32, "Hard", 1),
         Tournoi(
-            "ATP250 #5", "Bank Of China Honk Kong Tennis Open", "Hong Kong", 28, "Hard"
+            "ATP250 #5", "Bank Of China Honk Kong Tennis Open", "Hong Kong", 28, "Hard", 1
         ),
     ],
     2: [
-        Tournoi("ATP250 #5", "Adelaide International", "Adelaide", 28, "Hard"),
-        Tournoi("ATP250 #5", "ASB Classic", "Auckland", 28, "Hard"),
+        Tournoi("ATP250 #5", "Adelaide International", "Adelaide", 28, "Hard", 2),
+        Tournoi("ATP250 #5", "ASB Classic", "Auckland", 28, "Hard", 2),
     ],
-    3: [Tournoi("GrandSlam", "Australian Open", "Melbourne", 128, "Hard")],
-    5: [Tournoi("ATP250 #5", "Open Sud de France", "Montpellier", 28, "Hard")],
+    3: [Tournoi("GrandSlam", "Australian Open", "Melbourne", 128, "Hard", 3)],
+    5: [Tournoi("ATP250 #5", "Open Sud de France", "Montpellier", 28, "Hard", 5)],
     6: [
-        Tournoi("ATP250 #5", "Cordoba Open", "Cordoba", 28, "Clay"),
-        Tournoi("ATP250 #5", "Dallas Open", "Dallas", 28, "Indoor Hard"),
-        Tournoi("ATP250 #5", "Open 13 Provence", "Marseille", 28, "Indoor Hard"),
+        Tournoi("ATP250 #5", "Cordoba Open", "Cordoba", 28, "Clay", 6),
+        Tournoi("ATP250 #5", "Dallas Open", "Dallas", 28, "Indoor Hard", 6),
+        Tournoi("ATP250 #5", "Open 13 Provence", "Marseille", 28, "Indoor Hard", 6),
     ],
     7: [
-        Tournoi("ATP500 #5", "ABN Amro Open", "Rotterdam", 32, "Indoor Hard"),
-        Tournoi("ATP250 #5", "IEB+ Argentina Open", "Buenos Aires", 28, "Clay"),
-        Tournoi("ATP250 #5", "Delray Beach Open", "Delray Beach", 28, "Hard"),
+        Tournoi("ATP500 #5", "ABN Amro Open", "Rotterdam", 32, "Indoor Hard", 7),
+        Tournoi("ATP250 #5", "IEB+ Argentina Open", "Buenos Aires", 28, "Clay", 7),
+        Tournoi("ATP250 #5", "Delray Beach Open", "Delray Beach", 28, "Hard", 7),
     ],
     8: [
-        Tournoi("ATP500 #5", "Rio Open", "Rio de Janeiro", 32, "Clay"),
-        Tournoi("ATP250 #5", "Qater Exxonmobil Open", "Doha", 28, "Hard"),
-        Tournoi("ATP250 #5", "Mifel Tennis Open", "Los Cabos", 28, "Hard"),
+        Tournoi("ATP500 #5", "Rio Open", "Rio de Janeiro", 32, "Clay", 8),
+        Tournoi("ATP250 #5", "Qater Exxonmobil Open", "Doha", 28, "Hard", 8),
+        Tournoi("ATP250 #5", "Mifel Tennis Open", "Los Cabos", 28, "Hard", 8),
     ],
     9: [
-        Tournoi("ATP500 #5", "Abierto Mexicano", "Acapulco", 32, "Hard"),
+        Tournoi("ATP500 #5", "Abierto Mexicano", "Acapulco", 32, "Hard", 9),
         Tournoi(
-            "ATP500 #5", "Dubai Duty Free Tennis Championships", "Dubai", 32, "Hard"
+            "ATP500 #5", "Dubai Duty Free Tennis Championships", "Dubai", 32, "Hard", 9
         ),
-        Tournoi("ATP250 #5", "Movistar Chile Open", "Santiago", 28, "Clay"),
+        Tournoi("ATP250 #5", "Movistar Chile Open", "Santiago", 28, "Clay", 9),
     ],
-    10: [Tournoi("ATP1000 #7", "BNP Paribas Open", "Indian Wells", 96, "Hard")],
-    12: [Tournoi("ATP1000 #7", "Miami Open", "Miami", 96, "Hard")],
+    10: [Tournoi("ATP1000 #7", "BNP Paribas Open", "Indian Wells", 96, "Hard", 10)],
+    12: [Tournoi("ATP1000 #7", "Miami Open", "Miami", 96, "Hard", 12)],
     14: [
-        Tournoi("ATP250 #5", "Millennium Estoril Open", "Estoril", 28, "Clay"),
-        Tournoi("ATP250 #5", "Grand Prix Hassan II", "Marrakech", 28, "Clay"),
+        Tournoi("ATP250 #5", "Millennium Estoril Open", "Estoril", 28, "Clay", 14),
+        Tournoi("ATP250 #5", "Grand Prix Hassan II", "Marrakech", 28, "Clay", 14),
         Tournoi(
-            "ATP250 #5", "Fayez Sarofim Clay Court Championships", "Houston", 28, "Clay"
+            "ATP250 #5", "Fayez Sarofim Clay Court Championships", "Houston", 28, "Clay", 14
         ),
     ],
-    15: [Tournoi("ATP1000 #6", "Rolex Monte Carlo Masters", "Monte-Carlo", 56, "Clay")],
+    15: [Tournoi("ATP1000 #6", "Rolex Monte Carlo Masters", "Monte-Carlo", 56, "Clay", 15)],
     16: [
-        Tournoi("ATP500 #6", "Barcelona Open Banc Sabadell", "Barcelona", 48, "Clay"),
-        Tournoi("ATP250 #5", "BMW Open", "Munich", 28, "Clay"),
-        Tournoi("ATP250 #5", "Tiriac Open", "Bucharest", 28, "Clay"),
+        Tournoi("ATP500 #6", "Barcelona Open Banc Sabadell", "Barcelona", 48, "Clay", 16),
+        Tournoi("ATP250 #5", "BMW Open", "Munich", 28, "Clay", 16),
+        Tournoi("ATP250 #5", "Tiriac Open", "Bucharest", 28, "Clay", 16),
     ],
-    17: [Tournoi("ATP1000 #7", "Mutua Madrid Open", "Madrid", 96, "Clay")],
-    19: [Tournoi("ATP1000 #7", "Internazionali BNL d'Italia", "Rome", 96, "Clay")],
+    17: [Tournoi("ATP1000 #7", "Mutua Madrid Open", "Madrid", 96, "Clay", 17)],
+    19: [Tournoi("ATP1000 #7", "Internazionali BNL d'Italia", "Rome", 96, "Clay", 19)],
     21: [
-        Tournoi("ATP250 #5", "Gonet Geneva Open", "Geneva", 28, "Clay"),
-        Tournoi("ATP250 #5", "Open Parc", "Lyon", 28, "Clay"),
+        Tournoi("ATP250 #5", "Gonet Geneva Open", "Geneva", 28, "Clay", 21),
+        Tournoi("ATP250 #5", "Open Parc", "Lyon", 28, "Clay", 21),
     ],
-    22: [Tournoi("GrandSlam", "Roland-Garros", "Paris", 128, "Clay")],
+    22: [Tournoi("GrandSlam", "Roland-Garros", "Paris", 128, "Clay", 22)],
     24: [
-        Tournoi("ATP250 #5", "Libema Open", "'s-Hertogenbosch", 28, "Grass"),
-        Tournoi("ATP250 #5", "Boss Open", "Stuttgart", 28, "Grass"),
+        Tournoi("ATP250 #5", "Libema Open", "'s-Hertogenbosch", 28, "Grass", 24),
+        Tournoi("ATP250 #5", "Boss Open", "Stuttgart", 28, "Grass", 24),
     ],
     25: [
-        Tournoi("ATP500 #5", "Terra Wortmann Open", "Halle", 32, "Grass"),
-        Tournoi("ATP500 #5", "Cinch Championships", "London", 32, "Grass"),
+        Tournoi("ATP500 #5", "Terra Wortmann Open", "Halle", 32, "Grass", 25),
+        Tournoi("ATP500 #5", "Cinch Championships", "London", 32, "Grass", 25),
     ],
     26: [
-        Tournoi("ATP250 #5", "Mallorca Championships", "Mallorca", 28, "Grass"),
-        Tournoi("ATP250 #5", "Rothesay International", "Eastbourne", 28, "Grass"),
+        Tournoi("ATP250 #5", "Mallorca Championships", "Mallorca", 28, "Grass", 26),
+        Tournoi("ATP250 #5", "Rothesay International", "Eastbourne", 28, "Grass", 26),
     ],
-    27: [Tournoi("GrandSlam", "Wimbledon", "London", 128, "Grass")],
+    27: [Tournoi("GrandSlam", "Wimbledon", "London", 128, "Grass", 27)],
     29: [
-        Tournoi("ATP500 #5", "Hamburg Open", "Hamburg", 32, "Clay"),
-        Tournoi("ATP250 #5", "Nordea Open", "Bastad", 28, "Clay"),
-        Tournoi("ATP250 #5", "EFG Swiss Open Gstaad", "Gstaad", 28, "Clay"),
-        Tournoi("ATP250 #5", "Infosys Hall Of Fame Open", "Newport", 28, "Grass"),
+        Tournoi("ATP500 #5", "Hamburg Open", "Hamburg", 32, "Clay", 29),
+        Tournoi("ATP250 #5", "Nordea Open", "Bastad", 28, "Clay", 29),
+        Tournoi("ATP250 #5", "EFG Swiss Open Gstaad", "Gstaad", 28, "Clay", 29),
+        Tournoi("ATP250 #5", "Infosys Hall Of Fame Open", "Newport", 28, "Grass", 29),
     ],
     30: [
-        Tournoi("ATP250 #5", "Plava Laguna Croatia Open Umag", "Umag", 28, "Clay"),
-        Tournoi("ATP250 #5", "Generali Open", "Kitzbuhel", 28, "Clay"),
-        Tournoi("ATP250 #5", "Atlanta Open", "Atlanta", 28, "Hard"),
+        Tournoi("ATP250 #5", "Plava Laguna Croatia Open Umag", "Umag", 28, "Clay", 30),
+        Tournoi("ATP250 #5", "Generali Open", "Kitzbuhel", 28, "Clay", 30),
+        Tournoi("ATP250 #5", "Atlanta Open", "Atlanta", 28, "Hard", 30),
     ],
-    31: [Tournoi("ATP500 #6", "Mubadala Citi DC Open", "Washington DC", 48, "Hard")],
-    32: [Tournoi("ATP1000 #6", "National Bank Open", "Montreal", 56, "Hard")],
-    33: [Tournoi("ATP1000 #6", "Cincinnati Open", "Cincinnati", 56, "Hard")],
-    34: [Tournoi("ATP250 #6", "Winston Salem Open", "Winston Salem", 48, "Hard")],
-    35: [Tournoi("GrandSlam", "US Open", "New York", 128, "Hard")],
+    31: [Tournoi("ATP500 #6", "Mubadala Citi DC Open", "Washington DC", 48, "Hard", 31)],
+    32: [Tournoi("ATP1000 #6", "National Bank Open", "Montreal", 56, "Hard", 32)],
+    33: [Tournoi("ATP1000 #6", "Cincinnati Open", "Cincinnati", 56, "Hard", 33)],
+    34: [Tournoi("ATP250 #6", "Winston Salem Open", "Winston Salem", 48, "Hard", 34)],
+    35: [Tournoi("GrandSlam", "US Open", "New York", 128, "Hard", 35)],
     38: [
-        Tournoi("ATP250 #5", "Chengdu Open", "Chengdu", 28, "Hard"),
-        Tournoi("ATP250 #5", "Hangzhou Open", "Hangzhou", 28, "Hard"),
+        Tournoi("ATP250 #5", "Chengdu Open", "Chengdu", 28, "Hard", 38),
+        Tournoi("ATP250 #5", "Hangzhou Open", "Hangzhou", 28, "Hard", 38),
     ],
     39: [
-        Tournoi("ATP500 #5", "Kinoshita Group Japan Open", "Tokyo", 32, "Hard"),
-        Tournoi("ATP500 #5", "China Open", "Beijing", 32, "Hard"),
+        Tournoi("ATP500 #5", "Kinoshita Group Japan Open", "Tokyo", 32, "Hard", 39),
+        Tournoi("ATP500 #5", "China Open", "Beijing", 32, "Hard", 39),
     ],
-    40: [Tournoi("ATP1000 #7", "Rolex Shanghai Masters", "Shanghai", 96, "Hard")],
+    40: [Tournoi("ATP1000 #7", "Rolex Shanghai Masters", "Shanghai", 96, "Hard", 40)],
     42: [
-        Tournoi("ATP250 #5", "European Open", "Antwerp", 28, "Indoor Hard"),
-        Tournoi("ATP250 #5", "Almaty Open", "Almaty", 28, "Indoor Hard"),
-        Tournoi("ATP250 #5", "BNP Paribas Nordic Open", "Stockholm", 28, "Indoor Hard"),
+        Tournoi("ATP250 #5", "European Open", "Antwerp", 28, "Indoor Hard", 42),
+        Tournoi("ATP250 #5", "Almaty Open", "Almaty", 28, "Indoor Hard", 42),
+        Tournoi("ATP250 #5", "BNP Paribas Nordic Open", "Stockholm", 28, "Indoor Hard", 42),
     ],
     43: [
-        Tournoi("ATP500 #5", "Swiss Indoors Basel", "Basel", 32, "Indoor Hard"),
-        Tournoi("ATP500 #5", "Erste Bank Open", "Vienna", 32, "Indoor Hard"),
+        Tournoi("ATP500 #5", "Swiss Indoors Basel", "Basel", 32, "Indoor Hard", 43),
+        Tournoi("ATP500 #5", "Erste Bank Open", "Vienna", 32, "Indoor Hard", 43),
     ],
-    44: [Tournoi("ATP1000 #6", "Rolex Paris Masters", "Paris", 56, "Indoor Hard")],
+    44: [Tournoi("ATP1000 #6", "Rolex Paris Masters", "Paris", 56, "Indoor Hard", 44)],
     45: [
-        Tournoi("ATP250 #5", "Moselle Open", "Metz", 28, "Indoor Hard"),
-        Tournoi("ATP250 #5", "Watergen Gijon Open", "Gijon", 28, "Indoor Hard"),
+        Tournoi("ATP250 #5", "Moselle Open", "Metz", 28, "Indoor Hard", 45),
+        Tournoi("ATP250 #5", "Watergen Gijon Open", "Gijon", 28, "Indoor Hard", 45),
     ],
-    46: [Tournoi("ATP Finals", "Nitto ATP Finals", "Turin", 8, "Indoor Hard")],
+    46: [Tournoi("ATP Finals", "Nitto ATP Finals", "Turin", 8, "Indoor Hard", 46)],
 }

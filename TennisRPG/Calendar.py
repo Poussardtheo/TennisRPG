@@ -11,13 +11,16 @@ class Calendar:
         self.current_year = year
         self.current_week = 1
         self.tournois = tournoi
-
-    def avancer_semaine(self, classement):
-        self.current_week += 1
-        if self.current_week > self.SEMAINES_PAR_AN:
+        self.current_atp_points = None
+        
+    def avancer_semaine(self, classement, joueurs):
+        if self.current_week == self.SEMAINES_PAR_AN:
             self.current_year += 1
-            self.current_week = 1
+            self.current_week = 0
             classement.reinitialiser_atp_race()
+        self.current_week += 1
+        for joueur_str, joueur_values in joueurs.items():
+            joueur_values.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]
 
     def obtenir_tournois_semaine(self):
         return self.tournois.get(self.current_week, [])
@@ -65,7 +68,7 @@ class Calendar:
             self.repos(joueur)
             self.simuler_tournois_semaine(joueurs, classement)
 
-        self.avancer_semaine(classement)
+        self.avancer_semaine(classement, joueurs)
 
     @staticmethod
     def entrainement(joueur):
@@ -122,8 +125,11 @@ class Calendar:
                     if remplacant:
                         participants.append(remplacant)
                         joueurs_disponible.remove(remplacant)
-                tournoi.simuler_tournoi(participants, classement, type="atp")
-            
+                resultat = tournoi.simuler_tournoi(participants, classement, type="atp")
+                
+                for joueur, points in resultat.items():
+                    self.current_atp_points.loc[f"{joueur.prenom} {joueur.nom}", self.current_week] = points
+                    
             joueurs_disponible -= set(participants)
     
         classement.update_classement("atp")
@@ -131,7 +137,7 @@ class Calendar:
         classement.update_classement("elo")
         
         if tournoi_choisi.categorie in ["GrandSlam", "ATP1000 #7"]:
-            self.avancer_semaine(classement)
+            self.avancer_semaine(classement, joueurs)
         
     def simuler_tournois_semaine(self, joueurs, classement, preliminaire=False):
         tournois_semaine = self.obtenir_tournois_semaine()
@@ -148,7 +154,9 @@ class Calendar:
             participants = selectionner_joueurs_pour_tournoi(
                 tournoi, joueurs_disponible, classement
             )
-            tournoi.simuler_tournoi(participants, classement, preliminaire=preliminaire)
+            resultat = tournoi.simuler_tournoi(participants, classement, preliminaire=preliminaire)
+            for joueur, points in resultat.items():
+                self.current_atp_points.loc[f"{joueur.prenom} {joueur.nom}", self.current_week] = points
 
             joueurs_disponible -= set(participants)
 

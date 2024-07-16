@@ -1,5 +1,7 @@
 import threading
 
+import pandas as pd
+
 # Local import
 from TennisRPG.Calendar import *
 from TennisRPG.Personnage import *
@@ -8,7 +10,7 @@ from TennisRPG.Classement import Classement
 
 
 def main():
-	annee_debut = 2024
+	annee_debut = 2023
 	calendar = Calendar(annee_debut)
 	while True:
 		sexe = input("Jouer avec un personnage Masculin ('M') ou Féminin ('F') ? ")
@@ -37,9 +39,10 @@ def main():
 	
 	# Initialize ranking with the POOL of players
 	classement = Classement(POOL_JOUEURS, preliminaire=True)
+	calendar.current_atp_points = pd.DataFrame(0, index=POOL_JOUEURS.keys(), columns=[i for i in range(1, 53)])
 	for _ in range(1, 53):
 		calendar.simuler_tournois_semaine(POOL_JOUEURS, classement, preliminaire=True)
-		calendar.avancer_semaine(classement)
+		calendar.avancer_semaine(classement, POOL_JOUEURS)
 	
 	# End of the preliminary period.
 	POOL_JOUEURS[f"{prenom} {nom}"] = joueur_principal
@@ -48,13 +51,14 @@ def main():
 	
 	# Main game
 	print(f"\n\nBienvenue dans votre carrière de {tennis_sexe}, {prenom} {nom} !")
-	print(f"Votre aventure commence en {annee_debut}.\n")
+	print(f"Votre aventure commence en {calendar.current_year}.\n")
 
 	while True:
 		action = input("\nAppuyer sur: "
 						"\nEntrée pour continuer"
 						"\n'q' pour quitter"
 						"\n'c' pour afficher le classement"
+		                "\n'a' pour afficher la colonne du dataframe correspondant au points à défendre"
 						f"\n'i pour voir la carte d'identité de votre {joueurs_sexe}"
 						f"\n'e' pour affecter des points d'attributs à votre {joueurs_sexe}\n")
 
@@ -76,6 +80,9 @@ def main():
 			classement.afficher_classement(type=type)
 		elif action.lower() == 'i':
 			joueur_principal.id_card(classement)
+		elif action.lower() == 'a':
+			print(f"Current")
+			display(calendar.current_atp_points.loc[:, calendar.current_week].sort_values(ascending=False))
 		elif action.lower() == 'e':
 			joueur_principal.attribuer_ap_points_manuellement()
 		elif action == '':  # Si le joueur à appuyer sur entrée
