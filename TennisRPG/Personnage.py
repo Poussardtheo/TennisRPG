@@ -351,7 +351,7 @@ pays_locales = {
 	"Austria": ["de_AT"],
 	"Portugal": ["pt_PT"],
 	"Finland": ["fi_FI"],
-	"India": ["hi_IN", "en_IN"],
+	"India": ["en_IN"],
 	"Colombia": ["es_CO"],
 	"Slovakia": ["sk_SK"],
 	"Slovenia": ["sl_SI"],
