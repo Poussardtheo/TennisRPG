@@ -54,7 +54,11 @@ def main():
 		if action.lower() == 'q':
 			break
 		elif action.lower() == 'c':
-			classement.afficher_classement()
+			print("\n")
+			for i, type in enumerate(["atp", "atp_race"], 1):
+				print(f"{i}. {type}")
+			type = input("\nQuel classement souhaitez vous voir ?")
+			classement.afficher_classement(type=type)
 		elif action.lower() == 'i':
 			joueur_principal.id_card(classement)
 		elif action.lower() == 'e':

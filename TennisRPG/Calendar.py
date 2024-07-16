@@ -12,11 +12,12 @@ class Calendar:
         self.current_week = 1
         self.tournois = tournoi
 
-    def avancer_semaine(self):
+    def avancer_semaine(self, classement):
         self.current_week += 1
         if self.current_week > self.SEMAINES_PAR_AN:
             self.current_year += 1
             self.current_week = 1
+            classement.reinitialiser_atp_race()
 
     def obtenir_tournois_semaine(self):
         return self.tournois.get(self.current_week, [])
@@ -64,7 +65,7 @@ class Calendar:
             self.repos(joueur)
             self.simuler_tournois_semaine(joueurs, classement)
 
-        self.avancer_semaine()
+        self.avancer_semaine(classement)
 
     @staticmethod
     def entrainement(joueur):
@@ -117,16 +118,13 @@ class Calendar:
                 tournoi.simuler_tournoi(participants, classement, type="atp")
             
             joueurs_disponible -= set(participants)
-        
-        # Déjà pris en compte dans simuler_tournoi
-        # exp_gagnee = random.randint(150, 300)
-        # joueur.gagner_experience(exp_gagnee)
     
         classement.update_classement("atp")
+        classement.update_classement("atp_race")
         classement.update_classement("elo")
         
         if tournoi_choisi.categorie in ["GrandSlam", "ATP1000 #7"]:
-            self.avancer_semaine()
+            self.avancer_semaine(classement)
         
     def simuler_tournois_semaine(self, joueurs, classement):
         tournois_semaine = self.obtenir_tournois_semaine()
@@ -148,6 +146,7 @@ class Calendar:
             joueurs_disponible -= set(participants)
 
         classement.update_classement("atp")
+        classement.update_classement("atp_race")
         classement.update_classement("elo")
 
     @staticmethod

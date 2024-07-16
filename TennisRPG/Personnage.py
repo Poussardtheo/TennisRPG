@@ -105,6 +105,7 @@ class Personnage:
 		self.lvl = lvl
 		self.xp_points = 0
 		self.atp_points = 0
+		self.atp_race_points = 0
 		self.ap_points = 6 * (lvl - 1)  # Permet pnj avec des stats
 		self.fatigue = 0
 		self.blessure = 0
