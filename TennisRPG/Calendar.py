@@ -106,29 +106,24 @@ class Calendar:
         print(f"\n{joueur.prenom} a participé{accord} au tournoi : {tournoi_choisi.nom}.")
         
         joueurs_disponible = set(joueurs.values())
-        
+        joueurs_disponible.remove(joueur) # On s'assure qu'on ne peut pas participer à d'autre tournoi que celui choisi
         tournois_tries = sorted(
             tournois_semaine, key=lambda t: self.importance_tournoi(t), reverse=True
         )
+        
         for tournoi in tournois_tries:
             participants = selectionner_joueurs_pour_tournoi(
                 tournoi, joueurs_disponible, classement
             )
-            
             if tournoi == tournoi_choisi:
-                tournoi.jouer(joueur, participants, classement)
+                resultat = tournoi.jouer(joueur, participants, classement)
+                print(joueur.principal)
+                self.current_atp_points.loc[f"{joueur.prenom} {joueur.nom}", self.current_week] = resultat[joueur]
             else:
-                if joueur in participants:
-                    joueurs_restant = joueurs_disponible - set(participants)
-                    participants.remove(joueur)
-                    remplacant = self.trouver_remplacant(tournoi, joueurs_restant, classement)
-                    if remplacant:
-                        participants.append(remplacant)
-                        joueurs_disponible.remove(remplacant)
-                resultat = tournoi.simuler_tournoi(participants, classement, type="atp")
+                resultats = tournoi.simuler_tournoi(participants, classement, type="atp")
                 
-                for joueur, points in resultat.items():
-                    self.current_atp_points.loc[f"{joueur.prenom} {joueur.nom}", self.current_week] = points
+                for player, points in resultats.items():
+                    self.current_atp_points.loc[f"{player.prenom} {player.nom}", self.current_week] = points
                     
             joueurs_disponible -= set(participants)
     
@@ -167,13 +162,13 @@ class Calendar:
     @staticmethod
     def importance_tournoi(tournoi):
         importance = {
-            "GrandSlam": 5,
-            "ATP Finals": 5,
-            "ATP1000 #7": 4,
-            "ATP1000 #6": 4,
-            "ATP500 #6": 3,
-            "ATP500 #5": 3,
-            "ATP250 #6": 2,
+            "GrandSlam": 8,
+            "ATP Finals": 8,
+            "ATP1000 #7": 7,
+            "ATP1000 #6": 6,
+            "ATP500 #6": 5,
+            "ATP500 #5": 4,
+            "ATP250 #6": 3,
             "ATP250 #5": 2,
         }
         return importance.get(tournoi.categorie, 1)

@@ -103,7 +103,7 @@ class Tournoi:
     
     # We need to update the Calendar function to be able to use this function
     def jouer(self, joueur, participants, classement, type="atp"):
-        # Si le joueur n'est pas dans la liste des participants, ont l'ajoute et on retire un participants
+        # Si le joueur n'est pas dans la liste des participants, ont l'ajoute et on retire un participant
         if joueur not in participants:
             participants.append(joueur)
         
@@ -117,8 +117,9 @@ class Tournoi:
             else:
                 participants.pop(-1)  # Sinon, on retire le dernier
                 
-        self.simuler_tournoi(participants, classement, type)  # On peut simuler le tournoi
-
+        resultat = self.simuler_tournoi(participants, classement, type)  # On peut simuler le tournoi
+        return resultat
+    
     def simuler_tournoi(self, participants, classement, type="elo", preliminaire=False):
         if self.categorie == "ATP Finals":
             return self.simuler_tournoi_finals(participants, classement, preliminaire)
@@ -169,7 +170,8 @@ class Tournoi:
                     derniers_tours[perdant] = tour
                     if perdant.principal:
                         phase = noms_phases.get(tour, f"au tour {tour}")
-                        print(f"\n{perdant.prenom} {perdant.nom} a été éliminé(e) {phase}")
+                        accord = "e" if perdant.sexe.lower() == 'f' else ""
+                        print(f"\n{perdant.prenom} {perdant.nom} a été éliminé{accord} {phase}")
                     prochain_tour.append(gagnant)
                 elif joueur1:
                     prochain_tour.append(joueur1)
