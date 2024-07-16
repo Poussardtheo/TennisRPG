@@ -104,6 +104,7 @@ class Tournoi:
     # We need to update the Calendar function to be able to use this function
     def jouer(self, joueur, participants, classement, type="atp"):
         # Si le joueur n'est pas dans la liste des participants, ont l'ajoute et on retire un participant
+        # TODO: Make sure we don't have a problem with the US OPEN
         if joueur not in participants:
             participants.append(joueur)
         
