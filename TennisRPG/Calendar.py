@@ -115,6 +115,13 @@ class Calendar:
             if tournoi == tournoi_choisi:
                 tournoi.jouer(joueur, participants, classement)
             else:
+                if joueur in participants:
+                    joueurs_restant = joueurs_disponible - set(participants)
+                    participants.remove(joueur)
+                    remplacant = self.trouver_remplacant(tournoi, joueurs_restant, classement)
+                    if remplacant:
+                        participants.append(remplacant)
+                        joueurs_disponible.remove(remplacant)
                 tournoi.simuler_tournoi(participants, classement, type="atp")
             
             joueurs_disponible -= set(participants)
@@ -168,6 +175,13 @@ class Calendar:
         recuperation = random.randint(1, 3)
         accord = "e" if joueur.sexe.lower() == 'f' else ""
         print(f"\n{joueur.prenom} s'est reposé{accord} cette semaine.")
+    
+    def trouver_remplacant(self, tournoi, joueurs_disponibles, classement):
+        joueurs_eligibles = [j for j in joueurs_disponibles if est_eligible_pour_tournoi(j, tournoi, classement)]
+        if joueurs_eligibles:
+            return min(joueurs_eligibles, key=lambda j: classement.obtenir_rang(j, "atp"))
+        return None
+
 
 
 calendar = Calendar(2024)
