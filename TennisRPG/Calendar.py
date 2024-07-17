@@ -42,10 +42,10 @@ class Calendar:
         elif tournois_semaines:
             print(f"\nTournois cette semaine :")
             for t in tournois_semaines:
-                 print(f'  - {t.nom} ({t.categorie})')
-            print(f"\nAucun Tournoi accessible cette semaine")
+                print(f"  - {t.nom} ({t.categorie.split(' #')[0]})")
+            print(f"\nAucun Tournoi accessible cette semaine\n")
         else:
-            print("Pas de Tournois cette semaine")
+            print("Pas de Tournois cette semaine\n")
 
         for i, activite in enumerate(activites_possibles, 1):
             print(f"{i}. {activite}")
