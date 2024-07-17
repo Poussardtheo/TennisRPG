@@ -64,7 +64,7 @@ def main():
 		if action.lower() == 'q':
 			break
 		elif action.lower() == 'c':
-			print("\n")
+			print("")
 			ranking_type = ["atp", "atp_race"]
 			for i, type in enumerate(["atp", "atp_race"], 1):
 				print(f"{i}. {type}")

@@ -33,21 +33,26 @@ class Calendar:
         activites_possibles = [act for act in self.ACTIVITES if act != "Tournoi"]
         # Garde-fou pour empêcher de sélectionner Tournoi s'il n'y en a pas
         if tournois_elligible and tournois_semaines:
-            print(f"Tournois cette semaine : {[tournoi.nom for tournoi in tournois_semaines]}\n")
-            print(f"Tournois accessible : {[tournoi.nom for tournoi in tournois_elligible]}\n")
+            # print(f"Tournois cette semaine : {[tournoi.nom for tournoi in tournois_semaines]}\n")
+            print(f"\nTournois accessible cette semaine :")
+            for t in tournois_elligible:
+                print(f"  - {t.nom} ({t.categorie.split(' #')[0]})")
+            print("")
             activites_possibles = self.ACTIVITES
         elif tournois_semaines:
-            print(f"Tournois cette semaine : {[tournoi.nom for tournoi in tournois_semaines]}\n")
-            print(f"Aucun Tournoi accessible cette semaine\n")
+            print(f"\nTournois cette semaine :")
+            for t in tournois_semaines:
+                 print(f'  - {t.nom} ({t.categorie})')
+            print(f"\nAucun Tournoi accessible cette semaine")
         else:
-            print("Pas de Tournois cette semaine\n")
-        
+            print("Pas de Tournois cette semaine")
+
         for i, activite in enumerate(activites_possibles, 1):
             print(f"{i}. {activite}")
 
         while True:
             choix = input(
-                f"\nChoisissez votre activité cette semaine (1-{len(activites_possibles)}) ou q pour quitter: "
+                f"\nChoisissez votre activité cette semaine (1-{len(activites_possibles)}) ou q pour revenir au menu:\n"
             )
             if choix.lower() == "q":
                 break
@@ -79,15 +84,18 @@ class Calendar:
 
     @staticmethod
     def choisir_tournoi(tournois_eligibles):
-        print("\nTournoi disponible cette semaine:")
+        print("\nTournoi disponible cette semaine:\n")
         for i, tournoi in enumerate(tournois_eligibles, 1):
-            print(f"{i}. {tournoi.nom}")
+            print(f"{i}. {tournoi.nom} ({tournoi.categorie.split(' #')[0]})")
 
         while True:
             choix = input(
-                f"\nChoisissez votre tournoi cette semaine (1-{len(tournois_eligibles)}):"
+                f"\nChoisissez votre tournoi cette semaine (1-{len(tournois_eligibles)}) "
+                f"ou 'q' pour revenir au choix d'activité:"
             )
-            if choix.isdigit() and 1 <= int(choix) <= len(tournois_eligibles):
+            if choix.lower() == "q":
+                break
+            elif choix.isdigit() and 1 <= int(choix) <= len(tournois_eligibles):
                 tournoi_choisi = tournois_eligibles[int(choix) - 1]
                 return tournoi_choisi
             else:
@@ -98,7 +106,7 @@ class Calendar:
         tournois_eligibles = [t for t in tournois_semaine if est_eligible_pour_tournoi(joueur, t, classement)]
         
         # ne laisse le choix de la sélection du tournoi que s'il y a plusieurs tournois
-        if len(self.obtenir_tournois_semaine()) != 1:
+        if len(tournois_eligibles) != 1:
             tournoi_choisi = self.choisir_tournoi(tournois_eligibles)
         else:
             tournoi_choisi = tournois_eligibles[0]
