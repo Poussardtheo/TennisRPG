@@ -1,6 +1,6 @@
 # TennisRPG
 
-ce repo vise à créer un jeu de tennis réaliste en mode RPG. 
+Ce repo vise à créer un jeu de tennis réaliste en mode RPG. 
 
 Plongez dans le monde passionnant du circuit ATP. \
 Créez votre joueur et vivez votre propre histoire sur le circuit dans ce RPG textuel. \
@@ -8,31 +8,15 @@ Parcourez la terre entière et faites les bons choix pour faire de votre joueur 
 
 Ferez vous mieux que Nadal, Federer ou Djokovic ? 
 
-## V.0:
-Ce jeu est une version alpha. 
-Pour l'instant, vous pouvez créer votre joueur et faire vos choix sur les tournois auquels vous participer. 
-C'est tout. 
-
-Le seul choix que vous avez est l'activité à effectuer pendant la semaine. \
+## V.0.1:
+Ce jeu est une version alpha.
+Chaque semaine, vous aurez le choix entre vous reposer, participer à un tournoi ou bien, vous entraînez pour devenir plus fort.\
 A la fin de chaque semaine, vous découvrirez qui a gagné les tournois de la semaine. \
 Vous avez également la possibilité de consulter le classement et la carte d'identité de votre joueur. \
-Chaque Semaine, vous pourrez affecter vos points de compétence et voir comment vous vous situez par rapport aux autres. 
-
-
+Chaque semaine, vous pourrez affecter vos points de compétence et voir comment vous vous situez par rapport aux autres.
 
 
 ## Futures Améliorations :
-
-
-### V.0: 
-#### V.0.1: 
-- Possibilité de créer un circuit masculin ou féminin en fonction du sexe de votre joueur ✔️
-- Intégrer plus de nation possible pour les joueurs du POOL ✔️
-- Intégrer logique avec tournois sur deux semaines (Tournois en 7 tours) ✔️ 
-- Intégrer la logique pour l'ATP Finals (Match avec poule puis élimination directe) ✔
-- Intégrer une logique sur les tournois jouables par le perso jouable (pj) ✔
-  - ATP500 demande d'être dans le Top100 par exemple
-- Les pnj auront, eux aussi, une progression (pour rendre le jeu un peu plus intéressant.) ✔ 
 
 #### V.0.2:
 - Un système de Blessure sera mis en place pour rendre l'impact sur les choix plus important
