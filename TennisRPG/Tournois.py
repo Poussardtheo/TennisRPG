@@ -4,9 +4,11 @@ import math
 import random
 
 
+# Todo: Cette fonction sera à revoir lorsque l'on aura le système de blessure et d'objectifs
 def est_eligible_pour_tournoi(joueur, tournoi, classement):
     seuils = {
-        "GrandSlam": 128,  # Top 128 pour les Grands Chelems
+        # Ce fix est moche (passage de 128 à 130 joueurs éligible) sera amélioré plus tard
+        "GrandSlam": 130,  # Top 128 pour les Grands Chelems
         "ATP Finals": 8,  # Top 8 pour l'ATP Finals
         "ATP1000 #6": 60,  # Top 60 pour les Masters 1000 à 6 tours
         "ATP1000 #7": 100,  # Top 100 pour les Masters 1000 à 7 tours
@@ -104,7 +106,8 @@ class Tournoi:
     # We need to update the Calendar function to be able to use this function
     def jouer(self, joueur, participants, classement, type="atp"):
         # Si le joueur n'est pas dans la liste des participants, ont l'ajoute et on retire un participant
-        # TODO: Make sure we don't have a problem with the US OPEN
+        # TODO: In the grand slam, we don't have the right number of participants.
+        #  We must check why
         if joueur not in participants:
             participants.append(joueur)
         

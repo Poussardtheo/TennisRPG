@@ -8,7 +8,6 @@ from TennisRPG.Personnage import *
 from TennisRPG.Classement import Classement
 
 
-
 def main():
 	annee_debut = 2023
 	calendar = Calendar(annee_debut)

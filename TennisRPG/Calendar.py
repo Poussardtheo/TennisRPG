@@ -106,7 +106,7 @@ class Calendar:
         print(f"\n{joueur.prenom} a participé{accord} au tournoi : {tournoi_choisi.nom}.")
         
         joueurs_disponible = set(joueurs.values())
-        joueurs_disponible.remove(joueur) # On s'assure qu'on ne peut pas participer à d'autre tournoi que celui choisi
+        joueurs_disponible.remove(joueur)  # On s'assure qu'on ne peut pas participer à d'autre tournoi que celui choisi
         tournois_tries = sorted(
             tournois_semaine, key=lambda t: self.importance_tournoi(t), reverse=True
         )
@@ -117,7 +117,6 @@ class Calendar:
             )
             if tournoi == tournoi_choisi:
                 resultat = tournoi.jouer(joueur, participants, classement)
-                print(joueur.principal)
                 self.current_atp_points.loc[f"{joueur.prenom} {joueur.nom}", self.current_week] = resultat[joueur]
             else:
                 resultats = tournoi.simuler_tournoi(participants, classement, type="atp")
@@ -186,8 +185,6 @@ class Calendar:
         return None
 
 
-
-calendar = Calendar(2024)
 # from Personnage import Personnage
 #
 # personnage = Personnage("Theo", "Poussard", "France")
