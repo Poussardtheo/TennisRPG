@@ -240,9 +240,10 @@ class Personnage:
 			fatigue_ajoutee *= 1.5  # 50% de fatigue en plus si blessé
 
 		self.fatigue = min(100, self.fatigue + fatigue_ajoutee)
-		self.fatigue_accumulee = min(200, self.fatigue + fatigue_ajoutee / 2)
+		self.fatigue_accumulee = min(200, self.fatigue + fatigue_ajoutee / 2) # Todo: repenser la fatigue accumulée
 		if self.principal:
 			print(f"Niveau de fatigue actuel {self.fatigue}")
+			print(f"Niveau de fatigue accumulée {self.fatigue_accumulee}")
 
 		if self.fatigue >= 80:
 			accord = "la joueuse est très fatiguée" if self.sexe.lower() == 'f' else "Le joueur est très fatigué"
@@ -265,13 +266,12 @@ class Personnage:
 		self.semaines_indisponible = details["repos"]
 		
 		accord = "e" if self.sexe.lower() == 'f' else ""
+		accord2 = "s" if self.semaines_indisponible == 1 else ""
+
 		if self.principal:
-			print(f"{self.nom} s'est blessé{accord} : {blessure} (Gravité: {details['gravite']}). Indisponible pour {self.semaines_indisponible} semaines.")
+			print(f"{self.nom} s'est blessé{accord} : {blessure} (Gravité: {details['gravite']}). Indisponible pour {self.semaines_indisponible} semaine{accord2}.")
 			
-		if self.blessure == 0:
-			self.blessure = random.randint(
-				1, 5
-			)  # Todo: modifier pour que la gravité dépende de la fatigue
+		self.fatigue_accumulee = 0
 			
 	def se_reposer(self):
 		repos = random.randint(10, 20)
@@ -291,6 +291,7 @@ class Personnage:
 	
 	def selectionner_gravite_blessure(self):
 		facteur_gravite = min(self.fatigue_accumulee / 200, 1)
+		# Todo: Revoir cette liste de probabilité pour mieux refléter les grosses blessures à l'avenir
 		probabilites = [
 			0.30 * (1 - facteur_gravite),
 			0.25 * (1 - facteur_gravite),
@@ -435,4 +436,4 @@ def generer_pnj_thread(nb_joueurs, sexe, pool):
 	pool.update(generated_pool)
 	
 	
-personnage = Personnage("m", "Théo", "Poussard", "France")
+personnage = Personnage("m", "Théo", "Poussard", "France", principal=True)
