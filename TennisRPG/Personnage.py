@@ -3,6 +3,8 @@ from faker import Faker
 from transliterate import translit
 from unidecode import unidecode
 
+from TennisRPG.dico import blessure_tennis
+
 SURFACE_IMPACTS = {
 	"Hard": {
 		"Service": 1.2,
@@ -108,7 +110,9 @@ class Personnage:
 		self.atp_race_points = 0
 		self.ap_points = 6 * (lvl - 1)  # Permet pnj avec des stats
 		self.fatigue = 0
-		self.blessure = 0
+		self.fatigue_accumulee = 0 # Fatigue sur le long terme
+		self.blessure = None
+		self.semaines_indisponible = 0
 		self.stats = {attr: 30 for attr in list(self.POIDS_BASE.keys())}
 		self.elo = self.calculer_elo(initial=True)
 		self.generer_statistique()
@@ -223,7 +227,7 @@ class Personnage:
 		self.atp_points += earned_atp_points
 		print(f"{self.prenom} {self.nom} a gagné {earned_atp_points} points ATP.")
 
-	# Todo: regarder la faisabilité de la fatigue
+	# Todo: reprendre cette fonction avec la nouveauté de blessure
 	def gerer_fatigue(self, activite):
 		fatigue_base = {
 			"Tournoi": random.randint(15, 25),
@@ -232,12 +236,11 @@ class Personnage:
 		}
 
 		fatigue_ajoutee = fatigue_base.get(activite, 0)
-		if self.blessure > 0:
+		if self.blessure:
 			fatigue_ajoutee *= 1.5  # 50% de fatigue en plus si blessé
 
-		self.fatigue = min(
-			100, self.fatigue + fatigue_ajoutee
-		)  # La fatigue ne peut pas dépasser 100
+		self.fatigue = min(100, self.fatigue + fatigue_ajoutee)
+		self.fatigue_accumulee = min(200, self.fatigue + fatigue_ajoutee / 2)
 		if self.principal:
 			print(f"Niveau de fatigue actuel {self.fatigue}")
 
@@ -245,27 +248,38 @@ class Personnage:
 			accord = "la joueuse est très fatiguée" if self.sexe.lower() == 'f' else "Le joueur est très fatigué"
 			if self.principal:
 				print(f"Attention ! {accord} et risque de se blesser. ")
-			if (
-				random.random() < 1 - self.fatigue / 100
-			):  # Chance de se blesser en fct de la fatigue
-				self.blesser()
-
-	def blesser(self):
+		
+		self.verifier_blessure()
+		
+	def verifier_blessure(self):
+		chance_blessure = (self.fatigue + self.fatigue_accumulee / 4) / 2
+		if random.randint(1, 100) < chance_blessure:
+			self.infliger_blessure()
+		
+	def ingliger_blessure(self):
+		gravite = self.selectionner_gravite_blessure()
+		blessures_possibles = [b for b in blessure_tennis.items() if b[1]["gravite"] == gravite]
+		blessure, details = random.choice(blessures_possibles)
+		
+		self.blessure = blessure
+		self.semaines_indisponible = details["repos"]
+		
+		accord = "e" if self.sexe.lower() == 'f' else ""
+		if self.principal:
+			print(f"{self.nom} s'est blessé{accord} : {blessure} (Gravité: {details['gravite']}). Indisponible pour {self.semaines_indisponible} semaines.")
+			
 		if self.blessure == 0:
 			self.blessure = random.randint(
 				1, 5
 			)  # Todo: modifier pour que la gravité dépende de la fatigue
-			accord = "e" if self.sexe.lower() == 'f' else ""
-			if self.principal:
-				print(
-					f"{self.prenom} s'est blessé{accord} ! Gravité de la blessure: {self.blessure}"
-				)
+			
 
-	def repos(self):
-		recuperation = random.randint(10, 20)
-		self.fatigue = max(0, self.fatigue - recuperation)
+	def se_reposer(self):
+		repos = random.randint(10, 20)
+		self.fatigue = max(0, self.fatigue - repos)
+		self.fatigue_accumulee = max(0, self.fatigue_accumulee - repos//2) # La fatigue accumulée décroit + lentement
 
-		if self.blessure > 0:
+		if self.blessure:
 			recuperation_blessure = random.randint(1, 2)
 			self.blessure = max(0, self.blessure - recuperation_blessure)
 			if self.principal:
@@ -275,11 +289,25 @@ class Personnage:
 
 			print(f"{self.prenom} s'est reposé.")
 			print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
-
+	
+	def selectionner_gravite_blessure(self):
+		facteur_gravite = min(self.fatigue_accumulee / 200, 1)
+		probabilites = [
+			0.30 * (1 - facteur_gravite),
+			0.25 * (1 - facteur_gravite),
+			0.20,
+			0.15 * (1 + facteur_gravite),
+			0.06 * (1 + facteur_gravite),
+			0.03 * (1 + facteur_gravite * 2),
+			0.01 * (1 + facteur_gravite * 3)
+		]
+		total = sum(probabilites)
+		probabilites = [p / total for p in probabilites]
+		return random.choices(range(1, 8), weights=probabilites)[0]
+	
 	def peut_jouer(self):
-		return (
-			self.blessure < 3
-		)  # Le joueur ne peut pas jouer si la gravité de la blessure est >= 3
+		# Le joueur ne peut pas jouer si la gravité de la blessure est >= 3
+		return self.blessure is None and self.blessure < 3
 
 	def id_card(self, classement):
 		largeur = 46
