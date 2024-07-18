@@ -110,8 +110,8 @@ class Personnage:
 		self.atp_race_points = 0
 		self.ap_points = 6 * (lvl - 1)  # Permet pnj avec des stats
 		self.fatigue = 0
-		self.fatigue_accumulee = 0 # Fatigue sur le long terme
-		self.blessure = None
+		self.fatigue_accumulee = 0  # Fatigue sur le long terme
+		self.blessure: None | int = None
 		self.semaines_indisponible = 0
 		self.stats = {attr: 30 for attr in list(self.POIDS_BASE.keys())}
 		self.elo = self.calculer_elo(initial=True)
@@ -256,7 +256,7 @@ class Personnage:
 		if random.randint(1, 100) < chance_blessure:
 			self.infliger_blessure()
 		
-	def ingliger_blessure(self):
+	def infliger_blessure(self):
 		gravite = self.selectionner_gravite_blessure()
 		blessures_possibles = [b for b in blessure_tennis.items() if b[1]["gravite"] == gravite]
 		blessure, details = random.choice(blessures_possibles)
@@ -273,7 +273,6 @@ class Personnage:
 				1, 5
 			)  # Todo: modifier pour que la gravité dépende de la fatigue
 			
-
 	def se_reposer(self):
 		repos = random.randint(10, 20)
 		self.fatigue = max(0, self.fatigue - repos)
@@ -307,7 +306,7 @@ class Personnage:
 	
 	def peut_jouer(self):
 		# Le joueur ne peut pas jouer si la gravité de la blessure est >= 3
-		return self.blessure is None and self.blessure < 3
+		return self.blessure is None or blessure_tennis[self.blessure]["gravite"] <= 3
 
 	def id_card(self, classement):
 		largeur = 46
