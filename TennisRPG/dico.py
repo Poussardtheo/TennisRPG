@@ -2,7 +2,7 @@
 
 # Le dico des blessures. Il sera potentiellement réorganisé par gravité pour être plus facilement accessible.
 # Il faudra se renseigner sur les blessures proposé et
-blessure = {
+blessure_tennis = {
 	"Entorse de la cheville": {"gravite": 4, "repos": 4},
 	"Tendinite du coude": {"gravite": 3, "repos": 10},
 	"Déchirure musculaire de la cuisse": {"gravite": 5, "repos": 7},
