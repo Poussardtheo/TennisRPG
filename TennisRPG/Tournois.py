@@ -42,7 +42,7 @@ def seed(n):
 def selectionner_joueurs_pour_tournoi(
     tournoi, joueurs_disponibles, classement, type="elo"
 ):
-    joueurs_eligibles = [j for j in joueurs_disponibles if est_eligible_pour_tournoi(j, tournoi, classement) and j.peut_jouer()]
+    joueurs_eligibles = [j for j in joueurs_disponibles if j.peut_jouer()]  # est_eligible_pour_tournoi(j, tournoi, classement) and
     joueur_tries = sorted(
         joueurs_eligibles, key=lambda j: classement.obtenir_rang(j, type)
     )
@@ -127,7 +127,7 @@ class Tournoi:
     def simuler_tournoi(self, participants, classement, type="elo", preliminaire=False):
         if self.categorie == "ATP Finals":
             return self.simuler_tournoi_finals(participants, classement, preliminaire)
-        
+        print(f"nb joueurs théorique {self.nb_joueurs}, participants réels {len(participants)}")
         nb_tours = math.ceil(math.log2(self.nb_joueurs))
         nb_tetes_de_serie = 2 ** (nb_tours - 2)
         
@@ -202,6 +202,7 @@ class Tournoi:
             xp_gagne = self.XP_PAR_TOUR[self.categorie].get(dernier_tour, 0)
             resultats[joueur] = self.POINTS_ATP.get(self.categorie, {}).get(dernier_tour, 0)
             joueur.gagner_experience(xp_gagne)
+            joueur.gerer_fatigue("Tournoi")
             
         # Note the return will be useful when we'll save the info in a database
         return resultats
