@@ -106,8 +106,6 @@ class Tournoi:
     # We need to update the Calendar function to be able to use this function
     def jouer(self, joueur, participants, classement, type="atp"):
         # Si le joueur n'est pas dans la liste des participants, ont l'ajoute et on retire un participant
-        # TODO: In the grand slam, we don't have the right number of participants.
-        #  We must check why
         if joueur not in participants:
             participants.append(joueur)
         
@@ -127,7 +125,7 @@ class Tournoi:
     def simuler_tournoi(self, participants, classement, type="elo", preliminaire=False):
         if self.categorie == "ATP Finals":
             return self.simuler_tournoi_finals(participants, classement, preliminaire)
-        print(f"nb joueurs théorique {self.nb_joueurs}, participants réels {len(participants)}")
+
         nb_tours = math.ceil(math.log2(self.nb_joueurs))
         nb_tetes_de_serie = 2 ** (nb_tours - 2)
         

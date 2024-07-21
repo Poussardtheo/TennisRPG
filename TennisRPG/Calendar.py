@@ -30,7 +30,7 @@ class Calendar:
 
             # On repose les joueurs qui ne peuvent pas jouer
             if not joueur.peut_jouer() and not joueur.principal:
-                self.repos(joueur)
+                self.repos(joueur) # Todo: A vérifié que les pnj guérisse normalement
 
             # On incrémente l'historique de semaine blessée s'il vient de se blesser
             if joueur.blessure and joueur.semaines_blessee == 0:
