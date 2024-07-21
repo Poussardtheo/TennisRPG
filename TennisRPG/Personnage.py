@@ -121,6 +121,8 @@ class Personnage:
 		self.blessure: None | int = None
 		self.gravite_blessure = 0
 		self.semaines_indisponible = 0
+		self.semaines_blessee = 0  # Compte le nombre de semaines depuis sa blessure
+		self.blessure_aggravee_cette_semaine = False
 
 		# Stats et Elo
 		self.stats = {attr: 30 for attr in list(self.POIDS_BASE.keys())}
@@ -240,7 +242,7 @@ class Personnage:
 	# Todo: reprendre cette fonction avec la nouveauté de blessure
 	def gerer_fatigue(self, activite):
 		fatigue_base = {
-			"Tournoi": 80,# random.randint(15, 25),
+			"Tournoi": random.randint(15, 25),
 			"Entrainement": random.randint(10, 20),
 			"Exhibition": random.randint(5, 15),
 		}
@@ -284,22 +286,28 @@ class Personnage:
 
 		if self.principal:
 			print(f"{self.nom} s'est blessé{accord} : {blessure} (Gravité: {self.gravite_blessure}). Indisponible pour {self.semaines_indisponible} semaine{accord2}.")
+		self.blessure_aggravee_cette_semaine = False
 
-	# TODO: A reprendre potentiellement ou à merge avec repos de calendar
+	def reduire_temps_indisponibilite(self):
+		if self.blessure and self.semaines_indisponible > 0 and not self.blessure_aggravee_cette_semaine:
+			self.semaines_indisponible -= 1
+			self.semaines_blessee += 1
+			if self.semaines_indisponible == 0:
+				self.guerir()
+			elif self.principal:
+				accord2 = "s" if self.semaines_indisponible > 1 else ""
+				print(f"{self.prenom} {self.nom} récupère de sa blessure. Encore indisponible {self.semaines_indisponible} semaine{accord2}")
+				print(f"{self.prenom} {self.nom} s'est reposé.")
+				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
+
+		self.blessure_aggravee_cette_semaine = False
+
 	def se_reposer(self):
 		repos = random.randint(10, 20)
 		self.fatigue = max(0, self.fatigue - repos)
 		self.fatigue_accumulee = max(0, self.fatigue_accumulee - repos//2)  # La fatigue accumulée décroit + lentement
 
-		if self.blessure:
-			self.semaines_indisponible -= 1
-			accord2 = "s" if self.semaines_indisponible == 1 else ""
-			if self.principal and self.semaines_indisponible >= 1:
-				print(f"{self.prenom} {self.nom} récupère de sa blessure. Encore indisponible {self.semaines_indisponible} semaine{accord2}")
-				print(f"{self.prenom} {self.nom} s'est reposé.")
-				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
-			if self.semaines_indisponible <=0:
-				self.guerir()
+		self.reduire_temps_indisponibilite()
 	
 	def selectionner_gravite_blessure(self):
 		facteur_gravite = min(self.fatigue_accumulee / 200, 1)
@@ -324,7 +332,7 @@ class Personnage:
 			"Exhibition": 15
 		}
 		risque_aggravation = risque_base.get(activite, 0) + self.gravite_blessure*5
-		if random.randint(1,100) < risque_aggravation:
+		if random.randint(1, 100) < risque_aggravation:
 			self.aggraver_blessure()
 
 	def aggraver_blessure(self):
@@ -332,9 +340,10 @@ class Personnage:
 		self.gravite_blessure = min(7, self.gravite_blessure + 1)
 		augmentation_repos = random.randint(1, 3)  # Le repos augmente aléatoirement
 		self.semaines_indisponible += augmentation_repos
+		self.blessure_aggravee_cette_semaine = True
 
 		if self.principal:
-			accord2 = "s" if augmentation_repos == 1 else ""
+			accord2 = "s" if augmentation_repos > 1 else ""
 			print("La blessure s'est aggravée !")
 			print(f"Gravité : {ancienne_gravite} -> {self.gravite_blessure}")
 			print(f"Temps de récupération augmenté de {augmentation_repos} semaine{accord2}")
@@ -345,12 +354,16 @@ class Personnage:
 			print(f"{self.prenom} {self.nom} est guéri de sa blessure : {self.blessure}")
 		self.blessure = None
 		self.gravite_blessure = 0
-		self.fatigue_accumulee = max(0 ,self.fatigue_accumulee - 30) #Diminution de la fatigue sur le long terme
-		self.fatigue = 0 # La fatigue a court terme est réinitialisé
+		self.semaines_blessee = 0 # On réinitialise le compteur de semaines blessées
+		self.fatigue_accumulee = max(0, self.fatigue_accumulee - 30)  # Diminution de la fatigue sur le long terme
+		self.fatigue = 0  # La fatigue a court terme est réinitialisée
+		self.blessure_aggravee_cette_semaine = False
+	def a_besoin_repos(self):
+		return self.fatigue_accumulee >= 150 # Seuil de fatigue critique
 
 	def peut_jouer(self):
 		# Le joueur ne peut pas jouer si la gravité de la blessure est >= 3
-		return self.blessure is None or blessure_tennis[self.blessure]["gravite"] <= 3
+		return (self.blessure is None or self.gravite_blessure <= 3) and not self.a_besoin_repos()
 
 	def id_card(self, classement):
 		largeur = 46
@@ -383,7 +396,7 @@ class Personnage:
 		
 		print(f"│ XP      : {barre_xp}{espace_xp}{' ' * (middle_space-1)}{xp_values} │")
 		print(f"│ Fatigue : {self.fatigue:<32} │")
-		print(f"│ Blessure: {self.blessure:<32} │")
+		print(f"│ Blessure: {self.blessure} │")
 		print("├" + "─" * (largeur - 2) + "┤")
 		print("│" + " STATISTIQUES ".center(largeur - 2) + "│")
 		print("├" + "─" * (largeur - 2) + "┤")
