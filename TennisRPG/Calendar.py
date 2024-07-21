@@ -28,7 +28,7 @@ class Calendar:
     def choisir_activite(self, joueur, joueurs, classement):
         print(f"\nSemaine : {self.current_week} de l'année {self.current_year}")
         tournois_semaines = self.obtenir_tournois_semaine()
-        tournois_elligible = [t for t in tournois_semaines if est_eligible_pour_tournoi(joueur, t, classement)]
+        tournois_elligible = [t for t in tournois_semaines if est_eligible_pour_tournoi(joueur, t, classement) and joueur.peut_jouer()]
         
         activites_possibles = [act for act in self.ACTIVITES if act != "Tournoi"]
         # Garde-fou pour empêcher de sélectionner Tournoi s'il n'y en a pas
@@ -81,6 +81,7 @@ class Calendar:
         accord = "e" if joueur.sexe.lower() == 'f' else ""
         print(f"\n{joueur.prenom} s'est entraîné{accord} cette semaine.")
         joueur.gagner_experience(exp_gagnee)
+        joueur.gerer_fatigue("Entrainement")
 
     @staticmethod
     def choisir_tournoi(tournois_eligibles):
@@ -103,7 +104,7 @@ class Calendar:
 
     def participer_tournoi(self, joueur, joueurs, classement):
         tournois_semaine = self.obtenir_tournois_semaine()
-        tournois_eligibles = [t for t in tournois_semaine if est_eligible_pour_tournoi(joueur, t, classement)]
+        tournois_eligibles = [t for t in tournois_semaine if est_eligible_pour_tournoi(joueur, t, classement) and joueur.peut_jouer()]
         
         # ne laisse le choix de la sélection du tournoi que s'il y a plusieurs tournois
         if len(tournois_eligibles) != 1:
@@ -159,6 +160,7 @@ class Calendar:
             resultat = tournoi.simuler_tournoi(participants, classement, preliminaire=preliminaire)
             for joueur, points in resultat.items():
                 self.current_atp_points.loc[f"{joueur.prenom} {joueur.nom}", self.current_week] = points
+                joueur.gerer_fatigue("Tournoi")
 
             joueurs_disponible -= set(participants)
 
@@ -182,6 +184,7 @@ class Calendar:
 
     @staticmethod
     def repos(joueur):
+        joueur.se_reposer()
         recuperation = random.randint(1, 3)
         accord = "e" if joueur.sexe.lower() == 'f' else ""
         print(f"\n{joueur.prenom} s'est reposé{accord} cette semaine.")
