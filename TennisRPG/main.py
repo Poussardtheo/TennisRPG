@@ -58,6 +58,7 @@ def main():
 						"\n'q' pour quitter"
 						"\n'c' pour afficher le classement"
 		                "\n'a' pour afficher les points à défendre cette semaine"
+					   	"\n'b' pour afficher les joueurs blessés "
 						f"\n'i pour voir la carte d'identité de votre {joueurs_sexe}"
 						f"\n'e' pour affecter des points d'attributs à votre {joueurs_sexe}\n")
 
@@ -80,8 +81,9 @@ def main():
 		elif action.lower() == 'i':
 			joueur_principal.id_card(classement)
 		elif action.lower() == 'a':
-			print(f"Current")
 			print(calendar.current_atp_points.loc[:, calendar.current_week].sort_values(ascending=False))
+		elif action.lower() == 'b':
+			print([(personnage.nom, personnage.semaines_indisponible) for personnage in POOL_JOUEURS.values() if personnage.blessure])
 		elif action.lower() == 'e':
 			joueur_principal.attribuer_ap_points_manuellement()
 		elif action == '':  # Si le joueur à appuyer sur entrée
