@@ -42,7 +42,7 @@ def seed(n):
 def selectionner_joueurs_pour_tournoi(
     tournoi, joueurs_disponibles, classement, type="elo"
 ):
-    joueurs_eligibles = [j for j in joueurs_disponibles if est_eligible_pour_tournoi(j, tournoi, classement)]
+    joueurs_eligibles = [j for j in joueurs_disponibles if est_eligible_pour_tournoi(j, tournoi, classement) and j.peut_jouer()]
     joueur_tries = sorted(
         joueurs_eligibles, key=lambda j: classement.obtenir_rang(j, type)
     )
