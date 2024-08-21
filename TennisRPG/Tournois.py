@@ -123,6 +123,7 @@ class Tournoi:
         return resultat
     
     def simuler_tournoi(self, participants, classement, type="elo", preliminaire=False):
+        assert len(participants) == self.nb_joueurs
         if self.categorie == "ATP Finals":
             return self.simuler_tournoi_finals(participants, classement, preliminaire)
 

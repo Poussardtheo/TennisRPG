@@ -20,30 +20,27 @@ class Calendar:
             classement.reinitialiser_atp_race()
 
         self.current_week += 1
-
+        
+        # Les joueurs blessés se reposent
+        self.gerer_pnj_blesses(joueurs)
+        
         for joueur_str, joueur in joueurs.items():
             joueur.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]
 
-            # Réduit l'indisponibilité seulement si déjà blessés la semaine passée
-            if joueur.semaines_blessee > 0:
-                joueur.reduire_temps_indisponibilite()
-
-            # On repose les joueurs qui ne peuvent pas jouer
-            if not joueur.peut_jouer() and not joueur.principal:
-                self.repos(joueur) # Todo: A vérifié que les pnj guérisse normalement
-
-            # On incrémente l'historique de semaine blessée s'il vient de se blesser
-            if joueur.blessure and joueur.semaines_blessee == 0:
-                joueur.semaines_blessee += 1
-
     def obtenir_tournois_semaine(self):
         return self.tournois.get(self.current_week, [])
-
+    
+    def gerer_pnj_blesses(self, joueurs):
+        for joueur in joueurs.values():
+            if not joueur.principal and joueur.blessure:
+                self.repos(joueur)
+                
     def choisir_activite(self, joueur, joueurs, classement):
         print(f"\nSemaine : {self.current_week} de l'année {self.current_year}")
 
         if not joueur.peut_jouer():
             print(f"{joueur.prenom} {joueur.nom} ne peut pas jouer cette semaine et doit se reposer.")
+            self.repos(joueur)
             self.simuler_tournois_semaine(joueurs, classement)
             self.avancer_semaine(classement, joueurs)
             return
@@ -166,6 +163,7 @@ class Calendar:
     def simuler_tournois_semaine(self, joueurs, classement, preliminaire=False):
         tournois_semaine = self.obtenir_tournois_semaine()
         joueurs_disponible = set(joueur for joueur in joueurs.values() if joueur.peut_jouer())
+        print(f"\nJoueurs Disponibles: {len(joueurs_disponible)}/{len(joueurs.values())}")
 
         # Liste des tournois triés par ordre d'importance
         tournoi_tries = sorted(
@@ -176,6 +174,8 @@ class Calendar:
             participants = selectionner_joueurs_pour_tournoi(
                 tournoi, joueurs_disponible, classement
             )
+            print(f"\nnb de Participants : {len(participants)}")
+            print(tournoi.nom, tournoi.nb_joueurs)
             resultat = tournoi.simuler_tournoi(participants, classement, preliminaire=preliminaire)
             for joueur, points in resultat.items():
                 self.current_atp_points.loc[f"{joueur.prenom} {joueur.nom}", self.current_week] = points
@@ -207,7 +207,6 @@ class Calendar:
             accord = "e" if joueur.sexe.lower() == 'f' else ""
             print(f"\n{joueur.prenom} s'est reposé{accord} cette semaine.")
             print(f"Niveau de fatigue actuel {joueur.fatigue}")
-            print(f"Niveau de fatigue accumulée {joueur.fatigue_accumulee}")
     
     def trouver_remplacant(self, tournoi, joueurs_disponibles, classement):
         joueurs_eligibles = [j for j in joueurs_disponibles if est_eligible_pour_tournoi(j, tournoi, classement)]
