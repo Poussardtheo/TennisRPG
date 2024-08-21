@@ -1,9 +1,10 @@
+import math
 import random
 from faker import Faker
 from transliterate import translit
 from unidecode import unidecode
 
-from TennisRPG.dico import blessure_tennis
+from TennisRPG.Blessure import dico_blessures
 
 SURFACE_IMPACTS = {
 	"Hard": {
@@ -94,6 +95,15 @@ class Personnage:
 	}
 
 	def __init__(self, sexe, prenom, nom, country, taille=None, lvl=1, archetype=None, principal=False):
+		# Validation
+		assert sexe.lower() in ["m", "f"], "le sexe doit être 'm' ou 'f'"
+		assert lvl >= 1, "niveau minimum = 1"
+		assert isinstance(prenom, str) and isinstance(nom, str) and isinstance(country, str)
+		assert taille is None or isinstance(taille, int)
+		assert taille is None or 145 < taille < 220
+		assert isinstance(principal, bool)
+		assert archetype is None or archetype in ARCHETYPES.keys()
+		
 		self.sexe = sexe
 		self.nom = nom
 		self.prenom = prenom
@@ -113,16 +123,9 @@ class Personnage:
 		self.atp_points = 0
 		self.atp_race_points = 0
 
-		# Fatigue
+		# Fatigue & Blessure
 		self.fatigue = 0
-		self.fatigue_accumulee = 0  # Fatigue sur le long terme
-
-		# Blessure
-		self.blessure: None | int = None
-		self.gravite_blessure = 0
-		self.semaines_indisponible = 0
-		self.semaines_blessee = 0  # Compte le nombre de semaines depuis sa blessure
-		self.blessure_aggravee_cette_semaine = False
+		self.blessure = None
 
 		# Stats et Elo
 		self.stats = {attr: 30 for attr in list(self.POIDS_BASE.keys())}
@@ -238,132 +241,100 @@ class Personnage:
 	def attribuer_atp_points(self, earned_atp_points):
 		self.atp_points += earned_atp_points
 		print(f"{self.prenom} {self.nom} a gagné {earned_atp_points} points ATP.")
-
-	# Todo: reprendre cette fonction avec la nouveauté de blessure
+	
+	###############################################################
+	#                           SECTION                           #
+	#                      FATIGUE & BLESSURES                    #
+	###############################################################
+	
+	# Todo: Réfléchir aux valeurs de fatigues
 	def gerer_fatigue(self, activite):
 		fatigue_base = {
-			"Tournoi": random.randint(15, 25),
+			"Tournoi": random.randint(20, 35),
 			"Entrainement": random.randint(10, 20),
 			"Exhibition": random.randint(5, 15),
 		}
 
 		fatigue_ajoutee = fatigue_base.get(activite, 0)
-		if self.blessure:
-			fatigue_ajoutee *= 1.5  # 50% de fatigue en plus si blessé
 
 		self.fatigue = min(100, self.fatigue + fatigue_ajoutee)
-		self.fatigue_accumulee = min(200, self.fatigue_accumulee + fatigue_ajoutee / 2)
 		if self.principal:
 			print(f"Niveau de fatigue actuel {self.fatigue}")
-			print(f"Niveau de fatigue accumulée {self.fatigue_accumulee}")
 
-		if self.blessure:
-			self.risque_aggravation_blessure(activite)
-		else:
-			self.verifier_blessure()
+		# if self.blessure:
+		# 	self.risque_aggravation_blessure(activite)
+		
+		self.verifier_blessure()
 
 		if self.fatigue >= 80 and not self.blessure:
 			accord = "la joueuse est très fatiguée" if self.sexe.lower() == 'f' else "Le joueur est très fatigué"
 			if self.principal:
 				print(f"Attention ! {accord} et risque de se blesser. ")
 
-	def verifier_blessure(self):
-		chance_blessure = (self.fatigue + self.fatigue_accumulee / 4) / 2
-		if random.randint(1, 100) < chance_blessure:
+	def verifier_blessure(self, k=0.12, seuil=55):
+		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
+		if random.randint(1, 100) < risque:
 			self.infliger_blessure()
 
 	def infliger_blessure(self):
-		gravite = self.selectionner_gravite_blessure()
-		blessures_possibles = [b for b in blessure_tennis.items() if b[1]["gravite"] == gravite]
-		blessure, details = random.choice(blessures_possibles)
+		gravite = self.gravite_blessure()
+		blessures_possibles = dico_blessures[gravite]
 
-		self.blessure = blessure
-		self.gravite_blessure = details["gravite"]
-		self.semaines_indisponible = details["repos"]
-
+		self.blessure = random.choice(blessures_possibles)
+		
+		# Info sur la blessure
+		blessure = self.blessure.nom
+		gravite = self.blessure.gravite
+		repos = self.blessure.repos
+		
 		accord = "e" if self.sexe.lower() == 'f' else ""
-		accord2 = "s" if self.semaines_indisponible == 1 else ""
+		accord2 = "s" if self.blessure.repos == 1 else ""
 
 		if self.principal:
-			print(f"{self.nom} s'est blessé{accord} : {blessure} (Gravité: {self.gravite_blessure}). Indisponible pour {self.semaines_indisponible} semaine{accord2}.")
-		self.blessure_aggravee_cette_semaine = False
+			print(f"{self.nom} s'est blessé{accord} : {blessure} (Gravité: {gravite})"
+			      f". Indisponible pour {repos} semaine{accord2}.")
 
 	def reduire_temps_indisponibilite(self):
-		if self.blessure and self.semaines_indisponible > 0 and not self.blessure_aggravee_cette_semaine:
-			self.semaines_indisponible -= 1
-			self.semaines_blessee += 1
-			if self.semaines_indisponible == 0:
+		if self.blessure:
+			self.blessure.reduire_indisponibilite()
+			
+			if self.blessure.semaines_indisponibles == 0:
 				self.guerir()
-			elif self.principal:
-				accord2 = "s" if self.semaines_indisponible > 1 else ""
-				print(f"{self.prenom} {self.nom} récupère de sa blessure. Encore indisponible {self.semaines_indisponible} semaine{accord2}")
+				
+			if self.principal:
+				accord2 = "s" if self.blessure.repos > 1 else ""
+				print(f"{self.prenom} {self.nom} récupère de sa blessure. Encore indisponible {self.blessure.repos} semaine{accord2}")
 				print(f"{self.prenom} {self.nom} s'est reposé.")
 				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
 
-		self.blessure_aggravee_cette_semaine = False
-
 	def se_reposer(self):
-		repos = random.randint(10, 20)
+		repos = random.randint(10, 20)  # Todo: Revoir les valeurs
 		self.fatigue = max(0, self.fatigue - repos)
-		self.fatigue_accumulee = max(0, self.fatigue_accumulee - repos//2)  # La fatigue accumulée décroit + lentement
 
 		self.reduire_temps_indisponibilite()
 	
-	def selectionner_gravite_blessure(self):
-		facteur_gravite = min(self.fatigue_accumulee / 200, 1)
-		# Todo: Revoir cette liste de probabilité pour mieux refléter les grosses blessures à l'avenir
-		probabilites = [
-			0.30 * (1 - facteur_gravite),
-			0.25 * (1 - facteur_gravite),
-			0.20,
-			0.15 * (1 + facteur_gravite),
-			0.06 * (1 + facteur_gravite),
-			0.03 * (1 + facteur_gravite * 2),
-			0.01 * (1 + facteur_gravite * 3)
-		]
-		total = sum(probabilites)
-		probabilites = [p / total for p in probabilites]
+	def gravite_blessure(self):
+		if self.fatigue < 30:
+			poids = [70, 15, 10, 3, 2, 0, 0]
+		elif self.fatigue < 50:
+			poids = [50, 20, 15, 7, 5, 2, 1]
+		elif self.fatigue < 70:
+			poids = [20, 30, 20, 15, 8, 5, 2]
+		elif self.fatigue < 90:
+			poids = [10, 25, 25, 20, 10, 5, 5]
+		else:
+			poids = [5, 15, 25, 25, 15, 8, 7]
+			
+		total = sum(poids)
+		probabilites = [p / total for p in poids]
 		return random.choices(range(1, 8), weights=probabilites)[0]
 
-	def risque_aggravation_blessure(self, activite):
-		risque_base = {
-			"Tournoi": 30,
-			"Entrainement": 20,
-			"Exhibition": 15
-		}
-		risque_aggravation = risque_base.get(activite, 0) + self.gravite_blessure*5
-		if random.randint(1, 100) < risque_aggravation:
-			self.aggraver_blessure()
-
-	def aggraver_blessure(self):
-		ancienne_gravite = self.gravite_blessure
-		self.gravite_blessure = min(7, self.gravite_blessure + 1)
-		augmentation_repos = random.randint(1, 3)  # Le repos augmente aléatoirement
-		self.semaines_indisponible += augmentation_repos
-		self.blessure_aggravee_cette_semaine = True
-
-		if self.principal:
-			accord2 = "s" if augmentation_repos > 1 else ""
-			print("La blessure s'est aggravée !")
-			print(f"Gravité : {ancienne_gravite} -> {self.gravite_blessure}")
-			print(f"Temps de récupération augmenté de {augmentation_repos} semaine{accord2}")
-			print(f"Nouveau temps de récupération total: {self.semaines_indisponible} semaines")
-
 	def guerir(self):
-		if self.principal:
-			print(f"{self.prenom} {self.nom} est guéri de sa blessure : {self.blessure}")
-		self.blessure = None
-		self.gravite_blessure = 0
-		self.semaines_blessee = 0 # On réinitialise le compteur de semaines blessées
-		self.fatigue_accumulee = max(0, self.fatigue_accumulee - 30)  # Diminution de la fatigue sur le long terme
-		self.fatigue = 0  # La fatigue a court terme est réinitialisée
-		self.blessure_aggravee_cette_semaine = False
-	def a_besoin_repos(self):
-		return self.fatigue_accumulee >= 150 # Seuil de fatigue critique
-
+		self.blessure = None # Todo: Faire un test pour voir quand le repos tombe à 0 si on guérit
+		
 	def peut_jouer(self):
-		# Le joueur ne peut pas jouer si la gravité de la blessure est >= 3
-		return (self.blessure is None or self.gravite_blessure <= 3) and not self.a_besoin_repos()
+		# Le joueur ne peut pas jouer s'il est blessé
+		return self.blessure is None
 
 	def id_card(self, classement):
 		largeur = 46
@@ -396,7 +367,7 @@ class Personnage:
 		
 		print(f"│ XP      : {barre_xp}{espace_xp}{' ' * (middle_space-1)}{xp_values} │")
 		print(f"│ Fatigue : {self.fatigue:<32} │")
-		print(f"│ Blessure: {self.blessure} │")
+		print(f"│ Blessure: {self.blessure is None} │")
 		print("├" + "─" * (largeur - 2) + "┤")
 		print("│" + " STATISTIQUES ".center(largeur - 2) + "│")
 		print("├" + "─" * (largeur - 2) + "┤")
@@ -447,7 +418,7 @@ pays_locales = {
 
 def generer_pnj(nombre, sexe):
 	personnages_dico = {}
-	for _ in range(nombre):
+	for _ in range(nombre+1):
 		country = random.choice(list(pays_locales.keys()))
 
 		if len(pays_locales[country]) > 1:
