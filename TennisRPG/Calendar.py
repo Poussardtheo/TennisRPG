@@ -163,7 +163,6 @@ class Calendar:
     def simuler_tournois_semaine(self, joueurs, classement, preliminaire=False):
         tournois_semaine = self.obtenir_tournois_semaine()
         joueurs_disponible = set(joueur for joueur in joueurs.values() if joueur.peut_jouer())
-        print(f"\nJoueurs Disponibles: {len(joueurs_disponible)}/{len(joueurs.values())}")
 
         # Liste des tournois triés par ordre d'importance
         tournoi_tries = sorted(
@@ -174,8 +173,6 @@ class Calendar:
             participants = selectionner_joueurs_pour_tournoi(
                 tournoi, joueurs_disponible, classement
             )
-            print(f"\nnb de Participants : {len(participants)}")
-            print(tournoi.nom, tournoi.nb_joueurs)
             resultat = tournoi.simuler_tournoi(participants, classement, preliminaire=preliminaire)
             for joueur, points in resultat.items():
                 self.current_atp_points.loc[f"{joueur.prenom} {joueur.nom}", self.current_week] = points
