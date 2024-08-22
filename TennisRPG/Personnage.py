@@ -282,10 +282,8 @@ class Personnage:
 
 		self.blessure = random.choice(blessures_possibles)
 		
-		# Info sur la blessure
-		blessure = self.blessure.nom
-		gravite = self.blessure.gravite
-		repos = self.blessure.repos
+		# Infos sur la blessure
+		blessure, gravite, repos = self.blessure.nom, self.blessure.gravite, self.blessure.repos
 		
 		accord = "e" if self.sexe.lower() == 'f' else ""
 		accord2 = "s" if self.blessure.repos == 1 else ""
@@ -308,7 +306,7 @@ class Personnage:
 				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
 
 	def se_reposer(self):
-		repos = random.randint(10, 20)  # Todo: Revoir les valeurs
+		repos = random.randint(3, 10)  # Todo: Revoir les valeurs
 		self.fatigue = max(0, self.fatigue - repos)
 
 		self.reduire_temps_indisponibilite()
@@ -330,7 +328,7 @@ class Personnage:
 		return random.choices(range(1, 8), weights=probabilites)[0]
 
 	def guerir(self):
-		self.blessure = None # Todo: Faire un test pour voir quand le repos tombe à 0 si on guérit
+		self.blessure = None  # Todo: Faire un test pour voir quand le repos tombe à 0 si on guérit
 		
 	def peut_jouer(self):
 		# Le joueur ne peut pas jouer s'il est blessé
@@ -367,7 +365,7 @@ class Personnage:
 		
 		print(f"│ XP      : {barre_xp}{espace_xp}{' ' * (middle_space-1)}{xp_values} │")
 		print(f"│ Fatigue : {self.fatigue:<32} │")
-		print(f"│ Blessure: {self.blessure is None} │")
+		print(f"│ Blessure: {self.blessure if self.blessure else False} │")
 		print("├" + "─" * (largeur - 2) + "┤")
 		print("│" + " STATISTIQUES ".center(largeur - 2) + "│")
 		print("├" + "─" * (largeur - 2) + "┤")
