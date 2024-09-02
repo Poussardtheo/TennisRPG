@@ -7,7 +7,7 @@ class Blessure:
 		self.nom = nom
 		self.gravite = gravite
 		self.repos = repos
-		self.semaines_indisponibles = repos
+		self.semaines_indisponibles = self.repos
 		self.blessure_agravee_cette_semaine = False
 		
 	# TODO: Réfléchir aux valeurs et à la logique de risque
@@ -18,7 +18,7 @@ class Blessure:
 			"Exhibition": 15
 		}
 		
-		risque_agravation = risque_base.get(activite, 0) + self.gravite * 5
+		risque_agravation = risque_base.get(activite, 0) + self.gravite * 10
 		if random.randint(1, 100) < risque_agravation:
 			self.aggraver_blessure()
 		
@@ -33,41 +33,45 @@ class Blessure:
 	def reduire_indisponibilite(self):
 		if self.semaines_indisponibles > 0 and not self.blessure_agravee_cette_semaine:
 			self.semaines_indisponibles -= 1
+	
+	def __str__(self):
+		return f"Blessure: {self.nom}, Gravite: {self.gravite}, Repos initial: {self.repos}, Repos restant: {self.semaines_indisponibles}"
 
 
 dico_blessures = {
 	1: [
-		Blessure("Ampoule au pied", 1, 1),
-		Blessure("Crampes musculaires", 1, 1),
-		Blessure("Coup de chaleur", 1, 1)
+		{"nom": "Ampoule au pied", "gravite": 1, "repos": 1},
+		{"nom": "Crampes musculaires", "gravite": 1, "repos": 1},
+		{"nom": "Coup de chaleur", "gravite": 1, "repos": 1}
 	],
 	2: [
-		Blessure("Élongation du mollet", 2, 2),
-		Blessure("Syndrome du canal carpien", 2, 3),
-		Blessure("Syndrome de la bandelette ilio-tibiale", 2, 5)
+		{"nom": "Élongation du mollet", "gravite": 2, "repos": 2},
+		{"nom": "Syndrome du canal carpien", "gravite": 2, "repos": 3},
+		{"nom": "Syndrome de la bandelette ilio-tibiale", "gravite": 2, "repos": 5}
 	],
 	3: [
-		Blessure("Tendinite du coude", 3, 10),
-		Blessure("Lombalgie", 3, 4),
-		Blessure("Épicondylite latérale", 3, 9),
-		Blessure("Entorse du poignet", 3, 3)
+		{"nom": "Tendinite du coude", "gravite": 3, "repos": 10},
+		{"nom": "Lombalgie", "gravite": 3, "repos": 4},
+		{"nom": "Épicondylite latérale", "gravite": 3, "repos": 9},
+		{"nom": "Entorse du poignet", "gravite": 3, "repos": 3}
 	],
 	4: [
-		Blessure("Entorse de la cheville", 4, 4),
-		Blessure("Tendinite de l'épaule", 4, 5)
+		{"nom": "Entorse de la cheville", "gravite": 4, "repos": 4},
+		{"nom": "Tendinite de l'épaule", "gravite": 4, "repos": 5}
 	],
 	5: [
-		Blessure("Déchirure musculaire de la cuisse", 5, 7),
-		Blessure("Déchirure de la coiffe des rotateurs", 5, 12),
-		Blessure("Fracture de stress", 5, 7)
+		{"nom": "Déchirure musculaire de la cuisse", "gravite": 5, "repos": 7},
+		{"nom": "Déchirure de la coiffe des rotateurs", "gravite": 5, "repos": 12},
+		{"nom": "Fracture de stress", "gravite": 5, "repos": 7}
 	],
 	6: [
-		Blessure("Fracture de fatigue", 6, 7),
-		Blessure("Déchirure des ligaments du genou", 6, 20),
-		Blessure("Luxation de l'épaule", 6, 16)
+		{"nom": "Fracture de fatigue", "gravite": 6, "repos": 7},
+		{"nom": "Déchirure des ligaments du genou", "gravite": 6, "repos": 20},
+		{"nom": "Luxation de l'épaule", "gravite": 6, "repos": 16}
 	],
 	7: [
-		Blessure("Rupture du tendon d'Achille", 7, 22),
-		Blessure("Hernie discale", 7, 39)
+		{"nom": "Rupture du tendon d'Achille", "gravite": 7, "repos": 22},
+		{"nom": "Hernie discale", "gravite": 7, "repos": 39}
 	]
 }
+

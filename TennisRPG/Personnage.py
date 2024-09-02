@@ -4,7 +4,7 @@ from faker import Faker
 from transliterate import translit
 from unidecode import unidecode
 
-from TennisRPG.Blessure import dico_blessures
+from TennisRPG.Blessure import dico_blessures, Blessure
 
 SURFACE_IMPACTS = {
 	"Hard": {
@@ -250,7 +250,7 @@ class Personnage:
 	# Todo: Réfléchir aux valeurs de fatigues
 	def gerer_fatigue(self, activite):
 		fatigue_base = {
-			"Tournoi": random.randint(20, 35),
+			"Tournoi": random.randint(10, 15),
 			"Entrainement": random.randint(10, 20),
 			"Exhibition": random.randint(5, 15),
 		}
@@ -262,7 +262,7 @@ class Personnage:
 			print(f"Niveau de fatigue actuel {self.fatigue}")
 
 		# if self.blessure:
-		# 	self.risque_aggravation_blessure(activite)
+		# 	self.blessure.risque_aggravation_blessure(activite)
 		
 		self.verifier_blessure()
 
@@ -280,27 +280,26 @@ class Personnage:
 		gravite = self.gravite_blessure()
 		blessures_possibles = dico_blessures[gravite]
 
-		self.blessure = random.choice(blessures_possibles)
+		blessure_infos = random.choice(blessures_possibles)
 		
-		# Infos sur la blessure
-		blessure, gravite, repos = self.blessure.nom, self.blessure.gravite, self.blessure.repos
+		self.blessure = Blessure(blessure_infos["nom"], blessure_infos["gravite"], blessure_infos["repos"])
 		
 		accord = "e" if self.sexe.lower() == 'f' else ""
-		accord2 = "s" if self.blessure.repos == 1 else ""
+		accord2 = "s" if self.blessure.repos != 1 else ""
 
 		if self.principal:
-			print(f"{self.nom} s'est blessé{accord} : {blessure} (Gravité: {gravite})"
-			      f". Indisponible pour {repos} semaine{accord2}.")
+			print(f"{self.nom} s'est blessé{accord} : {self.blessure.nom} (Gravité: {self.blessure.gravite})"
+			      f". Indisponible pour {self.blessure.repos} semaine{accord2}.")
 
 	def reduire_temps_indisponibilite(self):
-		if self.blessure:
+		if isinstance(self.blessure, Blessure):
 			self.blessure.reduire_indisponibilite()
 			
 			if self.blessure.semaines_indisponibles == 0:
 				self.guerir()
 				
-			if self.principal:
-				accord2 = "s" if self.blessure.repos > 1 else ""
+			if self.principal and self.blessure:
+				accord2 = "s" if self.blessure.semaines_indisponibles > 1 else ""
 				print(f"{self.prenom} {self.nom} récupère de sa blessure. Encore indisponible {self.blessure.repos} semaine{accord2}")
 				print(f"{self.prenom} {self.nom} s'est reposé.")
 				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
@@ -332,7 +331,7 @@ class Personnage:
 		
 	def peut_jouer(self):
 		# Le joueur ne peut pas jouer s'il est blessé
-		return self.blessure is None
+		return self.blessure.gravite <= 3
 
 	def id_card(self, classement):
 		largeur = 46
