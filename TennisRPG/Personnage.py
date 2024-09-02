@@ -331,7 +331,7 @@ class Personnage:
 		
 	def peut_jouer(self):
 		# Le joueur ne peut pas jouer s'il est blessé
-		return self.blessure is not None
+		return self.blessure is None
 
 	def id_card(self, classement):
 		largeur = 46
