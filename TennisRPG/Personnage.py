@@ -272,9 +272,9 @@ class Personnage:
 				print(f"Attention ! {accord} et risque de se blesser. ")
 
 	def verifier_blessure(self, k=0.2, seuil=55):
-		# Les pnj ont un peu plus de risque de se blesser
-		if not self.principal:
-			k = 0.12
+		# # Les pnj ont un peu plus de risque de se blesser
+		# if not self.principal:
+		# 	k = 0.12
 			
 		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
 		if random.randint(1, 100) < risque:
@@ -336,7 +336,24 @@ class Personnage:
 	def peut_jouer(self):
 		# Le joueur ne peut pas jouer s'il est blessé
 		return self.blessure is None
-
+	
+	def should_participate(self, tournoi):
+		if self.fatigue < 40:
+			# Peu de fatigue, plus enclin à participer
+			return True
+		elif self.fatigue < 60:
+			# Fatigue moyennement élevé, considère le prestige du tournoi
+			if tournoi.importance_tournoi() <= 2:
+				return True # Participe aux grd chelem et aux Masters1000
+			else:
+				return False
+		else:
+			# Grosse fatigue, ne participe qu'aux grands chelems
+			if tournoi.importance_tournoi() <= 1:
+				return True
+			else:
+				return False
+		
 	def id_card(self, classement):
 		largeur = 46
 		print("┌" + "─" * (largeur - 2) + "┐")
@@ -419,7 +436,7 @@ pays_locales = {
 
 def generer_pnj(nombre, sexe):
 	personnages_dico = {}
-	for _ in range(nombre+1):
+	for _ in range(nombre):
 		country = random.choice(list(pays_locales.keys()))
 
 		if len(pays_locales[country]) > 1:
