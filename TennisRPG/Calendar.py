@@ -125,7 +125,7 @@ class Calendar:
         """Sélectionne tous les joueurs disponibles pour jouer le tournoi sans prendre en compte le personnage
         principal"""
         joueurs_disponibles = set(j for j in joueurs.values() if j.peut_jouer())
-        if joueur in joueurs.values():
+        if joueur in joueurs_disponibles:
             joueurs_disponibles.remove(joueur)
         return joueurs_disponibles
     
