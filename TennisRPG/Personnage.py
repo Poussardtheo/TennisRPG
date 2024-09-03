@@ -251,7 +251,7 @@ class Personnage:
 	def gerer_fatigue(self, activite):
 		fatigue_base = {
 			"Tournoi": random.randint(10, 15),
-			"Entrainement": random.randint(10, 20),
+			"Entrainement": random.randint(5, 10),
 			"Exhibition": random.randint(5, 15),
 		}
 
@@ -305,7 +305,7 @@ class Personnage:
 				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
 
 	def se_reposer(self):
-		repos = random.randint(3, 10)  # Todo: Revoir les valeurs
+		repos = random.randint(5, 20)  # Todo: Revoir les valeurs
 		self.fatigue = max(0, self.fatigue - repos)
 
 		self.reduire_temps_indisponibilite()
