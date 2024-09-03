@@ -250,7 +250,7 @@ class Personnage:
 	# Todo: Réfléchir aux valeurs de fatigues
 	def gerer_fatigue(self, activite):
 		fatigue_base = {
-			"Tournoi": random.randint(10, 15),
+			"Tournoi": random.randint(10, 20),
 			"Entrainement": random.randint(5, 10),
 			"Exhibition": random.randint(5, 15),
 		}
@@ -271,7 +271,7 @@ class Personnage:
 			if self.principal:
 				print(f"Attention ! {accord} et risque de se blesser. ")
 
-	def verifier_blessure(self, k=0.12, seuil=55):
+	def verifier_blessure(self, k=0.2, seuil=55):
 		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
 		if random.randint(1, 100) < risque:
 			self.infliger_blessure()

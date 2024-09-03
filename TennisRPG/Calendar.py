@@ -95,7 +95,7 @@ class Calendar:
 
     @staticmethod
     def entrainement(joueur):
-        exp_gagnee = random.randint(3, 7)
+        exp_gagnee = random.randint(10, 15)
         accord = "e" if joueur.sexe.lower() == 'f' else ""
         print(f"\n{joueur.prenom} s'est entraîné{accord} cette semaine.")
         joueur.gagner_experience(exp_gagnee)
