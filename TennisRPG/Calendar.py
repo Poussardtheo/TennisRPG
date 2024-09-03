@@ -41,7 +41,7 @@ class Calendar:
         if not joueur.peut_jouer():
             print(f"{joueur.prenom} {joueur.nom} ne peut pas jouer cette semaine et doit se reposer.")
             self.repos(joueur)
-            self.simuler_tournois_semaine(joueurs, classement)
+            self.simuler_tournois_semaine(joueur, joueurs, classement)
             self.avancer_semaine(classement, joueurs)
             return
 
@@ -84,12 +84,12 @@ class Calendar:
     def executer_activite(self, joueur, activite, joueurs, classement):
         if activite == "Entrainement":
             self.entrainement(joueur)
-            self.simuler_tournois_semaine(joueurs, classement)
+            self.simuler_tournois_semaine(joueur, joueurs, classement)
         elif activite == "Tournoi":
             self.participer_tournoi(joueur, joueurs, classement)
         else:
             self.repos(joueur)
-            self.simuler_tournois_semaine(joueurs, classement)
+            self.simuler_tournois_semaine(joueur, joueurs, classement)
 
         self.avancer_semaine(classement, joueurs)
 
@@ -119,7 +119,16 @@ class Calendar:
                 return tournoi_choisi
             else:
                 print("\nChoix invalide, veuillez réessayer")
-
+    
+    @staticmethod
+    def selectionner_joueurs_disponibles(joueur, joueurs):
+        """Sélectionne tous les joueurs disponibles pour jouer le tournoi sans prendre en compte le personnage
+        principal"""
+        joueurs_disponibles = set(j for j in joueurs.values() if j.peut_jouer())
+        if joueur in joueurs.values():
+            joueurs_disponibles.remove(joueur)
+        return joueurs_disponibles
+    
     def participer_tournoi(self, joueur, joueurs, classement):
         tournois_semaine = self.obtenir_tournois_semaine()
         tournois_eligibles = [t for t in tournois_semaine if est_eligible_pour_tournoi(joueur, t, classement) and joueur.peut_jouer()]
@@ -132,15 +141,14 @@ class Calendar:
         accord = "e" if joueur.sexe.lower() == 'f' else ""
         print(f"\n{joueur.prenom} a participé{accord} au tournoi : {tournoi_choisi.nom}.")
         
-        joueurs_disponible = set(joueurs.values())
-        joueurs_disponible.remove(joueur)  # On s'assure qu'on ne peut pas participer à d'autre tournoi que celui choisi
+        joueurs_disponibles = self.selectionner_joueurs_disponibles(joueur, joueurs)
         tournois_tries = sorted(
             tournois_semaine, key=lambda t: self.importance_tournoi(t), reverse=True
         )
         
         for tournoi in tournois_tries:
             participants = selectionner_joueurs_pour_tournoi(
-                tournoi, joueurs_disponible, classement
+                tournoi, joueurs_disponibles, classement
             )
             if tournoi == tournoi_choisi:
                 resultat = tournoi.jouer(joueur, participants, classement)
@@ -151,7 +159,7 @@ class Calendar:
                 for player, points in resultats.items():
                     self.current_atp_points.loc[f"{player.prenom} {player.nom}", self.current_week] = points
                     
-            joueurs_disponible -= set(participants)
+            joueurs_disponibles -= set(participants)
     
         classement.update_classement("atp")
         classement.update_classement("atp_race")
@@ -160,9 +168,9 @@ class Calendar:
         if tournoi_choisi.categorie in ["GrandSlam", "ATP1000 #7"]:
             self.avancer_semaine(classement, joueurs)
         
-    def simuler_tournois_semaine(self, joueurs, classement, preliminaire=False):
+    def simuler_tournois_semaine(self, joueur, joueurs, classement, preliminaire=False):
         tournois_semaine = self.obtenir_tournois_semaine()
-        joueurs_disponible = set(joueur for joueur in joueurs.values() if joueur.peut_jouer())
+        joueurs_disponible = self.selectionner_joueurs_disponibles(joueur, joueurs)
 
         # Liste des tournois triés par ordre d'importance
         tournoi_tries = sorted(
@@ -174,8 +182,8 @@ class Calendar:
                 tournoi, joueurs_disponible, classement
             )
             resultat = tournoi.simuler_tournoi(participants, classement, preliminaire=preliminaire)
-            for joueur, points in resultat.items():
-                self.current_atp_points.loc[f"{joueur.prenom} {joueur.nom}", self.current_week] = points
+            for player, points in resultat.items():
+                self.current_atp_points.loc[f"{player.prenom} {player.nom}", self.current_week] = points
 
             joueurs_disponible -= set(participants)
 

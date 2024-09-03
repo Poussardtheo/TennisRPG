@@ -40,7 +40,7 @@ def main():
 	classement = Classement(POOL_JOUEURS, preliminaire=True)
 	calendar.current_atp_points = pd.DataFrame(0, index=POOL_JOUEURS.keys(), columns=[i for i in range(1, 53)])
 	for _ in range(1, 53):
-		calendar.simuler_tournois_semaine(POOL_JOUEURS, classement, preliminaire=True)
+		calendar.simuler_tournois_semaine(joueur_principal, POOL_JOUEURS, classement, preliminaire=True)
 		calendar.avancer_semaine(classement, POOL_JOUEURS)
 	
 	# End of the preliminary period.
@@ -83,7 +83,7 @@ def main():
 		elif action.lower() == 'a':
 			print(calendar.current_atp_points.loc[:, calendar.current_week].sort_values(ascending=False))
 		elif action.lower() == 'b':
-			print([(personnage.nom, personnage.semaines_indisponible) for personnage in POOL_JOUEURS.values() if personnage.blessure])
+			print([personnage.blessure for personnage in POOL_JOUEURS.values() if personnage.blessure])
 		elif action.lower() == 'e':
 			joueur_principal.attribuer_ap_points_manuellement()
 		elif action == '':  # Si le joueur à appuyer sur entrée
@@ -91,4 +91,3 @@ def main():
 
 	print("\nMerci d'avoir joué ! Voici vos statistiques finales : ")
 	joueur_principal.id_card(classement)
-
