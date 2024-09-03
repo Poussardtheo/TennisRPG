@@ -272,6 +272,10 @@ class Personnage:
 				print(f"Attention ! {accord} et risque de se blesser. ")
 
 	def verifier_blessure(self, k=0.2, seuil=55):
+		# Les pnj ont un peu plus de risque de se blesser
+		if not self.principal:
+			k = 0.12
+			
 		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
 		if random.randint(1, 100) < risque:
 			self.infliger_blessure()
