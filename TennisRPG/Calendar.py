@@ -142,9 +142,7 @@ class Calendar:
         print(f"\n{joueur.prenom} a participé{accord} au tournoi : {tournoi_choisi.nom}.")
         
         joueurs_disponibles = self.selectionner_joueurs_disponibles(joueur, joueurs)
-        tournois_tries = sorted(
-            tournois_semaine, key=lambda t: self.importance_tournoi(t), reverse=True
-        )
+        tournois_tries = sorted(tournois_semaine, key=lambda t: t.importance_tournoi())
         
         for tournoi in tournois_tries:
             participants = selectionner_joueurs_pour_tournoi(
@@ -173,9 +171,7 @@ class Calendar:
         joueurs_disponible = self.selectionner_joueurs_disponibles(joueur, joueurs)
 
         # Liste des tournois triés par ordre d'importance
-        tournoi_tries = sorted(
-            tournois_semaine, key=lambda t: self.importance_tournoi(t), reverse=True
-        )
+        tournoi_tries = sorted(tournois_semaine, key=lambda t: t.importance_tournoi())
 
         for tournoi in tournoi_tries:
             participants = selectionner_joueurs_pour_tournoi(
@@ -190,20 +186,6 @@ class Calendar:
         classement.update_classement("atp")
         classement.update_classement("atp_race")
         classement.update_classement("elo")
-
-    @staticmethod
-    def importance_tournoi(tournoi):
-        importance = {
-            "GrandSlam": 8,
-            "ATP Finals": 8,
-            "ATP1000 #7": 7,
-            "ATP1000 #6": 6,
-            "ATP500 #6": 5,
-            "ATP500 #5": 4,
-            "ATP250 #6": 3,
-            "ATP250 #5": 2,
-        }
-        return importance.get(tournoi.categorie, 1)
 
     @staticmethod
     def repos(joueur):
