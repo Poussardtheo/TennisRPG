@@ -18,17 +18,35 @@ class Calendar:
             self.current_year += 1
             self.current_week = 0
             classement.reinitialiser_atp_race()
+
         self.current_week += 1
-        for joueur_str, joueur_values in joueurs.items():
-            joueur_values.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]
+        
+        # Les joueurs blessés se reposent
+        self.gerer_pnj_blesses(joueurs)
+        
+        for joueur_str, joueur in joueurs.items():
+            joueur.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]
 
     def obtenir_tournois_semaine(self):
         return self.tournois.get(self.current_week, [])
-
+    
+    def gerer_pnj_blesses(self, joueurs):
+        for joueur in joueurs.values():
+            if not joueur.principal and joueur.blessure:
+                self.repos(joueur)
+                
     def choisir_activite(self, joueur, joueurs, classement):
         print(f"\nSemaine : {self.current_week} de l'année {self.current_year}")
+
+        if not joueur.peut_jouer():
+            print(f"{joueur.prenom} {joueur.nom} ne peut pas jouer cette semaine et doit se reposer.")
+            self.repos(joueur)
+            self.simuler_tournois_semaine(joueur, joueurs, classement)
+            self.avancer_semaine(classement, joueurs)
+            return
+
         tournois_semaines = self.obtenir_tournois_semaine()
-        tournois_elligible = [t for t in tournois_semaines if est_eligible_pour_tournoi(joueur, t, classement)]
+        tournois_elligible = [t for t in tournois_semaines if est_eligible_pour_tournoi(joueur, t, classement) and joueur.peut_jouer()]
         
         activites_possibles = [act for act in self.ACTIVITES if act != "Tournoi"]
         # Garde-fou pour empêcher de sélectionner Tournoi s'il n'y en a pas
@@ -66,21 +84,22 @@ class Calendar:
     def executer_activite(self, joueur, activite, joueurs, classement):
         if activite == "Entrainement":
             self.entrainement(joueur)
-            self.simuler_tournois_semaine(joueurs, classement)
+            self.simuler_tournois_semaine(joueur, joueurs, classement)
         elif activite == "Tournoi":
             self.participer_tournoi(joueur, joueurs, classement)
         else:
             self.repos(joueur)
-            self.simuler_tournois_semaine(joueurs, classement)
+            self.simuler_tournois_semaine(joueur, joueurs, classement)
 
         self.avancer_semaine(classement, joueurs)
 
     @staticmethod
     def entrainement(joueur):
-        exp_gagnee = random.randint(3, 7)
+        exp_gagnee = random.randint(10, 15)
         accord = "e" if joueur.sexe.lower() == 'f' else ""
         print(f"\n{joueur.prenom} s'est entraîné{accord} cette semaine.")
         joueur.gagner_experience(exp_gagnee)
+        joueur.gerer_fatigue("Entrainement")
 
     @staticmethod
     def choisir_tournoi(tournois_eligibles):
@@ -100,10 +119,19 @@ class Calendar:
                 return tournoi_choisi
             else:
                 print("\nChoix invalide, veuillez réessayer")
-
+    
+    @staticmethod
+    def selectionner_joueurs_disponibles(joueur, joueurs):
+        """Sélectionne tous les joueurs disponibles pour jouer le tournoi sans prendre en compte le personnage
+        principal"""
+        joueurs_disponibles = set(j for j in joueurs.values() if j.peut_jouer())
+        if joueur in joueurs_disponibles:
+            joueurs_disponibles.remove(joueur)
+        return joueurs_disponibles
+    
     def participer_tournoi(self, joueur, joueurs, classement):
         tournois_semaine = self.obtenir_tournois_semaine()
-        tournois_eligibles = [t for t in tournois_semaine if est_eligible_pour_tournoi(joueur, t, classement)]
+        tournois_eligibles = [t for t in tournois_semaine if est_eligible_pour_tournoi(joueur, t, classement) and joueur.peut_jouer()]
         
         # ne laisse le choix de la sélection du tournoi que s'il y a plusieurs tournois
         if len(tournois_eligibles) != 1:
@@ -113,15 +141,12 @@ class Calendar:
         accord = "e" if joueur.sexe.lower() == 'f' else ""
         print(f"\n{joueur.prenom} a participé{accord} au tournoi : {tournoi_choisi.nom}.")
         
-        joueurs_disponible = set(joueurs.values())
-        joueurs_disponible.remove(joueur)  # On s'assure qu'on ne peut pas participer à d'autre tournoi que celui choisi
-        tournois_tries = sorted(
-            tournois_semaine, key=lambda t: self.importance_tournoi(t), reverse=True
-        )
+        joueurs_disponibles = self.selectionner_joueurs_disponibles(joueur, joueurs)
+        tournois_tries = sorted(tournois_semaine, key=lambda t: t.importance_tournoi())
         
         for tournoi in tournois_tries:
             participants = selectionner_joueurs_pour_tournoi(
-                tournoi, joueurs_disponible, classement
+                tournoi, joueurs_disponibles, classement
             )
             if tournoi == tournoi_choisi:
                 resultat = tournoi.jouer(joueur, participants, classement)
@@ -132,7 +157,7 @@ class Calendar:
                 for player, points in resultats.items():
                     self.current_atp_points.loc[f"{player.prenom} {player.nom}", self.current_week] = points
                     
-            joueurs_disponible -= set(participants)
+            joueurs_disponibles -= set(participants)
     
         classement.update_classement("atp")
         classement.update_classement("atp_race")
@@ -141,24 +166,20 @@ class Calendar:
         if tournoi_choisi.categorie in ["GrandSlam", "ATP1000 #7"]:
             self.avancer_semaine(classement, joueurs)
         
-    def simuler_tournois_semaine(self, joueurs, classement, preliminaire=False):
+    def simuler_tournois_semaine(self, joueur, joueurs, classement, preliminaire=False):
         tournois_semaine = self.obtenir_tournois_semaine()
-        joueurs_disponible = set(
-            joueurs.values()
-        )  # L'idée est de rentrer directement le pool de Joueur ds la fct
+        joueurs_disponible = self.selectionner_joueurs_disponibles(joueur, joueurs)
 
         # Liste des tournois triés par ordre d'importance
-        tournoi_tries = sorted(
-            tournois_semaine, key=lambda t: self.importance_tournoi(t), reverse=True
-        )
+        tournoi_tries = sorted(tournois_semaine, key=lambda t: t.importance_tournoi())
 
         for tournoi in tournoi_tries:
             participants = selectionner_joueurs_pour_tournoi(
                 tournoi, joueurs_disponible, classement
             )
             resultat = tournoi.simuler_tournoi(participants, classement, preliminaire=preliminaire)
-            for joueur, points in resultat.items():
-                self.current_atp_points.loc[f"{joueur.prenom} {joueur.nom}", self.current_week] = points
+            for player, points in resultat.items():
+                self.current_atp_points.loc[f"{player.prenom} {player.nom}", self.current_week] = points
 
             joueurs_disponible -= set(participants)
 
@@ -167,24 +188,12 @@ class Calendar:
         classement.update_classement("elo")
 
     @staticmethod
-    def importance_tournoi(tournoi):
-        importance = {
-            "GrandSlam": 8,
-            "ATP Finals": 8,
-            "ATP1000 #7": 7,
-            "ATP1000 #6": 6,
-            "ATP500 #6": 5,
-            "ATP500 #5": 4,
-            "ATP250 #6": 3,
-            "ATP250 #5": 2,
-        }
-        return importance.get(tournoi.categorie, 1)
-
-    @staticmethod
     def repos(joueur):
-        recuperation = random.randint(1, 3)
-        accord = "e" if joueur.sexe.lower() == 'f' else ""
-        print(f"\n{joueur.prenom} s'est reposé{accord} cette semaine.")
+        joueur.se_reposer()
+        if joueur.principal:
+            accord = "e" if joueur.sexe.lower() == 'f' else ""
+            print(f"\n{joueur.prenom} s'est reposé{accord} cette semaine.")
+            print(f"Niveau de fatigue actuel {joueur.fatigue}")
     
     def trouver_remplacant(self, tournoi, joueurs_disponibles, classement):
         joueurs_eligibles = [j for j in joueurs_disponibles if est_eligible_pour_tournoi(j, tournoi, classement)]

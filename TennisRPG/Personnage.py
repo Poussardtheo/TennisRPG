@@ -1,7 +1,10 @@
+import math
 import random
 from faker import Faker
 from transliterate import translit
 from unidecode import unidecode
+
+from TennisRPG.Blessure import dico_blessures, Blessure
 
 SURFACE_IMPACTS = {
 	"Hard": {
@@ -83,15 +86,24 @@ class Personnage:
 		"Endurance": 1.3,
 		"Réflexes": 1.2,
 	}
-	
+
 	TAILLE_IMPACTS = {
 		"Service": 0.3,  # Impact positif important
 		"Puissance": 0.2,  # Impact positif modéré
 		"Vitesse": -0.1,  # Impact négatif léger
 		"Endurance": -0.2,  # Impact négatif modéré
 	}
-	
+
 	def __init__(self, sexe, prenom, nom, country, taille=None, lvl=1, archetype=None, principal=False):
+		# Validation
+		assert sexe.lower() in ["m", "f"], "le sexe doit être 'm' ou 'f'"
+		assert lvl >= 1, "niveau minimum = 1"
+		assert isinstance(prenom, str) and isinstance(nom, str) and isinstance(country, str)
+		assert taille is None or isinstance(taille, int)
+		assert taille is None or 145 < taille < 220
+		assert isinstance(principal, bool)
+		assert archetype is None or archetype in ARCHETYPES.keys()
+		
 		self.sexe = sexe
 		self.nom = nom
 		self.prenom = prenom
@@ -101,14 +113,21 @@ class Personnage:
 		self.country = country
 		self.archetype = archetype or random.choice(list(ARCHETYPES.keys()))
 		self.principal = principal  # Indique si le joueur est le personnage_principal ou un pnj
-		
+
+		# Niveau, XP et attributs
 		self.lvl = lvl
 		self.xp_points = 0
+		self.ap_points = 6 * (lvl - 1)  # Permet pnj avec des stats
+
+		# Classement
 		self.atp_points = 0
 		self.atp_race_points = 0
-		self.ap_points = 6 * (lvl - 1)  # Permet pnj avec des stats
+
+		# Fatigue & Blessure
 		self.fatigue = 0
-		self.blessure = 0
+		self.blessure = None
+
+		# Stats et Elo
 		self.stats = {attr: 30 for attr in list(self.POIDS_BASE.keys())}
 		self.elo = self.calculer_elo(initial=True)
 		self.generer_statistique()
@@ -118,7 +137,7 @@ class Personnage:
 			poids = {attr: self.POIDS_BASE[attr] * SURFACE_IMPACTS[surface].get(attr, 1.0) for attr in self.POIDS_BASE}
 		else:
 			poids = self.POIDS_BASE
-			
+
 		score_pondere = sum(self.stats[attr] * poids[attr] for attr in poids)
 		score_moyen = score_pondere / sum(poids.values())
 
@@ -132,19 +151,19 @@ class Personnage:
 		for attr, impact in self.TAILLE_IMPACTS.items():
 			ajustement = round(impact * taille_mod * 10)  # l'ajustement se fait de -3 à 3
 			self.stats[attr] = min(70, self.stats[attr] + ajustement)
-		
+
 		if self.lvl > 1:
 			self.attribuer_ap_points_automatiquement()
-			
+
 	def attribuer_ap_points_automatiquement(self):
 		priorites = ARCHETYPES[self.archetype]
 		points_categorie = {"primaire": round(self.ap_points * 0.5),
 							"secondaire": round(self.ap_points * 0.3),
 							"tertiaire": round(self.ap_points * 0.2)}
-		
+
 		for categorie, points in points_categorie.items():
 			attrs = priorites[categorie]
-			
+
 			for _ in range(points):
 				attr = random.choice(attrs)
 				if self.stats[attr] < 70:
@@ -157,7 +176,7 @@ class Personnage:
 					else:
 						# Si tous les attributs de la catégorie sont à 70, on passe à la catégorie suivante
 						break
-			
+
 			self.ap_points -= points
 		self.elo = self.calculer_elo()
 
@@ -185,7 +204,7 @@ class Personnage:
 				print(f"{self.prenom} a gagné {self.POINTS_BASE} AP points.")
 			else:
 				self.attribuer_ap_points_automatiquement()
-			
+
 	def attribuer_ap_points_manuellement(self):
 		if self.ap_points == 0:
 			print("\n Pas de points AP à attribuer.")
@@ -222,65 +241,119 @@ class Personnage:
 	def attribuer_atp_points(self, earned_atp_points):
 		self.atp_points += earned_atp_points
 		print(f"{self.prenom} {self.nom} a gagné {earned_atp_points} points ATP.")
-
-	# Todo: regarder la faisabilité de la fatigue
+	
+	###############################################################
+	#                           SECTION                           #
+	#                      FATIGUE & BLESSURES                    #
+	###############################################################
+	
+	# Todo: Réfléchir aux valeurs de fatigues
 	def gerer_fatigue(self, activite):
 		fatigue_base = {
-			"Tournoi": random.randint(15, 25),
-			"Entrainement": random.randint(10, 20),
+			"Tournoi": random.randint(10, 20),
+			"Entrainement": random.randint(5, 10),
 			"Exhibition": random.randint(5, 15),
 		}
 
 		fatigue_ajoutee = fatigue_base.get(activite, 0)
-		if self.blessure > 0:
-			fatigue_ajoutee *= 1.5  # 50% de fatigue en plus si blessé
 
-		self.fatigue = min(
-			100, self.fatigue + fatigue_ajoutee
-		)  # La fatigue ne peut pas dépasser 100
+		self.fatigue = min(100, self.fatigue + fatigue_ajoutee)
 		if self.principal:
 			print(f"Niveau de fatigue actuel {self.fatigue}")
 
-		if self.fatigue >= 80:
+		# if self.blessure:
+		# 	self.blessure.risque_aggravation_blessure(activite)
+		
+		self.verifier_blessure()
+
+		if self.fatigue >= 80 and not self.blessure:
 			accord = "la joueuse est très fatiguée" if self.sexe.lower() == 'f' else "Le joueur est très fatigué"
 			if self.principal:
 				print(f"Attention ! {accord} et risque de se blesser. ")
-			if (
-				random.random() < 1 - self.fatigue / 100
-			):  # Chance de se blesser en fct de la fatigue
-				self.blesser()
 
-	def blesser(self):
-		if self.blessure == 0:
-			self.blessure = random.randint(
-				1, 5
-			)  # Todo: modifier pour que la gravité dépende de la fatigue
-			accord = "e" if self.sexe.lower() == 'f' else ""
-			if self.principal:
-				print(
-					f"{self.prenom} s'est blessé{accord} ! Gravité de la blessure: {self.blessure}"
-				)
+	def verifier_blessure(self, k=0.2, seuil=55):
+		# # Les pnj ont un peu plus de risque de se blesser
+		# if not self.principal:
+		# 	k = 0.12
+			
+		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
+		if random.randint(1, 100) < risque:
+			self.infliger_blessure()
 
-	def repos(self):
-		recuperation = random.randint(10, 20)
-		self.fatigue = max(0, self.fatigue - recuperation)
+	def infliger_blessure(self):
+		gravite = self.gravite_blessure()
+		blessures_possibles = dico_blessures[gravite]
 
-		if self.blessure > 0:
-			recuperation_blessure = random.randint(1, 2)
-			self.blessure = max(0, self.blessure - recuperation_blessure)
-			if self.principal:
-				print(
-					f"{self.prenom} récupère de sa blessure. Gravité actuelle: {self.blessure}"
-				)
+		blessure_infos = random.choice(blessures_possibles)
+		
+		self.blessure = Blessure(blessure_infos["nom"], blessure_infos["gravite"], blessure_infos["repos"])
+		
+		accord = "e" if self.sexe.lower() == 'f' else ""
+		accord2 = "s" if self.blessure.repos != 1 else ""
 
-			print(f"{self.prenom} s'est reposé.")
-			print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
+		if self.principal:
+			print(f"{self.nom} s'est blessé{accord} : {self.blessure.nom} (Gravité: {self.blessure.gravite})"
+			      f". Indisponible pour {self.blessure.repos} semaine{accord2}.")
 
+	def reduire_temps_indisponibilite(self):
+		if isinstance(self.blessure, Blessure):
+			self.blessure.reduire_indisponibilite()
+			
+			if self.blessure.semaines_indisponibles == 0:
+				self.guerir()
+				
+			if self.principal and self.blessure:
+				accord2 = "s" if self.blessure.semaines_indisponibles > 1 else ""
+				print(f"{self.prenom} {self.nom} récupère de sa blessure. Encore indisponible {self.blessure.repos} semaine{accord2}")
+				print(f"{self.prenom} {self.nom} s'est reposé.")
+				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
+
+	def se_reposer(self):
+		repos = random.randint(5, 20)  # Todo: Revoir les valeurs
+		self.fatigue = max(0, self.fatigue - repos)
+
+		self.reduire_temps_indisponibilite()
+	
+	def gravite_blessure(self):
+		if self.fatigue < 30:
+			poids = [70, 15, 10, 3, 2, 0, 0]
+		elif self.fatigue < 50:
+			poids = [50, 20, 15, 7, 5, 2, 1]
+		elif self.fatigue < 70:
+			poids = [20, 30, 20, 15, 8, 5, 2]
+		elif self.fatigue < 90:
+			poids = [10, 25, 25, 20, 10, 5, 5]
+		else:
+			poids = [5, 15, 25, 25, 15, 8, 7]
+			
+		total = sum(poids)
+		probabilites = [p / total for p in poids]
+		return random.choices(range(1, 8), weights=probabilites)[0]
+
+	def guerir(self):
+		self.blessure = None  # Todo: Faire un test pour voir quand le repos tombe à 0 si on guérit
+		
 	def peut_jouer(self):
-		return (
-			self.blessure < 3
-		)  # Le joueur ne peut pas jouer si la gravité de la blessure est >= 3
-
+		# Le joueur ne peut pas jouer s'il est blessé
+		return self.blessure is None
+	
+	def should_participate(self, tournoi):
+		if self.fatigue < 40:
+			# Peu de fatigue, plus enclin à participer
+			return True
+		elif self.fatigue < 60:
+			# Fatigue moyennement élevé, considère le prestige du tournoi
+			if tournoi.importance_tournoi() <= 2:
+				return True # Participe aux grd chelem et aux Masters1000
+			else:
+				return False
+		else:
+			# Grosse fatigue, ne participe qu'aux grands chelems
+			if tournoi.importance_tournoi() <= 1:
+				return True
+			else:
+				return False
+		
 	def id_card(self, classement):
 		largeur = 46
 		print("┌" + "─" * (largeur - 2) + "┐")
@@ -312,7 +385,7 @@ class Personnage:
 		
 		print(f"│ XP      : {barre_xp}{espace_xp}{' ' * (middle_space-1)}{xp_values} │")
 		print(f"│ Fatigue : {self.fatigue:<32} │")
-		print(f"│ Blessure: {self.blessure:<32} │")
+		print(f"│ Blessure: {self.blessure if self.blessure else False} │")
 		print("├" + "─" * (largeur - 2) + "┤")
 		print("│" + " STATISTIQUES ".center(largeur - 2) + "│")
 		print("├" + "─" * (largeur - 2) + "┤")
@@ -408,4 +481,4 @@ def generer_pnj_thread(nb_joueurs, sexe, pool):
 	pool.update(generated_pool)
 	
 	
-personnage = Personnage("m", "Théo", "Poussard", "France")
+personnage = Personnage("m", "Théo", "Poussard", "France", principal=True)

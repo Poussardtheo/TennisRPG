@@ -12,10 +12,10 @@ def est_eligible_pour_tournoi(joueur, tournoi, classement):
         "ATP Finals": 8,  # Top 8 pour l'ATP Finals
         "ATP1000 #6": 60,  # Top 60 pour les Masters 1000 à 6 tours
         "ATP1000 #7": 100,  # Top 100 pour les Masters 1000 à 7 tours
-        "ATP500 #6": 100,  # Top 100 pour les ATP 500 à 6 tours
-        "ATP500 #5": 100,  # Top 100 pour les ATP 500 à 5 tours
-        "ATP250 #6": 200,  # Top 200 pour les ATP 250 à 6 tours
-        "ATP250 #5": 200,  # Top 200 pour les ATP 250 à 5 tours
+        "ATP500 #6": 150,  # Top 150 pour les ATP 500 à 6 tours
+        "ATP500 #5": 150,  # Top 150 pour les ATP 500 à 5 tours
+        "ATP250 #6": 250,  # Top 250 pour les ATP 250 à 6 tours
+        "ATP250 #5": 250,  # Top 250 pour les ATP 250 à 5 tours
     }
     
     classement_joueur = classement.obtenir_rang(joueur, type="atp")
@@ -42,15 +42,15 @@ def seed(n):
 def selectionner_joueurs_pour_tournoi(
     tournoi, joueurs_disponibles, classement, type="elo"
 ):
-    joueurs_eligibles = [j for j in joueurs_disponibles if est_eligible_pour_tournoi(j, tournoi, classement)]
-    joueur_tries = sorted(
+    joueurs_eligibles = [j for j in joueurs_disponibles if j.peut_jouer() and j.should_participate(tournoi)]
+    participants = sorted(
         joueurs_eligibles, key=lambda j: classement.obtenir_rang(j, type)
     )
     if tournoi.categorie == "ATP Finals":
-        joueur_tries = sorted(
+        participants = sorted(
             joueurs_eligibles, key=lambda j: classement.obtenir_rang(j, "atp_race")
         )
-    return joueur_tries[: tournoi.nb_joueurs]
+    return participants[: tournoi.nb_joueurs]
 
 
 class Tournoi:
@@ -84,14 +84,14 @@ class Tournoi:
     
     # Todo: Ajuster le tableau pour avoir quelque chose de cohérent (Mieux mais pas encore sûr de la cohérence)
     XP_PAR_TOUR = {
-        "GrandSlam": {1: 100, 2: 200, 3: 400, 4: 600, 5: 750, 6: 900, 7: 1000, "Vainqueur": 1250},
-        "ATP1000 #7": {1: 30, 2: 60, 3: 100, 4: 125, 5: 150, 6: 200, 7: 225, "Vainqueur": 250},
-        "ATP1000 #6": {1: 30, 2: 60, 3: 100, 4: 125, 5: 150, 6: 200, "Vainqueur": 250},
-        "ATP500 #6": {1: 25, 2: 50, 3: 75, 4: 100, 5: 125, 6: 130, "Vainqueur": 150},
-        "ATP500 #5": {1: 25, 2: 50, 3: 75, 4: 100, 5: 125, "Vainqueur": 150},
-        "ATP250 #6": {1: 10, 2: 20, 3: 40, 4: 80, 5: 100, 6: 110, "Vainqueur": 120},
-        "ATP250 #5": {1: 10, 2: 20, 3: 40, 4: 80, 5: 100, "Vainqueur": 110},
-        "ATP Finals": {1: 250, 2: 400, 3: 500, "Vainqueur": 1000}  # Ajusté pour l'ATP Finals
+        "GrandSlam": {1: 100, 2: 200, 3: 400, 4: 600, 5: 750, 6: 900, 7: 1000, "Vainqueur": 1000},
+        "ATP1000 #7": {1: 50, 2: 75, 3: 100, 4: 150, 5: 200, 6: 250, 7: 350, "Vainqueur": 500},
+        "ATP1000 #6": {1: 50, 2: 75, 3: 100, 4: 150, 5: 200, 6: 250, "Vainqueur": 500},
+        "ATP500 #6": {1: 25, 2: 50, 3: 75, 4: 100, 5: 150, 6: 200, "Vainqueur": 250},
+        "ATP500 #5": {1: 25, 2: 50, 3: 75, 4: 100, 5: 150, "Vainqueur": 250},
+        "ATP250 #6": {1: 25, 2: 30, 3: 40, 4: 80, 5: 100, 6: 110, "Vainqueur": 125},
+        "ATP250 #5": {1: 25, 2: 30, 3: 40, 4: 80, 5: 100, "Vainqueur": 125},
+        "ATP Finals": {1: 125, 2: 250, 3: 500, "Vainqueur": 1000}  # Ajusté pour l'ATP Finals
     }
     
     def __init__(self, categorie, nom, emplacement, nb_joueurs, surface, week):
@@ -103,11 +103,21 @@ class Tournoi:
         self.week = week
         #self.vainqueurs = {}
     
-    # We need to update the Calendar function to be able to use this function
+    def importance_tournoi(self):
+        importance = {
+            "GrandSlam": 1,
+            "ATP Finals": 1,
+            "ATP1000 #7": 2,
+            "ATP1000 #6": 2,
+            "ATP500 #6": 3,
+            "ATP500 #5": 3,
+            "ATP250 #6": 4,
+            "ATP250 #5": 4,
+        }
+        return importance.get(self.categorie, 1)
+    
     def jouer(self, joueur, participants, classement, type="atp"):
         # Si le joueur n'est pas dans la liste des participants, ont l'ajoute et on retire un participant
-        # TODO: In the grand slam, we don't have the right number of participants.
-        #  We must check why
         if joueur not in participants:
             participants.append(joueur)
         
@@ -125,9 +135,10 @@ class Tournoi:
         return resultat
     
     def simuler_tournoi(self, participants, classement, type="elo", preliminaire=False):
+        assert len(participants) == self.nb_joueurs, f"Tournoi {self.nom} : {len(participants)}/{self.nb_joueurs}"
         if self.categorie == "ATP Finals":
             return self.simuler_tournoi_finals(participants, classement, preliminaire)
-        
+
         nb_tours = math.ceil(math.log2(self.nb_joueurs))
         nb_tetes_de_serie = 2 ** (nb_tours - 2)
         
@@ -202,6 +213,7 @@ class Tournoi:
             xp_gagne = self.XP_PAR_TOUR[self.categorie].get(dernier_tour, 0)
             resultats[joueur] = self.POINTS_ATP.get(self.categorie, {}).get(dernier_tour, 0)
             joueur.gagner_experience(xp_gagne)
+            joueur.gerer_fatigue("Tournoi")
             
         # Note the return will be useful when we'll save the info in a database
         return resultats
