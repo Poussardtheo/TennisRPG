@@ -3,9 +3,9 @@
 import math
 import random
 
+import numpy as np
 
-# Todo: Cette fonction est à revoir avec la nouvelle logique de sous-classes.
-#  Il faudra également l'update lorsque l'on aura plus de tournois (Challengers et ITF)
+
 def est_eligible_pour_tournoi(joueur, tournoi, classement):
 	classement_joueur = classement.obtenir_rang(joueur, type="atp")
 	
@@ -196,74 +196,12 @@ class Tournoi:
 
 class GrandSlam(Tournoi):
 	POINTS_ATP = {1: 10, 2: 50, 3: 100, 4: 200, 5: 400, 6: 800, 7: 1300, "Vainqueur": 2000}
-	XP_PAR_TOUR = {1: 100, 2: 200, 3: 400, 4: 600, 5: 750, 6: 900, 7: 1000, "Vainqueur": 1000}
+	XP_PAR_TOUR = {1: 100, 2: 200, 3: 400, 4: 600, 5: 750, 6: 900, 7: 1300, "Vainqueur": 2000}
 	eligibility_threshold = 130
 	
 	def __init__(self, nom, emplacement, nb_joueurs, surface, week):
 		super().__init__(nom, emplacement, nb_joueurs, surface, week, sets_gagnants=3)
 		self.importance_tournoi = 1
-
-
-class Masters1000(Tournoi):
-	POINTS_ATP_6_TOURS = {1: 10, 2: 50, 3: 100, 4: 200, 5: 400, 6: 650, "Vainqueur": 1000}
-	XP_PAR_TOUR_6_TOURS = {1: 50, 2: 75, 3: 100, 4: 150, 5: 200, 6: 250, "Vainqueur": 500}
-	
-	POINTS_ATP_7_TOURS = {1: 10, 2: 30, 3: 50, 4: 100, 5: 200, 6: 400, 7: 650, "Vainqueur": 1000}
-	XP_PAR_TOUR_7_TOURS = {1: 50, 2: 75, 3: 100, 4: 150, 5: 200, 6: 250, 7: 350, "Vainqueur": 500}
-	
-	def __init__(self, nom, emplacement, nb_joueurs, surface, week, nb_tours=6):
-		super().__init__(nom, emplacement, nb_joueurs, surface, week)
-		self.importance_tournoi = 2
-		self.eligibility_threshold = 60 if nb_tours == 6 else 100
-		
-		if nb_tours == 6:
-			self.POINTS_ATP = Masters1000.POINTS_ATP_6_TOURS
-			self.XP_PAR_TOUR = Masters1000.XP_PAR_TOUR_6_TOURS
-		elif nb_tours == 7:
-			self.POINTS_ATP = Masters1000.POINTS_ATP_7_TOURS
-			self.XP_PAR_TOUR = Masters1000.XP_PAR_TOUR_7_TOURS
-	
-
-class ATP500(Tournoi):
-	POINTS_ATP_5_TOURS = {1: 0, 2: 50, 3: 100, 4: 200, 5: 330, "Vainqueur": 500}
-	XP_PAR_TOUR_5_TOURS = {1: 25, 2: 50, 3: 75, 4: 100, 5: 150, "Vainqueur": 250}
-	
-	POINTS_ATP_6_TOURS = {1: 0, 2: 25, 3: 50, 4: 100, 5: 200, 6: 330, "Vainqueur": 500}
-	XP_PAR_TOUR_6_TOURS = {1: 25, 2: 50, 3: 75, 4: 100, 5: 150, 6: 200, "Vainqueur": 250}
-	
-	eligibility_threshold = 120
-	
-	def __init__(self, nom, emplacement, nb_joueurs, surface, week, nb_tours=5):
-		super().__init__(nom, emplacement, nb_joueurs, surface, week)
-		self.importance_tournoi = 3
-		
-		if nb_tours == 5:
-			self.POINTS_ATP = ATP500.POINTS_ATP_5_TOURS
-			self.XP_PAR_TOUR = ATP500.XP_PAR_TOUR_5_TOURS
-		elif nb_tours == 6:
-			self.POINTS_ATP = ATP500.POINTS_ATP_6_TOURS
-			self.XP_PAR_TOUR = ATP500.XP_PAR_TOUR_6_TOURS
-
-
-class ATP250(Tournoi):
-	POINTS_ATP_5_TOURS = {1: 0, 2: 25, 3: 50, 4: 100, 5: 165, "Vainqueur": 250}
-	XP_PAR_TOUR_5_TOURS = {1: 25, 2: 30, 3: 40, 4: 80, 5: 100, "Vainqueur": 125}
-	
-	POINTS_ATP_6_TOURS = {1: 0, 2: 13, 3: 25, 4: 50, 5: 100, 6: 165, "Vainqueur": 250}
-	XP_PAR_TOUR_6_TOURS = {1: 25, 2: 30, 3: 40, 4: 80, 5: 100, 6: 110, "Vainqueur": 125}
-	
-	eligibility_threshold = 150
-	
-	def __init__(self, nom, emplacement, nb_joueurs, surface, week, nb_tours=5):
-		super().__init__(nom, emplacement, nb_joueurs, surface, week)
-		self.importance_tournoi = 4
-		
-		if nb_tours == 5:
-			self.POINTS_ATP = ATP250.POINTS_ATP_5_TOURS
-			self.XP_PAR_TOUR = ATP250.XP_PAR_TOUR_5_TOURS
-		elif nb_tours == 6:
-			self.POINTS_ATP = ATP250.POINTS_ATP_6_TOURS
-			self.XP_PAR_TOUR = ATP250.XP_PAR_TOUR_6_TOURS
 
 
 class ATPFinals(Tournoi):
@@ -274,7 +212,7 @@ class ATPFinals(Tournoi):
 	def __init__(self, nom, emplacement, nb_joueurs, surface, week):
 		super().__init__(nom, emplacement, nb_joueurs, surface, week)
 		self.importance_tournoi = 1
-		
+	
 	def simuler_tournoi(self, participants, classement, type="elo", preliminaire=False):
 		# Todo: add a logic for the players that are injured (add the two substitutes)
 		if len(participants) != 8:
@@ -370,6 +308,145 @@ class ATPFinals(Tournoi):
 		else:
 			
 			return [joueurs_tries[0][0], joueurs_tries[1][0]]
+	
+		
+class Masters1000(Tournoi):
+	POINTS_ATP_6_TOURS = {1: 10, 2: 50, 3: 100, 4: 200, 5: 400, 6: 650, "Vainqueur": 1000}
+	XP_PAR_TOUR_6_TOURS = {1: 50, 2: 75, 3: 125, 4: 200, 5: 400, 6: 650, "Vainqueur": 1000}
+	
+	POINTS_ATP_7_TOURS = {1: 10, 2: 30, 3: 50, 4: 100, 5: 200, 6: 400, 7: 650, "Vainqueur": 1000}
+	XP_PAR_TOUR_7_TOURS = {1: 50, 2: 75, 3: 100, 4: 150, 5: 200, 6: 400, 7: 650, "Vainqueur": 1000}
+	
+	def __init__(self, nom, emplacement, nb_joueurs, surface, week, nb_tours=6):
+		super().__init__(nom, emplacement, nb_joueurs, surface, week)
+		self.importance_tournoi = 2
+		self.eligibility_threshold = 70 if nb_tours == 6 else 100
+		
+		if nb_tours == 6:
+			self.POINTS_ATP = Masters1000.POINTS_ATP_6_TOURS
+			self.XP_PAR_TOUR = Masters1000.XP_PAR_TOUR_6_TOURS
+		elif nb_tours == 7:
+			self.POINTS_ATP = Masters1000.POINTS_ATP_7_TOURS
+			self.XP_PAR_TOUR = Masters1000.XP_PAR_TOUR_7_TOURS
+	
+
+class ATP500(Tournoi):
+	POINTS_ATP_5_TOURS = {1: 0, 2: 50, 3: 100, 4: 200, 5: 330, "Vainqueur": 500}
+	XP_PAR_TOUR_5_TOURS = {1: 25, 2: 50, 3: 80, 4: 150, 5: 330, "Vainqueur": 500}
+	
+	POINTS_ATP_6_TOURS = {1: 0, 2: 25, 3: 50, 4: 100, 5: 200, 6: 330, "Vainqueur": 500}
+	XP_PAR_TOUR_6_TOURS = {1: 25, 2: 50, 3: 75, 4: 100, 5: 200, 6: 330, "Vainqueur": 500}
+	
+	eligibility_threshold = 120
+	
+	def __init__(self, nom, emplacement, nb_joueurs, surface, week, nb_tours=5):
+		super().__init__(nom, emplacement, nb_joueurs, surface, week)
+		self.importance_tournoi = 3
+		
+		if nb_tours == 5:
+			self.POINTS_ATP = ATP500.POINTS_ATP_5_TOURS
+			self.XP_PAR_TOUR = ATP500.XP_PAR_TOUR_5_TOURS
+		elif nb_tours == 6:
+			self.POINTS_ATP = ATP500.POINTS_ATP_6_TOURS
+			self.XP_PAR_TOUR = ATP500.XP_PAR_TOUR_6_TOURS
+
+
+class ATP250(Tournoi):
+	POINTS_ATP_5_TOURS = {1: 0, 2: 25, 3: 50, 4: 100, 5: 165, "Vainqueur": 250}
+	XP_PAR_TOUR_5_TOURS = {1: 50, 2: 75, 3: 100, 4: 130, 5: 165, "Vainqueur": 250}
+	
+	POINTS_ATP_6_TOURS = {1: 0, 2: 13, 3: 25, 4: 50, 5: 100, 6: 165, "Vainqueur": 250}
+	XP_PAR_TOUR_6_TOURS = {1: 50, 2: 60, 3: 75, 4: 100, 5: 130, 6: 165, "Vainqueur": 250}
+	
+	eligibility_threshold = 150
+	
+	def __init__(self, nom, emplacement, nb_joueurs, surface, week, nb_tours=5):
+		super().__init__(nom, emplacement, nb_joueurs, surface, week)
+		self.importance_tournoi = 4
+		
+		if nb_tours == 5:
+			self.POINTS_ATP = ATP250.POINTS_ATP_5_TOURS
+			self.XP_PAR_TOUR = ATP250.XP_PAR_TOUR_5_TOURS
+		elif nb_tours == 6:
+			self.POINTS_ATP = ATP250.POINTS_ATP_6_TOURS
+			self.XP_PAR_TOUR = ATP250.XP_PAR_TOUR_6_TOURS
+
+
+class CHALLENGERS175(Tournoi):
+	POINTS_ATP = {1: 0, 2: 13, 3: 25, 4: 50, 5: 90, "Vainqueur": 175}
+	XP_PAR_TOUR = {1: 45, 2: 60, 3: 80, 4: 100, 5: 125, "Vainqueur": 175}
+	
+	eligibility_threshold = 200
+	
+	def __init__(self, nom, emplacement, nb_joueurs, surface, week):
+		super().__init__(nom, emplacement, nb_joueurs, surface, week)
+		self.importance_tournoi = 5
+
+
+class CHALLENGERS125(Tournoi):
+	POINTS_ATP = {1: 0, 2: 8, 3: 16, 4: 35, 5: 64, "Vainqueur": 125}
+	XP_PAR_TOUR = {1: 37, 2: 45, 3: 60, 4: 80, 5: 100, "Vainqueur": 125}
+	
+	eligibility_threshold = 250
+	
+	def __init__(self, nom, emplacement, nb_joueurs, surface, week):
+		super().__init__(nom, emplacement, nb_joueurs, surface, week)
+		self.importance_tournoi = 6
+
+
+class CHALLENGERS100(Tournoi):
+	POINTS_ATP = {1: 0, 2: 7, 3: 14, 4: 25, 5: 50, "Vainqueur": 100}
+	XP_PAR_TOUR = {1: 30, 2: 37, 3: 45, 4: 60, 5: 80, "Vainqueur": 100}
+	
+	eligibility_threshold = 300
+	
+	def __init__(self, nom, emplacement, nb_joueurs, surface, week):
+		super().__init__(nom, emplacement, nb_joueurs, surface, week)
+		self.importance_tournoi = 7
+
+
+class CHALLENGERS75(Tournoi):
+	POINTS_ATP = {1: 0, 2: 6, 3: 12, 4: 22, 5: 44, "Vainqueur": 75}
+	XP_PAR_TOUR = {1: 25, 2: 30, 3: 37, 4: 45, 5: 60, "Vainqueur": 80}
+	
+	eligibility_threshold = 400
+	
+	def __init__(self, nom, emplacement, nb_joueurs, surface, week):
+		super().__init__(nom, emplacement, nb_joueurs, surface, week)
+		self.importance_tournoi = 8
+
+
+class CHALLENGERS50(Tournoi):
+	POINTS_ATP = {1: 0, 2: 4, 3: 8, 4: 14, 5: 25, "Vainqueur": 50}
+	XP_PAR_TOUR = {1: 22, 2: 25, 3: 30, 4: 37, 5: 45, "Vainqueur": 60}
+	
+	eligibility_threshold = 500
+	
+	def __init__(self, nom, emplacement, nb_joueurs, surface, week):
+		super().__init__(nom, emplacement, nb_joueurs, surface, week)
+		self.importance_tournoi = 9
+
+
+class ITFM25(Tournoi):
+	POINTS_ATP = {1: 0, 2: 1, 3: 3, 4: 8, 5: 16, "Vainqueur": 25}
+	XP_PAR_TOUR = {1: 17, 2: 22, 3: 25, 4: 30, 5: 37, "Vainqueur": 45}
+	
+	eligibility_threshold = 800
+	
+	def __init__(self, nom, emplacement, nb_joueurs, surface, week):
+		super().__init__(nom, emplacement, nb_joueurs, surface, week)
+		self.importance_tournoi = 10
+
+
+class ITFM15(Tournoi):
+	POINTS_ATP = {1: 0, 2: 1, 3: 2, 4: 4, 5: 8, "Vainqueur": 15}
+	XP_PAR_TOUR = {1: 15, 2: 17, 3: 22, 4: 25, 5: 30, "Vainqueur": 37}
+	
+	eligibility_threshold = np.infty
+	
+	def __init__(self, nom, emplacement, nb_joueurs, surface, week):
+		super().__init__(nom, emplacement, nb_joueurs, surface, week)
+		self.importance_tournoi = 11
 
 
 tournoi = {
