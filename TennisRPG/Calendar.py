@@ -1,6 +1,6 @@
 import random
 
-from TennisRPG.Tournois import tournoi, selectionner_joueurs_pour_tournoi, est_eligible_pour_tournoi
+from TennisRPG.Tournois import *
 
 
 class Calendar:
@@ -54,13 +54,13 @@ class Calendar:
             # print(f"Tournois cette semaine : {[tournoi.nom for tournoi in tournois_semaines]}\n")
             print(f"\nTournois accessible cette semaine :")
             for t in tournois_elligible:
-                print(f"  - {t.nom} ({t.categorie.split(' #')[0]})")
+                print(f"  - {t.nom} ({t.__class__.__name__})")
             print("")
             activites_possibles = self.ACTIVITES
         elif tournois_semaines:
             print(f"\nTournois cette semaine :")
             for t in tournois_semaines:
-                print(f"  - {t.nom} ({t.categorie.split(' #')[0]})")
+                print(f"  - {t.nom} ({t.__class__.__name__})")
             print(f"\nAucun Tournoi accessible cette semaine\n")
         else:
             print("Pas de Tournois cette semaine\n")
@@ -105,7 +105,7 @@ class Calendar:
     def choisir_tournoi(tournois_eligibles):
         print("\nTournoi disponible cette semaine:\n")
         for i, tournoi in enumerate(tournois_eligibles, 1):
-            print(f"{i}. {tournoi.nom} ({tournoi.categorie.split(' #')[0]})")
+            print(f"{i}. {tournoi.nom} ({tournoi.__class__.__name__})")
 
         while True:
             choix = input(
@@ -142,7 +142,7 @@ class Calendar:
         print(f"\n{joueur.prenom} a participé{accord} au tournoi : {tournoi_choisi.nom}.")
         
         joueurs_disponibles = self.selectionner_joueurs_disponibles(joueur, joueurs)
-        tournois_tries = sorted(tournois_semaine, key=lambda t: t.importance_tournoi())
+        tournois_tries = sorted(tournois_semaine, key=lambda t: t.importance_tournoi)
         
         for tournoi in tournois_tries:
             participants = selectionner_joueurs_pour_tournoi(
@@ -163,7 +163,7 @@ class Calendar:
         classement.update_classement("atp_race")
         classement.update_classement("elo")
         
-        if tournoi_choisi.categorie in ["GrandSlam", "ATP1000 #7"]:
+        if isinstance(tournoi_choisi, GrandSlam) or (isinstance(tournoi_choisi, Masters1000) and tournoi_choisi.nb_tours == 7):
             self.avancer_semaine(classement, joueurs)
         
     def simuler_tournois_semaine(self, joueur, joueurs, classement, preliminaire=False):
@@ -171,7 +171,7 @@ class Calendar:
         joueurs_disponible = self.selectionner_joueurs_disponibles(joueur, joueurs)
 
         # Liste des tournois triés par ordre d'importance
-        tournoi_tries = sorted(tournois_semaine, key=lambda t: t.importance_tournoi())
+        tournoi_tries = sorted(tournois_semaine, key=lambda t: t.importance_tournoi)
 
         for tournoi in tournoi_tries:
             participants = selectionner_joueurs_pour_tournoi(

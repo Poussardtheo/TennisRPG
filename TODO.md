@@ -14,7 +14,7 @@
 
 #### V.0.3
 - Possibilité de sauvegarder la progression pour faire perdurer le jeu dans le temps
-  --> Regarder la solution Mysql avec un hébergement en ligne 
+  --> Regarder la solution Mysql avec un hébergement en ligne
     - Planet Scale jusqu'à 10 G0 pour 5 bases de données gratuitement
     - InfinityFree semble être une solution avec stockage 5 GO et gratuit pour hébergement web
     - 

@@ -343,13 +343,13 @@ class Personnage:
 			return True
 		elif self.fatigue < 60:
 			# Fatigue moyennement élevé, considère le prestige du tournoi
-			if tournoi.importance_tournoi() <= 2:
+			if tournoi.importance_tournoi <= 2:
 				return True # Participe aux grd chelem et aux Masters1000
 			else:
 				return False
 		else:
 			# Grosse fatigue, ne participe qu'aux grands chelems
-			if tournoi.importance_tournoi() <= 1:
+			if tournoi.importance_tournoi <= 1:
 				return True
 			else:
 				return False
