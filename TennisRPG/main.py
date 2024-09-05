@@ -1,7 +1,7 @@
 import threading
 
 import pandas as pd
-
+import time
 # Local import
 from TennisRPG.Calendar import *
 from TennisRPG.Personnage import *
@@ -24,7 +24,8 @@ def main():
 
 	# Creating the player POOL
 	POOL_JOUEURS = {}
-	pool_thread = threading.Thread(target=generer_pnj_thread, args=(400, sexe, POOL_JOUEURS))
+	start = time.time()
+	pool_thread = threading.Thread(target=generer_pnj_thread, args=(700, sexe, POOL_JOUEURS))
 	pool_thread.start()
 	
 	# Create your player
@@ -35,13 +36,16 @@ def main():
 	
 	# Wait for player POOL generation to complete
 	pool_thread.join()
+	print(f"Temps de Création du Pool de PNJ: {time.time() - start}")
 	
 	# Initialize ranking with the POOL of players
 	classement = Classement(POOL_JOUEURS, preliminaire=True)
 	calendar.current_atp_points = pd.DataFrame(0, index=POOL_JOUEURS.keys(), columns=[i for i in range(1, 53)])
+	start = time.time()
 	for _ in range(1, 53):
 		calendar.simuler_tournois_semaine(joueur_principal, POOL_JOUEURS, classement, preliminaire=True)
 		calendar.avancer_semaine(classement, POOL_JOUEURS)
+	print(f"Temps de simulation année préliminaire: {time.time() - start}")
 	
 	# End of the preliminary period.
 	POOL_JOUEURS[f"{prenom} {nom}"] = joueur_principal

@@ -10,7 +10,7 @@ class Calendar:
     def __init__(self, year):
         self.current_year = year
         self.current_week = 1
-        self.tournois = tournoi
+        self.tournois = tournois
         self.current_atp_points = None
         
     def avancer_semaine(self, classement, joueurs):
@@ -21,20 +21,20 @@ class Calendar:
 
         self.current_week += 1
         
-        # Les joueurs blessés se reposent
-        self.gerer_pnj_blesses(joueurs)
-        
         for joueur_str, joueur in joueurs.items():
             joueur.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]
 
     def obtenir_tournois_semaine(self):
         return self.tournois.get(self.current_week, [])
     
-    def gerer_pnj_blesses(self, joueurs):
-        for joueur in joueurs.values():
-            if not joueur.principal and joueur.blessure:
-                self.repos(joueur)
-                
+    def gerer_pnj(self, joueurs_disponibles: set):
+        for joueur in joueurs_disponibles:
+            if not joueur.principal:
+                if joueur.blessure or joueur.fatigue > 30:
+                    self.repos(joueur)
+                else:
+                    self.entrainement(joueur)
+                    
     def choisir_activite(self, joueur, joueurs, classement):
         print(f"\nSemaine : {self.current_week} de l'année {self.current_year}")
 
@@ -96,11 +96,13 @@ class Calendar:
     @staticmethod
     def entrainement(joueur):
         exp_gagnee = random.randint(10, 15)
-        accord = "e" if joueur.sexe.lower() == 'f' else ""
-        print(f"\n{joueur.prenom} s'est entraîné{accord} cette semaine.")
         joueur.gagner_experience(exp_gagnee)
         joueur.gerer_fatigue("Entrainement")
-
+        
+        if joueur.principal : 
+            accord = "e" if joueur.sexe.lower() == 'f' else ""
+            print(f"\n{joueur.prenom} s'est entraîné{accord} cette semaine.")
+            
     @staticmethod
     def choisir_tournoi(tournois_eligibles):
         print("\nTournoi disponible cette semaine:\n")
@@ -158,7 +160,10 @@ class Calendar:
                     self.current_atp_points.loc[f"{player.prenom} {player.nom}", self.current_week] = points
                     
             joueurs_disponibles -= set(participants)
-    
+            
+        # gestion pnj not in tournament
+        self.gerer_pnj(joueurs_disponibles)
+            
         classement.update_classement("atp")
         classement.update_classement("atp_race")
         classement.update_classement("elo")
@@ -168,21 +173,24 @@ class Calendar:
         
     def simuler_tournois_semaine(self, joueur, joueurs, classement, preliminaire=False):
         tournois_semaine = self.obtenir_tournois_semaine()
-        joueurs_disponible = self.selectionner_joueurs_disponibles(joueur, joueurs)
+        joueurs_disponibles = self.selectionner_joueurs_disponibles(joueur, joueurs)
 
         # Liste des tournois triés par ordre d'importance
         tournoi_tries = sorted(tournois_semaine, key=lambda t: t.importance_tournoi)
 
         for tournoi in tournoi_tries:
             participants = selectionner_joueurs_pour_tournoi(
-                tournoi, joueurs_disponible, classement
+                tournoi, joueurs_disponibles, classement
             )
             resultat = tournoi.simuler_tournoi(participants, classement, preliminaire=preliminaire)
             for player, points in resultat.items():
                 self.current_atp_points.loc[f"{player.prenom} {player.nom}", self.current_week] = points
 
-            joueurs_disponible -= set(participants)
-
+            joueurs_disponibles -= set(participants)
+        
+        # gestion pnj not in tournament
+        self.gerer_pnj(joueurs_disponibles)
+        
         classement.update_classement("atp")
         classement.update_classement("atp_race")
         classement.update_classement("elo")

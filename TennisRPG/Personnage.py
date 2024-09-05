@@ -46,6 +46,16 @@ SURFACE_IMPACTS = {
 		"Vitesse": 1.1,
 		"Endurance": 1.0,
 		"Réflexes": 1.1
+	},
+	"Carpet": {
+		"Service": 1.3,
+		"Coup droit": 1.0,
+		"Revers": 1.0,
+		"Volée": 1.3,
+		"Puissance": 1.1,
+		"Vitesse": 1.2,
+		"Endurance": 0.9,
+		"Réflexes": 1.3
 	}
 }
 
@@ -250,8 +260,8 @@ class Personnage:
 	# Todo: Réfléchir aux valeurs de fatigues
 	def gerer_fatigue(self, activite):
 		fatigue_base = {
-			"Tournoi": random.randint(10, 20),
-			"Entrainement": random.randint(5, 10),
+			"Tournoi": random.randint(10, 15),
+			"Entrainement": random.randint(3, 7),
 			"Exhibition": random.randint(5, 15),
 		}
 
@@ -271,11 +281,7 @@ class Personnage:
 			if self.principal:
 				print(f"Attention ! {accord} et risque de se blesser. ")
 
-	def verifier_blessure(self, k=0.2, seuil=55):
-		# # Les pnj ont un peu plus de risque de se blesser
-		# if not self.principal:
-		# 	k = 0.12
-			
+	def verifier_blessure(self, k=0.2, seuil=70):
 		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
 		if random.randint(1, 100) < risque:
 			self.infliger_blessure()
@@ -309,7 +315,7 @@ class Personnage:
 				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
 
 	def se_reposer(self):
-		repos = random.randint(5, 20)  # Todo: Revoir les valeurs
+		repos = random.randint(10, 20)  # Todo: Revoir les valeurs
 		self.fatigue = max(0, self.fatigue - repos)
 
 		self.reduire_temps_indisponibilite()
@@ -337,22 +343,39 @@ class Personnage:
 		# Le joueur ne peut pas jouer s'il est blessé
 		return self.blessure is None
 	
-	def should_participate(self, tournoi):
+	def should_participate(self, tournoi, classement):
+		classement_limites = {
+			1: lambda c: True,                 # Grand Chelem: Pas de limite supérieure
+			2: lambda c: True,                 # Masters 1000: Top 1 à 150
+			3: lambda c: True,                 # ATP 500: Top 1 à 200
+			4: lambda c: True,                 # ATP 250: Top 1 à 300
+			5: lambda c: c >= 30,              # Challenger 175: Top 30+
+			6: lambda c: c >= 50,              # Challenger 125: Top 50+
+			7: lambda c: c >= 60,              # Challenger 100: Top 60+
+			8: lambda c: c >= 70,             # Challenger 75: Top 70+
+			9: lambda c: c >= 150              # Challenger 50: Top 150+
+		}
+	
+		classement_joueur = classement.obtenir_rang(self, 'atp')
+		# Vérification du classement du joueur pour le type de tournoi
+		if not classement_limites[tournoi.importance_tournoi](classement_joueur):
+			return False
+		
+		# Vérification de la fatigue du joueur
 		if self.fatigue < 40:
-			# Peu de fatigue, plus enclin à participer
-			return True
+			return True  # Peu de fatigue, plus enclin à participer
 		elif self.fatigue < 60:
-			# Fatigue moyennement élevé, considère le prestige du tournoi
-			if tournoi.importance_tournoi <= 2:
-				return True # Participe aux grd chelem et aux Masters1000
+			if classement_joueur <= 32:
+				return tournoi.importance_tournoi <= 2  # Masters1000 et plus prestigieux
+			if classement_joueur <= 200:
+				return tournoi.importance_tournoi <= 3  # ATP 500 et plus prestigieux
 			else:
-				return False
+				return tournoi.importance_tournoi <= 6  # Challenger 125 et plus prestigieux
 		else:
-			# Grosse fatigue, ne participe qu'aux grands chelems
-			if tournoi.importance_tournoi <= 1:
-				return True
+			if classement_joueur > 200:
+				return tournoi.importance_tournoi <= 4  # ATP 250 et plus prestigieux
 			else:
-				return False
+				return tournoi.importance_tournoi <= 2  # Grands Chelems et Masters 1000
 		
 	def id_card(self, classement):
 		largeur = 46
@@ -454,20 +477,17 @@ def generer_pnj(nombre, sexe):
 			taille_min, taille_max = 155, 185
 		else:
 			raise ValueError("Le sexe doit être 'M' ou 'F'")
+		
 		nom = fake.last_name()
 		taille = random.randint(taille_min, taille_max)  # todo: La taille doit suivre une gaussienne
 		lvl = random.randint(1, 25)
 
-		# Traduction for Russian and Greek Name (Soon, will add chinese and Japanese)
-		if random_locale == "ru_RU":
+		if random_locale in ["ru_RU", "bg_BG"]:
 			prenom = translit(prenom, "ru", reversed=True)
 			nom = translit(nom, "ru", reversed=True)
 		elif random_locale in ["el_GR","zh_CN", "ja_JP"]:
 			prenom = unidecode(prenom)
 			nom = unidecode(nom)
-		elif random_locale == "bg_BG": # If Bulgaria translate the name and fix the Country problem
-			prenom = translit(prenom, "ru", reversed=True)
-			nom = translit(nom, "ru", reversed=True)
 
 		personnage = Personnage(sexe, prenom, nom, country, taille, lvl)
 		personnage.generer_statistique()
