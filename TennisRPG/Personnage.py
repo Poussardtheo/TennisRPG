@@ -283,7 +283,6 @@ class Personnage:
 			if self.principal:
 				print(f"Attention ! {accord} et risque de se blesser. ")
 
-	# Todo: Have a logic for the npc and a logic for the main player.
 	# Fix: it doesn't for for now, must see why
 	def verifier_blessure(self, seuil=70):
 		# if self.principal:
@@ -322,7 +321,7 @@ class Personnage:
 				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
 
 	def se_reposer(self):
-		repos = random.randint(10, 20)  # Todo: Revoir les valeurs
+		repos = random.randint(10, 20)
 		self.fatigue = max(0, self.fatigue - repos)
 
 		self.reduire_temps_indisponibilite()
@@ -345,7 +344,7 @@ class Personnage:
 		return random.choices(range(1, 8), weights=probabilites)[0]
 
 	def guerir(self):
-		self.blessure = None  # Todo: Faire un test pour voir quand le repos tombe à 0 si on guérit
+		self.blessure = None
 		
 	def peut_jouer(self):
 		# Le joueur ne peut pas jouer s'il est blessé
@@ -370,15 +369,17 @@ class Personnage:
 			return False
 		
 		# Vérification de la fatigue du joueur
-		if self.fatigue < 40:
+		if self.fatigue < 50:
 			return True  # Peu de fatigue, plus enclin à participer
-		elif self.fatigue < 60:
+		elif self.fatigue < 70:
 			if classement_joueur <= 32:
 				return tournoi.importance_tournoi <= 2  # Masters1000 et plus prestigieux
 			if classement_joueur <= 200:
 				return tournoi.importance_tournoi <= 3  # ATP 500 et plus prestigieux
-			else:
+			if classement_joueur <= 500:
 				return tournoi.importance_tournoi <= 6  # Challenger 125 et plus prestigieux
+			else:
+				return tournoi.importance_tournoi <= 7  # Challenger 100 et plus prestigieux
 		else:
 			if classement_joueur > 200:
 				return tournoi.importance_tournoi <= 4  # ATP 250 et plus prestigieux
