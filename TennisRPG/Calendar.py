@@ -14,6 +14,7 @@ class Calendar:
         self.current_atp_points = None
         
     def avancer_semaine(self, classement, joueurs):
+        count = 0
         if self.current_week == self.SEMAINES_PAR_AN:
             self.current_year += 1
             self.current_week = 0
@@ -23,6 +24,8 @@ class Calendar:
         
         for joueur_str, joueur in joueurs.items():
             joueur.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]
+            count += 1 if joueur.blessure else 0
+        print(f"semaine {self.current_week}: nb joueurs blessé: {count}")
 
     def obtenir_tournois_semaine(self):
         return self.tournois.get(self.current_week, [])
@@ -33,7 +36,8 @@ class Calendar:
                 if joueur.blessure or joueur.fatigue > 30:
                     self.repos(joueur)
                 else:
-                    self.entrainement(joueur)
+                    # le joueur se repose avec proba 1/2
+                    self.entrainement(joueur) if random.randint(0, 100) % 2 else self.repos(joueur)
                     
     def choisir_activite(self, joueur, joueurs, classement):
         print(f"\nSemaine : {self.current_week} de l'année {self.current_year}")
@@ -46,7 +50,7 @@ class Calendar:
             return
 
         tournois_semaines = self.obtenir_tournois_semaine()
-        tournois_elligible = [t for t in tournois_semaines if est_eligible_pour_tournoi(joueur, t, classement) and joueur.peut_jouer()]
+        tournois_elligible = [t for t in tournois_semaines if est_eligible_pour_tournoi(joueur, t, classement)]
         
         activites_possibles = [act for act in self.ACTIVITES if act != "Tournoi"]
         # Garde-fou pour empêcher de sélectionner Tournoi s'il n'y en a pas
@@ -133,7 +137,7 @@ class Calendar:
     
     def participer_tournoi(self, joueur, joueurs, classement):
         tournois_semaine = self.obtenir_tournois_semaine()
-        tournois_eligibles = [t for t in tournois_semaine if est_eligible_pour_tournoi(joueur, t, classement) and joueur.peut_jouer()]
+        tournois_eligibles = [t for t in tournois_semaine if est_eligible_pour_tournoi(joueur, t, classement)]
         
         # ne laisse le choix de la sélection du tournoi que s'il y a plusieurs tournois
         if len(tournois_eligibles) != 1:

@@ -7,6 +7,7 @@ from transliterate import translit
 from unidecode import unidecode
 
 from TennisRPG.Blessure import dico_blessures, Blessure
+from TennisRPG.Tournois import Tournoi
 
 SURFACE_IMPACTS = {
 	"Hard": {
@@ -266,7 +267,23 @@ class Personnage:
 			"Entrainement": random.randint(3, 7),
 			"Exhibition": random.randint(5, 15),
 		}
-
+		
+		# fatigue en fonction de la qualité du tournoi
+		tournoi_fatigue_mapping = {
+			1: lambda: random.randint(15, 20),  # Grand Chelem
+			2: lambda: random.randint(12, 18),  # Masters 1000
+			3: lambda: random.randint(10, 15),  # ATP 500
+			4: lambda: random.randint(10, 15),  # ATP 250
+			5: lambda: random.randint(8, 12),   # Challenger 175
+			6: lambda: random.randint(8, 12),   # Challenger 125
+			7: lambda: random.randint(8, 12),   # Challenger 100
+			8: lambda: random.randint(8, 12),   # Challenger 75
+			9: lambda: random.randint(8, 12)    # Challenger 50
+		}
+	
+		if isinstance(activite, Tournoi) and activite.importance_tournoi is not None:
+			fatigue_base["Tournoi"] = tournoi_fatigue_mapping.get(activite.importance_tournoi, lambda: 0)()
+		
 		fatigue_ajoutee = fatigue_base.get(activite, 0)
 
 		self.fatigue = min(100, self.fatigue + fatigue_ajoutee)
@@ -285,8 +302,6 @@ class Personnage:
 
 	# Fix: it doesn't for for now, must see why
 	def verifier_blessure(self, seuil=70):
-		# if self.principal:
-		# 	seuil = 55
 		k = np.where(self.fatigue < seuil, 0.2, 0.07)
 		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
 		if random.randint(1, 100) < risque:
@@ -321,34 +336,32 @@ class Personnage:
 				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
 
 	def se_reposer(self):
-		repos = random.randint(10, 20)
+		repos = random.randint(10, 35)
 		self.fatigue = max(0, self.fatigue - repos)
 
 		self.reduire_temps_indisponibilite()
 	
-	# Todo: Revoir cette fonction
 	def gravite_blessure(self):
-		if self.fatigue < 30:
-			poids = [75, 15, 10, 0, 0, 0, 0]
-		elif self.fatigue < 50:
-			poids = [60, 20, 15, 5, 0, 0, 0]
-		elif self.fatigue < 70:
-			poids = [35, 25, 20, 15, 5, 0, 0]
-		elif self.fatigue < 90:
-			poids = [10, 25, 25, 20, 10, 5, 5]
-		else:
-			poids = [0, 15, 25, 25, 15, 10, 10]
-			
-		total = sum(poids)
-		probabilites = [p / total for p in poids]
-		return random.choices(range(1, 8), weights=probabilites)[0]
+		# Paramètres de la fonction logistique
+		k = 0.05  # Contrôle la pente des courbes
+		x0 = {1: 15, 2: 25, 3: 40, 4: 55, 5: 70, 6: 85, 7: 100}  # Points centraux pour chaque gravité
+		
+		# Calcul de la valeur logistique pour chaque gravité
+		logistic_values = [1 / (1 + np.exp(-k * (self.fatigue - x0[g]))) for g in range(1, 8)]
+		
+		# Normalisation pour s'assurer que la somme des probabilités est 1
+		total = sum(logistic_values)
+		normalized_values = [v / total for v in logistic_values]
+		
+		gravite = random.choices(range(1, 8), weights=normalized_values)[0]
+		return gravite
 
 	def guerir(self):
 		self.blessure = None
 		
 	def peut_jouer(self):
 		# Le joueur ne peut pas jouer s'il est blessé
-		return self.blessure is None
+		return self.blessure is None or self.blessure.gravite <= 2
 	
 	def should_participate(self, tournoi, classement):
 		classement_limites = {
@@ -360,7 +373,7 @@ class Personnage:
 			6: lambda c: c >= 50,              # Challenger 125: Top 50+
 			7: lambda c: c >= 60,              # Challenger 100: Top 60+
 			8: lambda c: c >= 70,             # Challenger 75: Top 70+
-			9: lambda c: c >= 150              # Challenger 50: Top 150+
+			9: lambda c: c >= 130              # Challenger 50: Top 130+
 		}
 	
 		classement_joueur = classement.obtenir_rang(self, 'atp')
@@ -369,22 +382,32 @@ class Personnage:
 			return False
 		
 		# Vérification de la fatigue du joueur
-		if self.fatigue < 50:
+		if self.fatigue < 30:
 			return True  # Peu de fatigue, plus enclin à participer
-		elif self.fatigue < 70:
+		elif self.fatigue < 60:
 			if classement_joueur <= 32:
 				return tournoi.importance_tournoi <= 2  # Masters1000 et plus prestigieux
 			if classement_joueur <= 200:
-				return tournoi.importance_tournoi <= 3  # ATP 500 et plus prestigieux
-			if classement_joueur <= 500:
-				return tournoi.importance_tournoi <= 6  # Challenger 125 et plus prestigieux
-			else:
-				return tournoi.importance_tournoi <= 7  # Challenger 100 et plus prestigieux
-		else:
-			if classement_joueur > 200:
 				return tournoi.importance_tournoi <= 4  # ATP 250 et plus prestigieux
+			if classement_joueur <= 300:
+				return tournoi.importance_tournoi <= 6  # Challenger 125 et plus prestigieux
+			if classement_joueur <= 800:
+				return tournoi.importance_tournoi <= 8  # Challenger 75 et plus prestigieux
 			else:
-				return tournoi.importance_tournoi <= 2  # Grands Chelems et Masters 1000
+				return True
+		elif self.fatigue < 85:
+			if classement_joueur <= 32:
+				return tournoi.importance_tournoi <= 1  # Grands chelems seulement
+			if classement_joueur <= 200:
+				return tournoi.importance_tournoi <= 3  # ATP 500 et plus prestigieux
+			if classement_joueur <= 300:
+				return tournoi.importance_tournoi <= 5  # Challenger 175 et plus prestigieux
+			if classement_joueur <= 800:
+				return tournoi.importance_tournoi <= 7  # Challenger 100 et plus prestigieux
+			else:
+				return True
+		else:
+			return False # Si le joueur à plus de 80% de fatigue il se repose
 		
 	def id_card(self, classement):
 		largeur = 46
