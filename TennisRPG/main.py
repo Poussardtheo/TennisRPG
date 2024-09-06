@@ -25,7 +25,7 @@ def main():
 	# Creating the player POOL
 	POOL_JOUEURS = {}
 	start = time.time()
-	pool_thread = threading.Thread(target=generer_pnj_thread, args=(700, sexe, POOL_JOUEURS))
+	pool_thread = threading.Thread(target=generer_pnj_thread, args=(650, sexe, POOL_JOUEURS))
 	pool_thread.start()
 	
 	# Create your player
@@ -87,7 +87,7 @@ def main():
 		elif action.lower() == 'a':
 			print(calendar.current_atp_points.loc[:, calendar.current_week].sort_values(ascending=False))
 		elif action.lower() == 'b':
-			print([personnage.blessure for personnage in POOL_JOUEURS.values() if personnage.blessure])
+			[print(personnage.blessure) for personnage in POOL_JOUEURS.values() if personnage.blessure]
 		elif action.lower() == 'e':
 			joueur_principal.attribuer_ap_points_manuellement()
 		elif action == '':  # Si le joueur à appuyer sur entrée

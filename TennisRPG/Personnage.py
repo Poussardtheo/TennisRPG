@@ -1,5 +1,7 @@
 import math
 import random
+
+import numpy as np
 from faker import Faker
 from transliterate import translit
 from unidecode import unidecode
@@ -281,7 +283,12 @@ class Personnage:
 			if self.principal:
 				print(f"Attention ! {accord} et risque de se blesser. ")
 
-	def verifier_blessure(self, k=0.2, seuil=70):
+	# Todo: Have a logic for the npc and a logic for the main player.
+	# Fix: it doesn't for for now, must see why
+	def verifier_blessure(self, seuil=70):
+		# if self.principal:
+		# 	seuil = 55
+		k = np.where(self.fatigue < seuil, 0.2, 0.07)
 		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
 		if random.randint(1, 100) < risque:
 			self.infliger_blessure()
@@ -320,17 +327,18 @@ class Personnage:
 
 		self.reduire_temps_indisponibilite()
 	
+	# Todo: Revoir cette fonction
 	def gravite_blessure(self):
 		if self.fatigue < 30:
-			poids = [70, 15, 10, 3, 2, 0, 0]
+			poids = [75, 15, 10, 0, 0, 0, 0]
 		elif self.fatigue < 50:
-			poids = [50, 20, 15, 7, 5, 2, 1]
+			poids = [60, 20, 15, 5, 0, 0, 0]
 		elif self.fatigue < 70:
-			poids = [20, 30, 20, 15, 8, 5, 2]
+			poids = [35, 25, 20, 15, 5, 0, 0]
 		elif self.fatigue < 90:
 			poids = [10, 25, 25, 20, 10, 5, 5]
 		else:
-			poids = [5, 15, 25, 25, 15, 8, 7]
+			poids = [0, 15, 25, 25, 15, 10, 10]
 			
 		total = sum(poids)
 		probabilites = [p / total for p in poids]
