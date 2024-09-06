@@ -3,7 +3,8 @@
 #### V.0.2:
 - Un système de Blessure sera mis en place pour rendre l'impact sur les choix plus important ✔
 - Ajout d'aléatoire dans les tournois qui sont joués par les PNJ ✔
-- Ajout de tournois challengers pour les joueurs les moins bien classés
+- Ajout de tournois challengers pour les joueurs les moins bien classés ✔
+  - Revoir le système de blessure pour que les pnj prennent des décisions smarter sur le choix des tournois
 - Ajout de phase de qualifications pour les tournois ? 
 - Intégrer une logique pour jouer un match, 
   - faire en sorte que lorsque l'on joue un tournoi, on puisse suivre l'évolution de notre joueur dans le tournoi
