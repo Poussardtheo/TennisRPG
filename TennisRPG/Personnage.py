@@ -344,7 +344,7 @@ class Personnage:
 	def gravite_blessure(self):
 		# Paramètres de la fonction logistique
 		k = 0.05  # Contrôle la pente des courbes
-		x0 = {1: 15, 2: 25, 3: 40, 4: 55, 5: 70, 6: 85, 7: 100}  # Points centraux pour chaque gravité
+		x0 = {1: 15, 2: 25, 3: 40, 4: 75, 5: 100, 6: 125, 7: 150}  # Points centraux pour chaque gravité
 		
 		# Calcul de la valeur logistique pour chaque gravité
 		logistic_values = [1 / (1 + np.exp(-k * (self.fatigue - x0[g]))) for g in range(1, 8)]
