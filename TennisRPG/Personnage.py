@@ -260,31 +260,30 @@ class Personnage:
 	#                      FATIGUE & BLESSURES                    #
 	###############################################################
 	
-	# Todo: Réfléchir aux valeurs de fatigues
-	def gerer_fatigue(self, activite):
+	# Todo: Reprendre cette fonction pour l'appeler dans simuler_match (classe Tournoi)
+	def gerer_fatigue(self, activite: Tournoi | str, sets_joues: int = 0):
 		fatigue_base = {
-			"Tournoi": random.randint(10, 15),
 			"Entrainement": random.randint(3, 7),
 			"Exhibition": random.randint(5, 15),
 		}
 		
-		# fatigue en fonction de la qualité du tournoi
+		# fatigue en fonction de la qualité du tournoi et du nombre de sets joués
 		tournoi_fatigue_mapping = {
-			1: lambda: random.randint(15, 20),  # Grand Chelem
-			2: lambda: random.randint(12, 18),  # Masters 1000
-			3: lambda: random.randint(10, 15),  # ATP 500
-			4: lambda: random.randint(10, 15),  # ATP 250
-			5: lambda: random.randint(8, 12),   # Challenger 175
-			6: lambda: random.randint(8, 12),   # Challenger 125
-			7: lambda: random.randint(8, 12),   # Challenger 100
-			8: lambda: random.randint(8, 12),   # Challenger 75
-			9: lambda: random.randint(8, 12)    # Challenger 50
+			1: lambda: sets_joues * 1.3,  # Grand Chelem: 1.3 pt de fatigue par sets joués
+			2: lambda: sets_joues * 1.2,  # Masters 1000 : 1.2 pt de fatigue par sets joués
+			3: lambda: sets_joues * 1.1,  # ATP 500 : 1.1 pt de fatigue par sets joués
+			4: lambda: sets_joues,  # ATP 250 : 1 pt de fatigue par sets joués
+			5: lambda: sets_joues * 0.8,   # Challenger 175 : 0.8 pt de fatigue par sets joués
+			6: lambda: sets_joues * 0.8,   # Challenger 125 : 0.8 pt de fatigue par sets joués
+			7: lambda: sets_joues * 0.8,   # Challenger 100 : 0.8 pt de fatigue par sets joués
+			8: lambda: sets_joues * 0.8,   # Challenger 75 : 0.8 pt de fatigue par sets joués
+			9: lambda: sets_joues * 0.8    # Challenger 50 : 0.8 pt de fatigue par sets joués
 		}
 	
-		if isinstance(activite, Tournoi) and activite.importance_tournoi is not None:
-			fatigue_base["Tournoi"] = tournoi_fatigue_mapping.get(activite.importance_tournoi, lambda: 0)()
-		
-		fatigue_ajoutee = fatigue_base.get(activite, 0)
+		if isinstance(activite, Tournoi) and activite.importance_tournoi is not None: # Normalement, deuxième condition useless
+			fatigue_ajoutee = tournoi_fatigue_mapping.get(activite.importance_tournoi, lambda: 0)()
+		else:
+			fatigue_ajoutee = fatigue_base.get(activite, 0)
 
 		self.fatigue = min(100, self.fatigue + fatigue_ajoutee)
 		if self.principal:
@@ -301,8 +300,8 @@ class Personnage:
 				print(f"Attention ! {accord} et risque de se blesser. ")
 
 	# Fix: it doesn't for for now, must see why
-	def verifier_blessure(self, seuil=70):
-		k = np.where(self.fatigue < seuil, 0.2, 0.07)
+	def verifier_blessure(self, seuil=60):
+		k = np.where(self.fatigue < seuil, 0.2, 0.08)
 		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
 		if random.randint(1, 100) < risque:
 			self.infliger_blessure()
@@ -336,7 +335,7 @@ class Personnage:
 				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
 
 	def se_reposer(self):
-		repos = random.randint(10, 35)
+		repos = random.randint(10, 20)
 		self.fatigue = max(0, self.fatigue - repos)
 
 		self.reduire_temps_indisponibilite()
@@ -361,7 +360,7 @@ class Personnage:
 		
 	def peut_jouer(self):
 		# Le joueur ne peut pas jouer s'il est blessé
-		return self.blessure is None or self.blessure.gravite <= 2
+		return self.blessure is None
 	
 	def should_participate(self, tournoi, classement):
 		classement_limites = {

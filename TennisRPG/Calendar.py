@@ -12,7 +12,8 @@ class Calendar:
         self.current_week = 1
         self.tournois = tournois
         self.current_atp_points = None
-        
+
+    # Todo: Revoir la gestion des pnj quand il n'y a pas de tournoi
     def avancer_semaine(self, classement, joueurs):
         count = 0
         if self.current_week == self.SEMAINES_PAR_AN:
@@ -21,10 +22,14 @@ class Calendar:
             classement.reinitialiser_atp_race()
 
         self.current_week += 1
-        
+
+        # Attention, cette logique ne prend pas en compte les tournois sur plusieurs semaines
+        if not self.obtenir_tournois_semaine():
+            self.gerer_pnj(joueurs)
+
         for joueur_str, joueur in joueurs.items():
             joueur.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]
-            count += 1 if joueur.blessure else 0
+            count += 1 if not joueur.peut_jouer() else 0
         print(f"semaine {self.current_week}: nb joueurs blessé: {count}")
 
     def obtenir_tournois_semaine(self):
@@ -33,7 +38,7 @@ class Calendar:
     def gerer_pnj(self, joueurs_disponibles: set):
         for joueur in joueurs_disponibles:
             if not joueur.principal:
-                if joueur.blessure or joueur.fatigue > 30:
+                if joueur.blessure or joueur.fatigue > 40:
                     self.repos(joueur)
                 else:
                     # le joueur se repose avec proba 1/2
@@ -206,14 +211,3 @@ class Calendar:
             accord = "e" if joueur.sexe.lower() == 'f' else ""
             print(f"\n{joueur.prenom} s'est reposé{accord} cette semaine.")
             print(f"Niveau de fatigue actuel {joueur.fatigue}")
-    
-    def trouver_remplacant(self, tournoi, joueurs_disponibles, classement):
-        joueurs_eligibles = [j for j in joueurs_disponibles if est_eligible_pour_tournoi(j, tournoi, classement)]
-        if joueurs_eligibles:
-            return min(joueurs_eligibles, key=lambda j: classement.obtenir_rang(j, "atp"))
-        return None
-
-
-# from Personnage import Personnage
-#
-# personnage = Personnage("Theo", "Poussard", "France")

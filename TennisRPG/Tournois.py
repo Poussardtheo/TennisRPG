@@ -122,14 +122,16 @@ class Tournoi:
 		derniers_tours = {joueur: 0 for joueur in participants}
 		
 		for tour in range(1, nb_tours + 1):
+			# Garantit que si l'on est en finale, on applique la logique de la finale
+			est_finale = True if tour == nb_tours else False
+
 			prochain_tour = []
 			for match in tableau:
 				joueur1, joueur2 = match
 				if joueur1 and joueur2:
-					gagnant = self.simuler_match(joueur1, joueur2)[0]
-					perdant = joueur2 if gagnant == joueur1 else joueur1
+					gagnant, perdant = self.simuler_match(joueur1, joueur2, est_finale)[0:2]  # Prend le gagnant et le perdant
 					derniers_tours[perdant] = tour
-					if perdant.principal:
+					if perdant is not None and perdant.principal:
 						phase = noms_phases.get(tour, f"au tour {tour}")
 						accord = "e" if perdant.sexe.lower() == 'f' else ""
 						print(f"\n{perdant.prenom} {perdant.nom} a été éliminé{accord} {phase}")
@@ -159,20 +161,43 @@ class Tournoi:
 			xp_gagne = self.XP_PAR_TOUR.get(dernier_tour, 0)
 			resultats[joueur] = self.POINTS_ATP.get(dernier_tour, 0)
 			joueur.gagner_experience(xp_gagne)
-			joueur.gerer_fatigue("Tournoi")
 		
 		# Note the return will be useful when we'll save the info in a database
 		return resultats
-	
-	def simuler_match(self, joueur1, joueur2):
-		elo1 = joueur1.calculer_elo(surface=self.surface)
-		elo2 = joueur2.calculer_elo(surface=self.surface)
+
+	@staticmethod
+	def determiner_vainqueur_finale(joueur1, joueur2):
+		"""Détermine le vainqueur de la finale selon la gravité de la blessure et la fatigue des joueurs"""
+		if joueur1.blessure.gravite < joueur2.blessure.gravite:
+			return joueur1, joueur2, 0, 0
+		elif joueur2.blessure.gravite < joueur1.blessure.gravite:
+			return joueur1, joueur2, 0, 0
+		else:
+			return joueur1, joueur2, 0, 0 if joueur1.fatigue < joueur2.fatigue else joueur2, joueur1, 0, 0
+
+	def simuler_match(self, joueur1, joueur2, est_finale=False):
+		# Gère les abandons en tournoi si un (ou les deux) joueurs sont blessés
+		joueur1_peut_jouer = joueur1.peut_jouer()
+		joueur2_peut_jouer = joueur2.peut_jouer()
+
+		if not joueur1_peut_jouer and not joueur2_peut_jouer:
+			# Les deux joueurs sont blessés,
+			if est_finale:
+				return self.determiner_vainqueur_finale(joueur1, joueur2)
+			else:
+				# match annulé
+				return None, None, 0, 0
+		elif not joueur1_peut_jouer:
+			return joueur2, joueur1, 0, 0
+		elif not joueur2_peut_jouer:
+			return joueur1, joueur2, 0, 0
+
+		elo1 = joueur1.calculer_elo(surface=self.surface) - joueur1.fatigue ** 1.25  # La fatigue diminue les performances
+		elo2 = joueur2.calculer_elo(surface=self.surface) - joueur2.fatigue ** 1.25
 		
 		proba1 = 1 / (1 + 10 ** ((elo2 - elo1) / 400))
 		
 		# Logique sur le score du match.
-		# Note: On pourra se servir de cela pour simuler la fatigue d'un joueur
-		#  (plus un match est long et plus les joueurs seront fatigués)
 		sets_joueur1, sets_joueur2 = 0, 0
 		
 		while max(sets_joueur1, sets_joueur2) < self.sets_gagnants:
@@ -180,16 +205,23 @@ class Tournoi:
 				sets_joueur1 += 1
 			else:
 				sets_joueur2 += 1
-		
+
+		# Détermine le gagnant
 		if sets_joueur1 > sets_joueur2:
 			gagnant, perdant = joueur1, joueur2
 			sets_gagnant, sets_perdant = sets_joueur1, sets_joueur2
 		else:
 			gagnant, perdant = joueur2, joueur1
 			sets_gagnant, sets_perdant = sets_joueur2, sets_joueur1
-		
+
+		sets_joues=sets_gagnant+sets_perdant
+
+		# Gère la fatigue des deux joueurs
+		gagnant.gerer_fatigue(self, sets_joues=sets_joues)
+		perdant.gerer_fatigue(self, sets_joues=sets_joues)
+
 		# Mise à jour des Elo
-		k = 32
+		k = 32 # Todo: revoir cela pour l'évolution de l'elo dans le temps
 		elo_change = k * (1 - 1 / (1 + 10 ** ((perdant.elo - gagnant.elo) / 400)))
 		
 		gagnant.elo += elo_change
@@ -250,21 +282,23 @@ class ATPFinals(Tournoi):
 		qualifies_b = self.selectionner_qualifies(resultats_poule_b)
 		
 		# Demi finales
-		demi_finale_1 = self.simuler_match(qualifies_a[0], qualifies_b[1])[0]
-		demi_finale_2 = self.simuler_match(qualifies_b[0], qualifies_a[1])[0]
+		demi_finale_1 = self.simuler_match(qualifies_a[0], qualifies_b[1], est_finale=True)[0]
+		demi_finale_2 = self.simuler_match(qualifies_b[0], qualifies_a[1], est_finale=True)[0]
 		
 		for demi_finaliste in [demi_finale_1, demi_finale_2]:
 			resultats[demi_finaliste] += 400  # 400 points pour une victoire en demi-finale
 			demi_finaliste.atp_points += 400
 		
 		# Finale
-		vainqueur = self.simuler_match(demi_finale_1, demi_finale_2)[0]
+		vainqueur = self.simuler_match(demi_finale_1, demi_finale_2, est_finale=True)[0]
 		resultats[vainqueur] += 500
 		vainqueur.atp_points += 500  # +500pts si victoire en finale
 		if not preliminaire:
 			print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
 		
 		# Progression des joueurs
+		# Todo: inclure ici la gestion des points atp (Permet de s'astreindre du paramètre est une finale).
+		#  Prévoir également la gestion des remplaçants
 		for joueur in participants:
 			if joueur == vainqueur:
 				xp_gagne = self.XP_PAR_TOUR["Vainqueur"]
@@ -452,7 +486,7 @@ class ITFM15(Tournoi):
 	POINTS_ATP = {1: 0, 2: 1, 3: 2, 4: 4, 5: 8, "Vainqueur": 15}
 	XP_PAR_TOUR = {1: 15, 2: 17, 3: 22, 4: 25, 5: 30, "Vainqueur": 37}
 	
-	eligibility_threshold = np.infty
+	eligibility_threshold = np.inf
 	
 	def __init__(self, emplacement, surface, edition=None):
 		nom = f"M15 {emplacement} {edition}" if edition else f"M15 {emplacement}"

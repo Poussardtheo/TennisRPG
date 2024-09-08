@@ -25,7 +25,7 @@ def main():
 	# Creating the player POOL
 	POOL_JOUEURS = {}
 	start = time.time()
-	pool_thread = threading.Thread(target=generer_pnj_thread, args=(700, sexe, POOL_JOUEURS))
+	pool_thread = threading.Thread(target=generer_pnj_thread, args=(500, sexe, POOL_JOUEURS))
 	pool_thread.start()
 	
 	# Create your player
