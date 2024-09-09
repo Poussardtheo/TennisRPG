@@ -10,8 +10,8 @@ class Blessure:
 		self.semaines_indisponibles = self.repos
 		self.blessure_agravee_cette_semaine = False
 		
-	# TODO: Réfléchir aux valeurs et à la logique de risque
-	def risque_agravation_blessure(self, activite):
+	# Todo: Revoir la fonction
+	def risque_aggravation_blessure(self, activite):
 		risque_base = {
 			"Tournoi": 30,
 			"Entrainement": 20,
@@ -42,36 +42,42 @@ dico_blessures = {
 	1: [
 		{"nom": "Ampoule au pied", "gravite": 1, "repos": 1},
 		{"nom": "Crampes musculaires", "gravite": 1, "repos": 1},
+		{"nom": "Contracture musculaires", "gravite": 1, "repos": 1},
 		{"nom": "Coup de chaleur", "gravite": 1, "repos": 1}
 	],
 	2: [
-		{"nom": "Élongation du mollet", "gravite": 2, "repos": 2},
-		{"nom": "Syndrome du canal carpien", "gravite": 2, "repos": 3},
-		{"nom": "Syndrome de la bandelette ilio-tibiale", "gravite": 2, "repos": 5}
+		{"nom": "Contracture musculaire", "gravite": 2, "repos": 1},
+		{"nom": "Élongation du mollet", "gravite": 2, "repos": 1},
+		{"nom": "Syndrome du canal carpien", "gravite": 2, "repos": 2},
+		{"nom": "Entorse du poignet", "gravite": 2, "repos": 2},
 	],
 	3: [
-		{"nom": "Tendinite du coude", "gravite": 3, "repos": 10},
-		{"nom": "Lombalgie", "gravite": 3, "repos": 4},
-		{"nom": "Épicondylite latérale", "gravite": 3, "repos": 9},
-		{"nom": "Entorse du poignet", "gravite": 3, "repos": 3}
+		{"nom": "Lombalgie", "gravite": 3, "repos": 2},
+		{"nom": "Syndrome de la bandelette ilio-tibiale", "gravite": 3, "repos": 3},
+		{"nom": "Tendinite légère", "gravite": 3, "repos": 3}
 	],
 	4: [
-		{"nom": "Entorse de la cheville", "gravite": 4, "repos": 4},
-		{"nom": "Tendinite de l'épaule", "gravite": 4, "repos": 5}
+		{"nom": "Entorse de la cheville", "gravite": 4, "repos": 3},
+		{"nom": "Élongation musculaire", "gravite": 4, "repos": 3},
+		{"nom": "Tendinite de l'épaule", "gravite": 4, "repos": 4},
+		{"nom": "Déchirement partiel du ménisque", "gravite": 4, "repos": 5},
 	],
 	5: [
-		{"nom": "Déchirure musculaire de la cuisse", "gravite": 5, "repos": 7},
-		{"nom": "Déchirure de la coiffe des rotateurs", "gravite": 5, "repos": 12},
-		{"nom": "Fracture de stress", "gravite": 5, "repos": 7}
+		{"nom": "Déchirure musculaire", "gravite": 5, "repos": 6},
+		{"nom": "Fracture simple", "gravite": 5, "repos": 6},
+		{"nom": "Épicondylite latérale", "gravite": 5, "repos": 8}
 	],
 	6: [
-		{"nom": "Fracture de fatigue", "gravite": 6, "repos": 7},
-		{"nom": "Déchirure des ligaments du genou", "gravite": 6, "repos": 20},
-		{"nom": "Luxation de l'épaule", "gravite": 6, "repos": 16}
+		{"nom": "Déchirure de la coiffe des rotateurs", "gravite": 6, "repos": 10},
+		{"nom": "Fracture osseuse complexe", "gravite": 6, "repos": 12},
+		{"nom": "Luxation de l'épaule", "gravite": 6, "repos": 14},
+		{"nom": "Déchirure ligamentaire", "gravite": 6, "repos": 16},
 	],
 	7: [
-		{"nom": "Rupture du tendon d'Achille", "gravite": 7, "repos": 22},
-		{"nom": "Hernie discale", "gravite": 7, "repos": 39}
+		{"nom": "Hernie discale", "gravite": 7, "repos": 14},
+		{"nom": "Rupture du tendon d'Achille", "gravite": 7, "repos": 20},
+		{"nom": "Rupture du ligament croisé antérieur", "gravite": 7, "repos": 36}
 	]
 }
+
 

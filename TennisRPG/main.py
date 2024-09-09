@@ -1,7 +1,7 @@
 import threading
 
 import pandas as pd
-
+import time
 # Local import
 from TennisRPG.Calendar import *
 from TennisRPG.Personnage import *
@@ -9,7 +9,7 @@ from TennisRPG.Classement import Classement
 
 
 def main():
-	annee_debut = 2023
+	annee_debut = 2014
 	calendar = Calendar(annee_debut)
 	while True:
 		sexe = input("Jouer avec un personnage Masculin ('M') ou Féminin ('F') ? ")
@@ -24,7 +24,8 @@ def main():
 
 	# Creating the player POOL
 	POOL_JOUEURS = {}
-	pool_thread = threading.Thread(target=generer_pnj_thread, args=(400, sexe, POOL_JOUEURS))
+	start = time.time()
+	pool_thread = threading.Thread(target=generer_pnj_thread, args=(500, sexe, POOL_JOUEURS))
 	pool_thread.start()
 	
 	# Create your player
@@ -35,13 +36,16 @@ def main():
 	
 	# Wait for player POOL generation to complete
 	pool_thread.join()
+	print(f"Temps de Création du Pool de PNJ: {time.time() - start}")
 	
 	# Initialize ranking with the POOL of players
 	classement = Classement(POOL_JOUEURS, preliminaire=True)
 	calendar.current_atp_points = pd.DataFrame(0, index=POOL_JOUEURS.keys(), columns=[i for i in range(1, 53)])
-	for _ in range(1, 53):
+	start = time.time()
+	for _ in range(1, 53):  # 10 ans de simulation
 		calendar.simuler_tournois_semaine(joueur_principal, POOL_JOUEURS, classement, preliminaire=True)
 		calendar.avancer_semaine(classement, POOL_JOUEURS)
+	print(f"Temps de simulation année préliminaire: {time.time() - start}")
 	
 	# End of the preliminary period.
 	POOL_JOUEURS[f"{prenom} {nom}"] = joueur_principal
@@ -83,7 +87,7 @@ def main():
 		elif action.lower() == 'a':
 			print(calendar.current_atp_points.loc[:, calendar.current_week].sort_values(ascending=False))
 		elif action.lower() == 'b':
-			print([personnage.blessure for personnage in POOL_JOUEURS.values() if personnage.blessure])
+			[print(personnage.blessure) for personnage in POOL_JOUEURS.values() if personnage.blessure]
 		elif action.lower() == 'e':
 			joueur_principal.attribuer_ap_points_manuellement()
 		elif action == '':  # Si le joueur à appuyer sur entrée

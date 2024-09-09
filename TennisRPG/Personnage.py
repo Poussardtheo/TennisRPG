@@ -1,10 +1,13 @@
 import math
 import random
+
+import numpy as np
 from faker import Faker
 from transliterate import translit
 from unidecode import unidecode
 
 from TennisRPG.Blessure import dico_blessures, Blessure
+from TennisRPG.Tournois import Tournoi
 
 SURFACE_IMPACTS = {
 	"Hard": {
@@ -46,6 +49,16 @@ SURFACE_IMPACTS = {
 		"Vitesse": 1.1,
 		"Endurance": 1.0,
 		"Réflexes": 1.1
+	},
+	"Carpet": {
+		"Service": 1.3,
+		"Coup droit": 1.0,
+		"Revers": 1.0,
+		"Volée": 1.3,
+		"Puissance": 1.1,
+		"Vitesse": 1.2,
+		"Endurance": 0.9,
+		"Réflexes": 1.3
 	}
 }
 
@@ -247,22 +260,34 @@ class Personnage:
 	#                      FATIGUE & BLESSURES                    #
 	###############################################################
 	
-	# Todo: Réfléchir aux valeurs de fatigues
-	def gerer_fatigue(self, activite):
+	def gerer_fatigue(self, activite: Tournoi | str, sets_joues: int = 0):
 		fatigue_base = {
-			"Tournoi": random.randint(10, 20),
-			"Entrainement": random.randint(5, 10),
+			"Entrainement": random.randint(1, 3),
 			"Exhibition": random.randint(5, 15),
 		}
-
-		fatigue_ajoutee = fatigue_base.get(activite, 0)
+		
+		# fatigue en fonction de la qualité du tournoi et du nombre de sets joués
+		tournoi_fatigue_mapping = {
+			1: lambda: sets_joues * 1.7,  # Grand Chelem: 1.7 pt de fatigue par sets joués
+			2: lambda: sets_joues * 1.4,  # Masters 1000 : 1.4 pt de fatigue par sets joués
+			3: lambda: sets_joues * 1.2,  # ATP 500 : 1.2 pt de fatigue par sets joués
+			4: lambda: sets_joues,  # ATP 250 : 1 pt de fatigue par sets joués
+			5: lambda: sets_joues * 0.9,   # Challenger 175 : 0.9 pt de fatigue par sets joués
+			6: lambda: sets_joues * 0.9,   # Challenger 125 : 0.9 pt de fatigue par sets joués
+			7: lambda: sets_joues * 0.9,   # Challenger 100 : 0.9 pt de fatigue par sets joués
+			8: lambda: sets_joues * 0.9,   # Challenger 75 : 0.9 pt de fatigue par sets joués
+			9: lambda: sets_joues * 0.8    # Challenger 50 : 0.8 pt de fatigue par sets joués
+		}
+	
+		if isinstance(activite, Tournoi):
+			fatigue_ajoutee = tournoi_fatigue_mapping.get(activite.importance_tournoi, lambda: 0)()
+		else:
+			fatigue_ajoutee = fatigue_base.get(activite, 0)
 
 		self.fatigue = min(100, self.fatigue + fatigue_ajoutee)
-		if self.principal:
-			print(f"Niveau de fatigue actuel {self.fatigue}")
 
-		# if self.blessure:
-		# 	self.blessure.risque_aggravation_blessure(activite)
+		if self.blessure:
+			self.blessure.risque_aggravation_blessure(activite)
 		
 		self.verifier_blessure()
 
@@ -271,11 +296,9 @@ class Personnage:
 			if self.principal:
 				print(f"Attention ! {accord} et risque de se blesser. ")
 
-	def verifier_blessure(self, k=0.2, seuil=55):
-		# # Les pnj ont un peu plus de risque de se blesser
-		# if not self.principal:
-		# 	k = 0.12
-			
+	# Fix: it doesn't for for now, must see why
+	def verifier_blessure(self, seuil=60):
+		k = np.where(self.fatigue < seuil, 0.2, 0.12)
 		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
 		if random.randint(1, 100) < risque:
 			self.infliger_blessure()
@@ -296,10 +319,10 @@ class Personnage:
 			      f". Indisponible pour {self.blessure.repos} semaine{accord2}.")
 
 	def reduire_temps_indisponibilite(self):
-		if isinstance(self.blessure, Blessure):
+		if self.blessure:
 			self.blessure.reduire_indisponibilite()
 			
-			if self.blessure.semaines_indisponibles == 0:
+			if self.blessure.semaines_indisponibles == 0 or self.fatigue == 0:
 				self.guerir()
 				
 			if self.principal and self.blessure:
@@ -309,50 +332,72 @@ class Personnage:
 				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
 
 	def se_reposer(self):
-		repos = random.randint(5, 20)  # Todo: Revoir les valeurs
+		repos = random.randint(3, 5)
 		self.fatigue = max(0, self.fatigue - repos)
 
 		self.reduire_temps_indisponibilite()
 	
 	def gravite_blessure(self):
-		if self.fatigue < 30:
-			poids = [70, 15, 10, 3, 2, 0, 0]
-		elif self.fatigue < 50:
-			poids = [50, 20, 15, 7, 5, 2, 1]
-		elif self.fatigue < 70:
-			poids = [20, 30, 20, 15, 8, 5, 2]
-		elif self.fatigue < 90:
-			poids = [10, 25, 25, 20, 10, 5, 5]
-		else:
-			poids = [5, 15, 25, 25, 15, 8, 7]
-			
-		total = sum(poids)
-		probabilites = [p / total for p in poids]
-		return random.choices(range(1, 8), weights=probabilites)[0]
+		# Paramètres de la fonction logistique
+		k = 0.05  # Contrôle la pente des courbes
+		x0 = {1: 15, 2: 25, 3: 40, 4: 75, 5: 100, 6: 125, 7: 150}  # Points centraux pour chaque gravité
+		
+		# Calcul de la valeur logistique pour chaque gravité
+		logistic_values = [1 / (1 + np.exp(-k * (self.fatigue - x0[g]))) for g in range(1, 8)]
+		
+		# Normalisation pour s'assurer que la somme des probabilités est 1
+		total = sum(logistic_values)
+		normalized_values = [v / total for v in logistic_values]
+		
+		gravite = random.choices(range(1, 8), weights=normalized_values)[0]
+		return gravite
 
 	def guerir(self):
-		self.blessure = None  # Todo: Faire un test pour voir quand le repos tombe à 0 si on guérit
+		self.blessure = None
+		if self.principal:
+			print(f"{self.prenom} {self.nom} est guéri")
 		
 	def peut_jouer(self):
 		# Le joueur ne peut pas jouer s'il est blessé
-		return self.blessure is None
+		return self.blessure is None or self.blessure.gravite <= 2
 	
-	def should_participate(self, tournoi):
-		if self.fatigue < 40:
-			# Peu de fatigue, plus enclin à participer
-			return True
-		elif self.fatigue < 60:
-			# Fatigue moyennement élevé, considère le prestige du tournoi
-			if tournoi.importance_tournoi() <= 2:
-				return True # Participe aux grd chelem et aux Masters1000
-			else:
-				return False
-		else:
-			# Grosse fatigue, ne participe qu'aux grands chelems
-			if tournoi.importance_tournoi() <= 1:
-				return True
-			else:
-				return False
+	def should_participate(self, tournoi, classement):
+		classement_limites = {
+			1: lambda c: True,                 # Grand Chelem: Pas de limite supérieure
+			2: lambda c: True,                 # Masters 1000: Top 1 à 150
+			3: lambda c: True,                 # ATP 500: Top 1 à 250
+			4: lambda c: True,                 # ATP 250: Top 1 à 300
+			5: lambda c: c >= 30,              # Challenger 175: Top 30+
+			6: lambda c: c >= 50,              # Challenger 125: Top 50+
+			7: lambda c: c >= 60,              # Challenger 100: Top 60+
+			8: lambda c: c >= 70,             # Challenger 75: Top 70+
+			9: lambda c: c >= 130              # Challenger 50: Top 130+
+		}
+	
+		classement_joueur = classement.obtenir_rang(self, 'atp')
+		# Vérification du classement du joueur pour le type de tournoi
+		if not classement_limites[tournoi.importance_tournoi](classement_joueur):
+			return False
+		
+		def f(x, seuil):
+			k = np.where(x < seuil, 0.3, 0.12)
+			return 1 - (1 / (1 + np.exp(-k * (x - seuil))))
+		
+		participation_chance = f(self.fatigue, seuil=45)
+		
+		# Ajuste la participation en fonction de l'importance du tournoi et du classement du joueur:
+		if tournoi.importance_tournoi <= 2:  # Grand Chelem, ATP Finals et Masters1000
+			participation_chance += 0.2
+		elif tournoi.importance_tournoi <= 4:  # ATP 500 et 250
+			if classement_joueur > 50:  # Les moins bien classé seront plus enclin à participer
+				participation_chance += 0.05
+		else:  # Tournoi Challengers
+			if classement_joueur < 40:
+				participation_chance -= 0.4
+			elif classement_joueur < 100:
+				participation_chance -= 0.2
+		
+		return random.random() < participation_chance
 		
 	def id_card(self, classement):
 		largeur = 46
@@ -401,25 +446,34 @@ class Personnage:
 pays_locales = {
 	"France": ["fr_FR"],
 	"United States": ["en_US"],
+	"Ireland": ["en_IE"],
+	"New_Zeland" : ["en_NZ"],
+	"Pakistan": ["en_PK"],
 	"Spain": ["es_ES"],
+	"Mexico": ["es_MX"],
 	"Germany": ["de_DE"],
 	"Italy": ["it_IT"],
 	"Russia": ["ru_RU"],
+	"Ukraine": ["uk_UA"],
 	"United Kingdom": ["en_GB"],
 	"Australia": ["en_AU"],
 	"Netherlands": ["nl_NL"],
 	"Belgium": ["nl_BE", "fr_BE"],
+	"Estonia": ["et_EE"],
 	"Brazil": ["pt_BR"],
 	"Argentina": ["es_AR"],
 	"Canada": ["en_CA", "fr_CA"],
 	"Switzerland": ["de_CH", "fr_CH", "it_CH"],
 	"Poland": ["pl_PL"],
 	"Croatia": ["hr_HR"],
+	"Romania": ["ro_RO"],
 	"Greece": ["el_GR"],
 	"Chile": ["es_CL"],
 	"Denmark": ["da_DK"],
 	"Sweden": ["sv_SE"],
 	"Bulgaria": ["bg_BG"],
+	"Hungary": ["hu_HU"],
+	"Lituania": ["lt_LT"],
 	"Czech Republic": ["cs_CZ"],
 	"Austria": ["de_AT"],
 	"Portugal": ["pt_PT"],
@@ -428,9 +482,10 @@ pays_locales = {
 	"Colombia": ["es_CO"],
 	"Slovakia": ["sk_SK"],
 	"Slovenia": ["sl_SI"],
-	"Bosnia and Herzegovina": ["bs_BA"],
 	"China": ["zh_CN"],
-	"Japan": ["ja_JP"]
+	"Turkey": ["tr_TR"],
+	"Japan": ["ja_JP"],
+	"Norway": ["no_NO"]
 }
 
 
@@ -454,20 +509,17 @@ def generer_pnj(nombre, sexe):
 			taille_min, taille_max = 155, 185
 		else:
 			raise ValueError("Le sexe doit être 'M' ou 'F'")
+		
 		nom = fake.last_name()
 		taille = random.randint(taille_min, taille_max)  # todo: La taille doit suivre une gaussienne
 		lvl = random.randint(1, 25)
 
-		# Traduction for Russian and Greek Name (Soon, will add chinese and Japanese)
-		if random_locale == "ru_RU":
+		if random_locale in ["ru_RU", "bg_BG", "uk_UA"]:
 			prenom = translit(prenom, "ru", reversed=True)
 			nom = translit(nom, "ru", reversed=True)
 		elif random_locale in ["el_GR","zh_CN", "ja_JP"]:
 			prenom = unidecode(prenom)
 			nom = unidecode(nom)
-		elif random_locale == "bg_BG": # If Bulgaria translate the name and fix the Country problem
-			prenom = translit(prenom, "ru", reversed=True)
-			nom = translit(nom, "ru", reversed=True)
 
 		personnage = Personnage(sexe, prenom, nom, country, taille, lvl)
 		personnage.generer_statistique()

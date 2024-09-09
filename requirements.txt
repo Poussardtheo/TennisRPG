@@ -2,5 +2,6 @@ Faker
 transliterate
 unidecode
 pandas
+numpy
 setuptools
 pytest
