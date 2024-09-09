@@ -9,7 +9,7 @@ from TennisRPG.Classement import Classement
 
 
 def main():
-	annee_debut = 2023
+	annee_debut = 2014
 	calendar = Calendar(annee_debut)
 	while True:
 		sexe = input("Jouer avec un personnage Masculin ('M') ou Féminin ('F') ? ")
@@ -42,7 +42,7 @@ def main():
 	classement = Classement(POOL_JOUEURS, preliminaire=True)
 	calendar.current_atp_points = pd.DataFrame(0, index=POOL_JOUEURS.keys(), columns=[i for i in range(1, 53)])
 	start = time.time()
-	for _ in range(1, 53):
+	for _ in range(1, 53):  # 10 ans de simulation
 		calendar.simuler_tournois_semaine(joueur_principal, POOL_JOUEURS, classement, preliminaire=True)
 		calendar.avancer_semaine(classement, POOL_JOUEURS)
 	print(f"Temps de simulation année préliminaire: {time.time() - start}")

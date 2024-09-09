@@ -122,14 +122,11 @@ class Tournoi:
 		derniers_tours = {joueur: 0 for joueur in participants}
 		
 		for tour in range(1, nb_tours + 1):
-			# Garantit que si l'on est en finale, on applique la logique de la finale
-			est_finale = True if tour == nb_tours else False
-
 			prochain_tour = []
 			for match in tableau:
 				joueur1, joueur2 = match
 				if joueur1 and joueur2:
-					gagnant, perdant = self.simuler_match(joueur1, joueur2, est_finale)[0:2]  # Prend le gagnant et le perdant
+					gagnant, perdant = self.simuler_match(joueur1, joueur2)[0:2]  # Prend le gagnant et le perdant
 					derniers_tours[perdant] = tour
 					if perdant is not None and perdant.principal:
 						phase = noms_phases.get(tour, f"au tour {tour}")
@@ -166,7 +163,7 @@ class Tournoi:
 		return resultats
 
 	@staticmethod
-	def determiner_vainqueur_finale(joueur1, joueur2):
+	def determiner_vainqueur(joueur1, joueur2):
 		"""Détermine le vainqueur de la finale selon la gravité de la blessure et la fatigue des joueurs"""
 		if joueur1.blessure.gravite < joueur2.blessure.gravite:
 			return joueur1, joueur2, 0, 0
@@ -175,18 +172,14 @@ class Tournoi:
 		else:
 			return joueur1, joueur2, 0, 0 if joueur1.fatigue < joueur2.fatigue else joueur2, joueur1, 0, 0
 
-	def simuler_match(self, joueur1, joueur2, est_finale=False):
+	def simuler_match(self, joueur1, joueur2):
 		# Gère les abandons en tournoi si un (ou les deux) joueurs sont blessés
 		joueur1_peut_jouer = joueur1.peut_jouer()
 		joueur2_peut_jouer = joueur2.peut_jouer()
 
 		if not joueur1_peut_jouer and not joueur2_peut_jouer:
 			# Les deux joueurs sont blessés,
-			if est_finale:
-				return self.determiner_vainqueur_finale(joueur1, joueur2)
-			else:
-				# match annulé
-				return None, None, 0, 0
+			return self.determiner_vainqueur(joueur1, joueur2)
 		elif not joueur1_peut_jouer:
 			return joueur2, joueur1, 0, 0
 		elif not joueur2_peut_jouer:
@@ -291,7 +284,7 @@ class ATPFinals(Tournoi):
 			resultats[demi_finaliste] += 400  # +400 points pour une victoire en demi-finale
 		
 		# Finale
-		vainqueur = self.simuler_match(demi_finale_1, demi_finale_2, est_finale=True)[0]
+		vainqueur = self.simuler_match(demi_finale_1, demi_finale_2)[0]
 		resultats[vainqueur] += 500  # +500pts si victoire en finale
 		if not preliminaire:
 			print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
@@ -307,7 +300,9 @@ class ATPFinals(Tournoi):
 			else:
 				xp_gagne = self.XP_PAR_TOUR[1]
 			joueur.gagner_experience(xp_gagne)
-			joueur.apt_points += resultats[joueur]
+		
+		for joueur, points in resultats.items():
+			joueur.atp_points += points
 			
 		return resultats
 	

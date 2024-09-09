@@ -262,31 +262,29 @@ class Personnage:
 	
 	def gerer_fatigue(self, activite: Tournoi | str, sets_joues: int = 0):
 		fatigue_base = {
-			"Entrainement": random.randint(3, 7),
+			"Entrainement": random.randint(1, 3),
 			"Exhibition": random.randint(5, 15),
 		}
 		
 		# fatigue en fonction de la qualité du tournoi et du nombre de sets joués
 		tournoi_fatigue_mapping = {
-			1: lambda: sets_joues * 1.3,  # Grand Chelem: 1.3 pt de fatigue par sets joués
-			2: lambda: sets_joues * 1.2,  # Masters 1000 : 1.2 pt de fatigue par sets joués
-			3: lambda: sets_joues * 1.1,  # ATP 500 : 1.1 pt de fatigue par sets joués
+			1: lambda: sets_joues * 1.7,  # Grand Chelem: 1.5 pt de fatigue par sets joués
+			2: lambda: sets_joues * 1.4,  # Masters 1000 : 1.4 pt de fatigue par sets joués
+			3: lambda: sets_joues * 1.2,  # ATP 500 : 1.2 pt de fatigue par sets joués
 			4: lambda: sets_joues,  # ATP 250 : 1 pt de fatigue par sets joués
-			5: lambda: sets_joues * 0.8,   # Challenger 175 : 0.8 pt de fatigue par sets joués
-			6: lambda: sets_joues * 0.8,   # Challenger 125 : 0.8 pt de fatigue par sets joués
-			7: lambda: sets_joues * 0.8,   # Challenger 100 : 0.8 pt de fatigue par sets joués
-			8: lambda: sets_joues * 0.8,   # Challenger 75 : 0.8 pt de fatigue par sets joués
+			5: lambda: sets_joues * 0.9,   # Challenger 175 : 0.9 pt de fatigue par sets joués
+			6: lambda: sets_joues * 0.9,   # Challenger 125 : 0.9 pt de fatigue par sets joués
+			7: lambda: sets_joues * 0.9,   # Challenger 100 : 0.9 pt de fatigue par sets joués
+			8: lambda: sets_joues * 0.9,   # Challenger 75 : 0.9 pt de fatigue par sets joués
 			9: lambda: sets_joues * 0.8    # Challenger 50 : 0.8 pt de fatigue par sets joués
 		}
 	
-		if isinstance(activite, Tournoi) and activite.importance_tournoi is not None: # Normalement, deuxième condition useless
+		if isinstance(activite, Tournoi):
 			fatigue_ajoutee = tournoi_fatigue_mapping.get(activite.importance_tournoi, lambda: 0)()
 		else:
 			fatigue_ajoutee = fatigue_base.get(activite, 0)
 
 		self.fatigue = min(100, self.fatigue + fatigue_ajoutee)
-		if self.principal:
-			print(f"Niveau de fatigue actuel {self.fatigue}")
 
 		# if self.blessure:
 		# 	self.blessure.risque_aggravation_blessure(activite)
@@ -300,7 +298,7 @@ class Personnage:
 
 	# Fix: it doesn't for for now, must see why
 	def verifier_blessure(self, seuil=60):
-		k = np.where(self.fatigue < seuil, 0.2, 0.08)
+		k = np.where(self.fatigue < seuil, 0.2, 0.12)
 		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
 		if random.randint(1, 100) < risque:
 			self.infliger_blessure()
@@ -321,10 +319,10 @@ class Personnage:
 			      f". Indisponible pour {self.blessure.repos} semaine{accord2}.")
 
 	def reduire_temps_indisponibilite(self):
-		if isinstance(self.blessure, Blessure):
+		if self.blessure:
 			self.blessure.reduire_indisponibilite()
 			
-			if self.blessure.semaines_indisponibles == 0:
+			if self.blessure.semaines_indisponibles == 0 or self.fatigue == 0:
 				self.guerir()
 				
 			if self.principal and self.blessure:
@@ -334,7 +332,7 @@ class Personnage:
 				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
 
 	def se_reposer(self):
-		repos = random.randint(10, 20)
+		repos = random.randint(3, 5)
 		self.fatigue = max(0, self.fatigue - repos)
 
 		self.reduire_temps_indisponibilite()
@@ -356,6 +354,7 @@ class Personnage:
 
 	def guerir(self):
 		self.blessure = None
+		#self.fatigue = max(0, self.fatigue - 30)  # Extra repos quand le joueur revient de blessure
 		
 	def peut_jouer(self):
 		# Le joueur ne peut pas jouer s'il est blessé
@@ -365,7 +364,7 @@ class Personnage:
 		classement_limites = {
 			1: lambda c: True,                 # Grand Chelem: Pas de limite supérieure
 			2: lambda c: True,                 # Masters 1000: Top 1 à 150
-			3: lambda c: True,                 # ATP 500: Top 1 à 200
+			3: lambda c: True,                 # ATP 500: Top 1 à 250
 			4: lambda c: True,                 # ATP 250: Top 1 à 300
 			5: lambda c: c >= 30,              # Challenger 175: Top 30+
 			6: lambda c: c >= 50,              # Challenger 125: Top 50+
@@ -379,33 +378,26 @@ class Personnage:
 		if not classement_limites[tournoi.importance_tournoi](classement_joueur):
 			return False
 		
-		# Vérification de la fatigue du joueur
-		if self.fatigue < 30:
-			return True  # Peu de fatigue, plus enclin à participer
-		elif self.fatigue < 60:
-			if classement_joueur <= 32:
-				return tournoi.importance_tournoi <= 2  # Masters1000 et plus prestigieux
-			if classement_joueur <= 200:
-				return tournoi.importance_tournoi <= 4  # ATP 250 et plus prestigieux
-			if classement_joueur <= 300:
-				return tournoi.importance_tournoi <= 6  # Challenger 125 et plus prestigieux
-			if classement_joueur <= 800:
-				return tournoi.importance_tournoi <= 8  # Challenger 75 et plus prestigieux
-			else:
-				return True
-		elif self.fatigue < 85:
-			if classement_joueur <= 32:
-				return tournoi.importance_tournoi <= 1  # Grands chelems seulement
-			if classement_joueur <= 200:
-				return tournoi.importance_tournoi <= 3  # ATP 500 et plus prestigieux
-			if classement_joueur <= 300:
-				return tournoi.importance_tournoi <= 5  # Challenger 175 et plus prestigieux
-			if classement_joueur <= 800:
-				return tournoi.importance_tournoi <= 7  # Challenger 100 et plus prestigieux
-			else:
-				return True
-		else:
-			return False # Si le joueur à plus de 80% de fatigue il se repose
+		def f(x, seuil):
+			k = np.where(x < seuil, 0.3, 0.12)
+			return 1 - (1 / (1 + np.exp(-k * (x - seuil))))
+		
+		participation_chance = f(self.fatigue, seuil=45)
+		
+		# Ajuste la participation en fonction de l'importance du tournoi et du classement du joueur:
+		if tournoi.importance_tournoi <= 2:  # Grand Chelem, ATP Finals et Masters1000
+			participation_chance += 0.2
+		elif tournoi.importance_tournoi <= 4:  # ATP 500 et 250
+			if classement_joueur > 50:  # Les moins bien classé seront plus enclin à participer
+				participation_chance += 0.05
+		else:  # Tournoi Challengers
+			if classement_joueur < 40:
+				participation_chance -= 0.4
+			elif classement_joueur < 100:
+				participation_chance -= 0.2
+		
+		return random.random() < participation_chance
+		
 		
 	def id_card(self, classement):
 		largeur = 46

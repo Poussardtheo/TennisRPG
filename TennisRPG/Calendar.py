@@ -13,7 +13,6 @@ class Calendar:
         self.tournois = tournois
         self.current_atp_points = None
 
-    # Todo: Revoir la gestion des pnj quand il n'y a pas de tournoi
     def avancer_semaine(self, classement, joueurs):
         count = 0
         if self.current_week == self.SEMAINES_PAR_AN:
@@ -23,26 +22,14 @@ class Calendar:
 
         self.current_week += 1
 
-        # Attention, cette logique ne prend pas en compte les tournois sur plusieurs semaines
-        if not self.obtenir_tournois_semaine():
-            self.gerer_pnj(joueurs)
-
         for joueur_str, joueur in joueurs.items():
+            joueur.se_reposer()
             joueur.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]
             count += 1 if not joueur.peut_jouer() else 0
         print(f"semaine {self.current_week}: nb joueurs blessé: {count}")
 
     def obtenir_tournois_semaine(self):
         return self.tournois.get(self.current_week, [])
-    
-    def gerer_pnj(self, joueurs_disponibles: set):
-        for joueur in joueurs_disponibles:
-            if not joueur.principal:
-                if joueur.blessure or joueur.fatigue > 40:
-                    self.repos(joueur)
-                else:
-                    # le joueur se repose avec proba 1/2
-                    self.entrainement(joueur) if random.randint(0, 100) % 2 else self.repos(joueur)
                     
     def choisir_activite(self, joueur, joueurs, classement):
         print(f"\nSemaine : {self.current_week} de l'année {self.current_year}")
@@ -170,9 +157,6 @@ class Calendar:
                     
             joueurs_disponibles -= set(participants)
             
-        # gestion pnj not in tournament
-        self.gerer_pnj(joueurs_disponibles)
-            
         classement.update_classement("atp")
         classement.update_classement("atp_race")
         classement.update_classement("elo")
@@ -196,9 +180,6 @@ class Calendar:
                 self.current_atp_points.loc[f"{player.prenom} {player.nom}", self.current_week] = points
 
             joueurs_disponibles -= set(participants)
-        
-        # gestion pnj not in tournament
-        self.gerer_pnj(joueurs_disponibles)
         
         classement.update_classement("atp")
         classement.update_classement("atp_race")
