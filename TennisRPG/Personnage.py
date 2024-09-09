@@ -260,7 +260,6 @@ class Personnage:
 	#                      FATIGUE & BLESSURES                    #
 	###############################################################
 	
-	# Todo: Reprendre cette fonction pour l'appeler dans simuler_match (classe Tournoi)
 	def gerer_fatigue(self, activite: Tournoi | str, sets_joues: int = 0):
 		fatigue_base = {
 			"Entrainement": random.randint(3, 7),

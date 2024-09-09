@@ -15,7 +15,7 @@ def est_eligible_pour_tournoi(joueur, tournoi, classement):
 def seed(n):
 	"""returns list of n in standard tournament seed order
 
-	Note that n need not be a power of 2 - 'byes' are returned as zero
+	Notes: n need not be a power of 2 - 'byes' are returned as zero
 	"""
 	ol = [1]
 	
@@ -214,14 +214,14 @@ class Tournoi:
 			gagnant, perdant = joueur2, joueur1
 			sets_gagnant, sets_perdant = sets_joueur2, sets_joueur1
 
-		sets_joues=sets_gagnant+sets_perdant
+		sets_joues = sets_gagnant+sets_perdant
 
 		# Gère la fatigue des deux joueurs
 		gagnant.gerer_fatigue(self, sets_joues=sets_joues)
 		perdant.gerer_fatigue(self, sets_joues=sets_joues)
 
 		# Mise à jour des Elo
-		k = 32 # Todo: revoir cela pour l'évolution de l'elo dans le temps
+		k = 32  # Todo: revoir cela pour l'évolution de l'elo dans le temps
 		elo_change = k * (1 - 1 / (1 + 10 ** ((perdant.elo - gagnant.elo) / 400)))
 		
 		gagnant.elo += elo_change
@@ -234,6 +234,7 @@ class Tournoi:
 #                           CLASSE                            #
 #                      FILLE POUR TOURNOI                     #
 ###############################################################
+
 class GrandSlam(Tournoi):
 	POINTS_ATP = {1: 10, 2: 50, 3: 100, 4: 200, 5: 400, 6: 800, 7: 1300, "Vainqueur": 2000}
 	XP_PAR_TOUR = {1: 100, 2: 200, 3: 400, 4: 600, 5: 750, 6: 900, 7: 1300, "Vainqueur": 2000}
@@ -254,9 +255,8 @@ class ATPFinals(Tournoi):
 		self.importance_tournoi = 1
 	
 	def simuler_tournoi(self, participants, classement, type="elo", preliminaire=False):
-		# Todo: add a logic for the players that are injured (add the two substitutes)
-		if len(participants) != 8:
-			raise ValueError("L'ATP Finals nécessite exactement 8 participants")
+		if len(participants) != 10:
+			raise ValueError("L'ATP Finals nécessite exactement 10 participants: 8 titulaire et 2 remplaçants")
 		
 		# Trier les joueurs par classement
 		joueurs_tries = sorted(participants, key=lambda j: classement.obtenir_rang(j, "atp_race"))
@@ -266,9 +266,11 @@ class ATPFinals(Tournoi):
 		poule_a = [joueurs_tries[0], joueurs_tries[3], joueurs_tries[4], joueurs_tries[7]]
 		poule_b = [joueurs_tries[1], joueurs_tries[2], joueurs_tries[5], joueurs_tries[6]]
 		
+		remplacants = [joueurs_tries[8], joueurs_tries[9]]
+		
 		# Simuler les matchs de poules
-		resultats_poule_a = self.simuler_matchs_poule(poule_a)
-		resultats_poule_b = self.simuler_matchs_poule(poule_b)
+		resultats_poule_a = self.simuler_matchs_poule(poule_a, remplacants)
+		resultats_poule_b = self.simuler_matchs_poule(poule_b, remplacants)
 		
 		resultats = {}
 		for poule in [resultats_poule_a, resultats_poule_b]:
@@ -282,23 +284,19 @@ class ATPFinals(Tournoi):
 		qualifies_b = self.selectionner_qualifies(resultats_poule_b)
 		
 		# Demi finales
-		demi_finale_1 = self.simuler_match(qualifies_a[0], qualifies_b[1], est_finale=True)[0]
-		demi_finale_2 = self.simuler_match(qualifies_b[0], qualifies_a[1], est_finale=True)[0]
+		demi_finale_1 = self.simuler_match(qualifies_a[0], qualifies_b[1])[0]
+		demi_finale_2 = self.simuler_match(qualifies_b[0], qualifies_a[1])[0]
 		
 		for demi_finaliste in [demi_finale_1, demi_finale_2]:
-			resultats[demi_finaliste] += 400  # 400 points pour une victoire en demi-finale
-			demi_finaliste.atp_points += 400
+			resultats[demi_finaliste] += 400  # +400 points pour une victoire en demi-finale
 		
 		# Finale
 		vainqueur = self.simuler_match(demi_finale_1, demi_finale_2, est_finale=True)[0]
-		resultats[vainqueur] += 500
-		vainqueur.atp_points += 500  # +500pts si victoire en finale
+		resultats[vainqueur] += 500  # +500pts si victoire en finale
 		if not preliminaire:
 			print(f"\nVainqueur du tournoi {self.nom}:\n{vainqueur.prenom} {vainqueur.nom}")
 		
-		# Progression des joueurs
-		# Todo: inclure ici la gestion des points atp (Permet de s'astreindre du paramètre est une finale).
-		#  Prévoir également la gestion des remplaçants
+		# Progression et points atp des joueurs
 		for joueur in participants:
 			if joueur == vainqueur:
 				xp_gagne = self.XP_PAR_TOUR["Vainqueur"]
@@ -309,47 +307,69 @@ class ATPFinals(Tournoi):
 			else:
 				xp_gagne = self.XP_PAR_TOUR[1]
 			joueur.gagner_experience(xp_gagne)
-		
+			joueur.apt_points += resultats[joueur]
+			
 		return resultats
 	
-	def simuler_matchs_poule(self, poule):
+	def simuler_matchs_poule(self, poule, remplacants):
 		resultats = {joueur: {'victoires': 0, 'sets_gagnes': 0, 'confrontations': {}} for joueur in poule}
-		for i in range(len(poule)):
-			for j in range(i + 1, len(poule)):
-				gagnant, perdant, sets_gagnant, sets_perdant = self.simuler_match(poule[i], poule[j])
-				# Update infos sur le gagnant
-				resultats[gagnant]['victoires'] += 1
-				resultats[gagnant]['sets_gagnes'] += sets_gagnant
-				resultats[gagnant]["confrontations"][perdant] = 'V'
-				
-				# Update infos sur le perdant
-				resultats[perdant]['sets_gagnes'] += sets_perdant
-				resultats[perdant]["confrontations"][gagnant] = 'D'
+		matchs_restants = [(poule[i], poule[j]) for i in range(len(poule)) for j in range(i + 1, len(poule))]
+		
+		# Gestion des remplaçants
+		for i, match in enumerate(matchs_restants):
+			joueur1, joueur2 = match
+			if not joueur1.peut_jouer() or not joueur2.peut_jouer():
+				remplacant = remplacants.pop(0)
+				if not joueur1.peut_jouer():
+					resultats, matchs_restants = self.remplacer_joueur(resultats, matchs_restants, i, joueur1, remplacant)
+				if not joueur2.peut_jouer():
+					resultats, matchs_restants = self.remplacer_joueur(resultats, matchs_restants, i, joueur2, remplacant)
+					
+			# Simuler le match
+			gagnant, perdant, sets_gagnant, sets_perdant = self.simuler_match(joueur1, joueur2)
+			
+			# Update infos sur le gagnant
+			resultats[gagnant]['victoires'] += 1
+			resultats[gagnant]['sets_gagnes'] += sets_gagnant
+			resultats[gagnant]["confrontations"][perdant] = 'V'
+			
+			# Update infos sur le perdant
+			resultats[perdant]['sets_gagnes'] += sets_perdant
+			resultats[perdant]["confrontations"][gagnant] = 'D'
 		return resultats
 	
 	@staticmethod
-	def selectionner_qualifies(resultats_poule):
-		joueurs_tries = sorted(resultats_poule.items(), key=lambda x: x[1]['victoires'], reverse=True)
-		
-		# Si pas d'égalité pour les deux premières places
-		if joueurs_tries[1][1]['victoires'] > joueurs_tries[2][1]['victoires']:
-			return [joueurs_tries[0][0], joueurs_tries[1][0]]
-		
-		# En cas d'égalités
-		joueurs_a_egalite = [j for j, r in joueurs_tries if r['victoires'] == joueurs_tries[1][1]['victoires']]
-		
-		# À 2
-		if len(joueurs_a_egalite) == 2:
-			# On compare les confrontations directes
-			if resultats_poule[joueurs_a_egalite[0]]["confrontations"][joueurs_a_egalite[1]] == 'V':
-				if resultats_poule[joueurs_a_egalite[0]]['confrontations'][joueurs_a_egalite[1]] == 'V':
-					return [joueurs_tries[0][0], joueurs_a_egalite[0]]
-				else:
-					return [joueurs_tries[0][0], joueurs_a_egalite[1]]
-		# À 3
-		else:
+	def remplacer_joueur(resultats, matchs_restants, index_match, joueur_blesse, remplacant):
+		if remplacant not in resultats:
+			resultats[remplacant] = {'victoires': 0, 'sets_gagnes': 0, 'confrontations': {}}
 			
-			return [joueurs_tries[0][0], joueurs_tries[1][0]]
+		for i in range(index_match, len(matchs_restants)):
+			joueur1, joueur2 = matchs_restants[i]
+			matchs_restants[i] = (
+				remplacant if joueur1 == joueur_blesse else joueur1,
+				remplacant if joueur2 == joueur_blesse else joueur2
+			)
+		return resultats, matchs_restants
+	
+	@staticmethod
+	def selectionner_qualifies(resultats_poule):
+		# Trier les joueurs par victoires, puis par sets gagnés et enfin par confrontations directes
+		joueurs_tries = sorted(resultats_poule.keys(),
+		                       key=lambda j: (resultats_poule[j]['victoires'],
+		                                      resultats_poule[j]['sets_gagnes'],
+		                                      -sum(1 for adv, res in resultats_poule[j]['confrontations'].items() if res == 'V')),
+		                       reverse=True)
+		
+		# Prendre les deux premiers
+		qualifies = joueurs_tries[:2]
+		
+		# Vérifier les blessures et remplacer si nécessaire
+		if not qualifies[0].peut_jouer():
+			qualifies[0] = joueurs_tries[2]  # Remplacer par le 3ème de la poule
+		if not qualifies[1].peut_jouer():
+			qualifies[1] = joueurs_tries[2] if qualifies[0] != joueurs_tries[2] else joueurs_tries[3]
+		
+		return qualifies
 
 
 class Masters1000(Tournoi):
@@ -850,7 +870,7 @@ tournois = {
 		 CHALLENGERS75("Directv Open Lima", "Lima", "Clay"),
 		 CHALLENGERS75("Unicharm Trophy Ehime", "Matsuyama", "Hard")
 	],
-	46: [ATPFinals("Nitto ATP Finals", "Turin", 8, "Indoor Hard"),
+	46: [ATPFinals("Nitto ATP Finals", "Turin", 10, "Indoor Hard"),
 	     CHALLENGERS100("Hyogo Noah Challenger", "Kobe", "Indoor Hard"),
 	     CHALLENGERS100("Uruguay Open", "Montevideo", "Clay"),
 	     CHALLENGERS75("Paine Schartz Partners Challenger", "Champaign, IL", "Indoor Hard"),

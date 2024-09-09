@@ -10,7 +10,6 @@ class Blessure:
 		self.semaines_indisponibles = self.repos
 		self.blessure_agravee_cette_semaine = False
 		
-	# TODO: Réfléchir aux valeurs et à la logique de risque
 	def risque_agravation_blessure(self, activite):
 		risque_base = {
 			"Tournoi": 30,
