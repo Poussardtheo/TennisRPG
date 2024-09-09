@@ -448,7 +448,7 @@ pays_locales = {
 	"United States": ["en_US"],
 	"Ireland": ["en_IE"],
 	"New_Zeland" : ["en_NZ"],
-	"Pakistan": ["en_PK"]
+	"Pakistan": ["en_PK"],
 	"Spain": ["es_ES"],
 	"Mexico": ["es_MX"],
 	"Germany": ["de_DE"],
