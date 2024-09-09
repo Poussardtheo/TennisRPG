@@ -268,7 +268,7 @@ class Personnage:
 		
 		# fatigue en fonction de la qualité du tournoi et du nombre de sets joués
 		tournoi_fatigue_mapping = {
-			1: lambda: sets_joues * 1.7,  # Grand Chelem: 1.5 pt de fatigue par sets joués
+			1: lambda: sets_joues * 1.7,  # Grand Chelem: 1.7 pt de fatigue par sets joués
 			2: lambda: sets_joues * 1.4,  # Masters 1000 : 1.4 pt de fatigue par sets joués
 			3: lambda: sets_joues * 1.2,  # ATP 500 : 1.2 pt de fatigue par sets joués
 			4: lambda: sets_joues,  # ATP 250 : 1 pt de fatigue par sets joués
@@ -286,8 +286,8 @@ class Personnage:
 
 		self.fatigue = min(100, self.fatigue + fatigue_ajoutee)
 
-		# if self.blessure:
-		# 	self.blessure.risque_aggravation_blessure(activite)
+		if self.blessure:
+			self.blessure.risque_aggravation_blessure(activite)
 		
 		self.verifier_blessure()
 
@@ -354,11 +354,12 @@ class Personnage:
 
 	def guerir(self):
 		self.blessure = None
-		#self.fatigue = max(0, self.fatigue - 30)  # Extra repos quand le joueur revient de blessure
+		if self.principal:
+			print(f"{self.prenom} {self.nom} est guéri")
 		
 	def peut_jouer(self):
 		# Le joueur ne peut pas jouer s'il est blessé
-		return self.blessure is None
+		return self.blessure is None or self.blessure.gravite <= 2
 	
 	def should_participate(self, tournoi, classement):
 		classement_limites = {
@@ -397,7 +398,6 @@ class Personnage:
 				participation_chance -= 0.2
 		
 		return random.random() < participation_chance
-		
 		
 	def id_card(self, classement):
 		largeur = 46
@@ -446,25 +446,34 @@ class Personnage:
 pays_locales = {
 	"France": ["fr_FR"],
 	"United States": ["en_US"],
+	"Ireland": ["en_IE"],
+	"New_Zeland" : ["en_NZ"],
+	"Pakistan": ["en_PK"]
 	"Spain": ["es_ES"],
+	"Mexico": ["es_MX"],
 	"Germany": ["de_DE"],
 	"Italy": ["it_IT"],
 	"Russia": ["ru_RU"],
+	"Ukraine": ["uk_UA"],
 	"United Kingdom": ["en_GB"],
 	"Australia": ["en_AU"],
 	"Netherlands": ["nl_NL"],
 	"Belgium": ["nl_BE", "fr_BE"],
+	"Estonia": ["et_EE"],
 	"Brazil": ["pt_BR"],
 	"Argentina": ["es_AR"],
 	"Canada": ["en_CA", "fr_CA"],
 	"Switzerland": ["de_CH", "fr_CH", "it_CH"],
 	"Poland": ["pl_PL"],
 	"Croatia": ["hr_HR"],
+	"Romania": ["ro_RO"],
 	"Greece": ["el_GR"],
 	"Chile": ["es_CL"],
 	"Denmark": ["da_DK"],
 	"Sweden": ["sv_SE"],
 	"Bulgaria": ["bg_BG"],
+	"Hungary": ["hu_HU"],
+	"Lituania": ["lt_LT"],
 	"Czech Republic": ["cs_CZ"],
 	"Austria": ["de_AT"],
 	"Portugal": ["pt_PT"],
@@ -473,9 +482,10 @@ pays_locales = {
 	"Colombia": ["es_CO"],
 	"Slovakia": ["sk_SK"],
 	"Slovenia": ["sl_SI"],
-	"Bosnia and Herzegovina": ["bs_BA"],
 	"China": ["zh_CN"],
-	"Japan": ["ja_JP"]
+	"Turkey": ["tr_TR"],
+	"Japan": ["ja_JP"],
+	"Norway": ["no_NO"]
 }
 
 
@@ -504,7 +514,7 @@ def generer_pnj(nombre, sexe):
 		taille = random.randint(taille_min, taille_max)  # todo: La taille doit suivre une gaussienne
 		lvl = random.randint(1, 25)
 
-		if random_locale in ["ru_RU", "bg_BG"]:
+		if random_locale in ["ru_RU", "bg_BG", "uk_UA"]:
 			prenom = translit(prenom, "ru", reversed=True)
 			nom = translit(nom, "ru", reversed=True)
 		elif random_locale in ["el_GR","zh_CN", "ja_JP"]:

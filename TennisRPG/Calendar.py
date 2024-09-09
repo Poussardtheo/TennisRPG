@@ -26,7 +26,9 @@ class Calendar:
             joueur.se_reposer()
             joueur.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]
             count += 1 if not joueur.peut_jouer() else 0
-        print(f"semaine {self.current_week}: nb joueurs blessé: {count}")
+            # réinitialiser l'aggravation à la fin de la semaine
+            if joueur.blessure:
+                joueur.blessure.blessure_agravee_cette_semaine = False
 
     def obtenir_tournois_semaine(self):
         return self.tournois.get(self.current_week, [])
