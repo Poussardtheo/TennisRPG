@@ -1,5 +1,6 @@
 import random
 
+import pandas as pd
 from TennisRPG.Tournois import *
 
 
@@ -11,15 +12,18 @@ class Calendar:
         self.current_year = year
         self.current_week = 1
         self.tournois = tournois
-        self.current_atp_points = None
+        self.current_atp_points: None | pd.DataFrame = None
 
     def avancer_semaine(self, classement, joueurs):
         count = 0
+        # Lorsque l'on entame une nouvelle année
         if self.current_week == self.SEMAINES_PAR_AN:
-            self.current_year += 1
-            self.current_week = 0
+            self.current_year += 1      # Update l'année
+            self.current_week = 0       # Reinitialize the week and the atp_race
             classement.reinitialiser_atp_race()
-
+            # Rotation on the age system (update the year, retirement, and generate new players)
+            # Todo: Don't forget to add the newest players to the current_atp_points dataframe
+            
         self.current_week += 1
 
         for joueur_str, joueur in joueurs.items():

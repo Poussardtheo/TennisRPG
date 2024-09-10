@@ -523,8 +523,10 @@ def generer_pnj(nombre, sexe):
 		prenom = fake.first_name_male() if sexe.lower() == 'm' else fake.first_name_female()
 		
 		nom = fake.last_name()
-		lvl = random.randint(1, 25)
-
+		lvl = random.randint(1, 25)  # Todo: Prendre en compte l'âge dans le calcul du niveau
+		age = random.randint(16, 37)  # Plage d'âge entre 16 et 37 ans
+		# Note : A voir ce que cela donne dans la simulation des années préliminaires
+		
 		if random_locale in ["ru_RU", "bg_BG", "uk_UA"]:
 			prenom = translit(prenom, "ru", reversed=True)
 			nom = translit(nom, "ru", reversed=True)
@@ -532,7 +534,7 @@ def generer_pnj(nombre, sexe):
 			prenom = unidecode(prenom)
 			nom = unidecode(nom)
 
-		personnage = Personnage(sexe, prenom, nom, country, lvl=lvl)
+		personnage = Personnage(sexe, prenom, nom, country, age=age, lvl=lvl)
 		personnage.generer_statistique()
 		personnages_dico[f"{personnage.prenom} {personnage.nom}"] = personnage
 
