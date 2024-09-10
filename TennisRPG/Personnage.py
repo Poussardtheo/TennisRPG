@@ -119,7 +119,7 @@ class Personnage:
 		"Endurance": -0.2,  # Impact négatif modéré
 	}
 
-	def __init__(self, sexe, prenom, nom, country, taille=None, lvl=1, archetype=None, principal=False):
+	def __init__(self, sexe, prenom, nom, country, age = None, taille=None, lvl=1, archetype=None, principal=False):
 		# Validation
 		assert sexe.lower() in ["m", "f"], "le sexe doit être 'm' ou 'f'"
 		assert lvl >= 1, "niveau minimum = 1"
@@ -127,6 +127,7 @@ class Personnage:
 		assert taille is None or 145 < taille < 220
 		assert isinstance(principal, bool)
 		assert archetype is None or archetype in ARCHETYPES.keys()
+		assert age is None or isinstance(age, int)
 		
 		# Height logic
 		if sexe.lower() == "m":
@@ -143,7 +144,8 @@ class Personnage:
 		self.country = country
 		self.archetype = archetype or random.choice(list(ARCHETYPES.keys()))
 		self.principal = principal  # Indique si le joueur est le personnage_principal ou un pnj
-
+		self.age = age
+		
 		# Niveau, XP et attributs
 		self.lvl = lvl
 		self.xp_points = 0
