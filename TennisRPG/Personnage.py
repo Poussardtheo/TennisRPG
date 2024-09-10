@@ -2,9 +2,11 @@ import math
 import random
 
 import numpy as np
+
 from faker import Faker
 from transliterate import translit
 from unidecode import unidecode
+from scipy.stats import truncnorm
 
 from TennisRPG.Blessure import dico_blessures, Blessure
 from TennisRPG.Tournois import Tournoi
@@ -86,6 +88,16 @@ ARCHETYPES = {
 }
 
 
+def generer_taille(lower_bound, upper_bound):
+	std_dev = 10  # écart-type de la distribution
+	mean = (upper_bound + lower_bound) / 2  # moyenne de la distribution
+	
+	a = (lower_bound - mean) / std_dev
+	b = (upper_bound - mean) / std_dev
+	
+	return int(truncnorm.rvs(a, b, loc=mean, scale=std_dev, size=1))
+
+
 class Personnage:
 	POINTS_BASE = 6
 	LVL_MAX = 30
@@ -112,15 +124,20 @@ class Personnage:
 		assert sexe.lower() in ["m", "f"], "le sexe doit être 'm' ou 'f'"
 		assert lvl >= 1, "niveau minimum = 1"
 		assert isinstance(prenom, str) and isinstance(nom, str) and isinstance(country, str)
-		assert taille is None or isinstance(taille, int)
 		assert taille is None or 145 < taille < 220
 		assert isinstance(principal, bool)
 		assert archetype is None or archetype in ARCHETYPES.keys()
 		
-		self.sexe = sexe
+		# Height logic
+		if sexe.lower() == "m":
+			taille = taille if taille else generer_taille(160, 205)
+		if sexe.lower() == "f":
+			taille = taille if taille else generer_taille(155, 185)
+			
+		self.sexe = sexe.lower()
 		self.nom = nom
 		self.prenom = prenom
-		self.taille = taille or (random.randint(160, 200) if self.sexe.lower() == 'm' else random.randint(155, 185))
+		self.taille = taille
 		self.main_dominante = "Gauche" if random.random() < 0.15 else "Droite"
 		self.revers = "Une main" if random.random() < 0.11 else "Deux mains"
 		self.country = country
@@ -160,7 +177,8 @@ class Personnage:
 		return round(elo_initial)
 
 	def generer_statistique(self):
-		taille_mod = (self.taille - 180) / 20  # -1 à 1 pour 160 à 200
+		mean_height = 170 if self.sexe == "f" else 182.5
+		taille_mod = (self.taille - mean_height) / 20  # -1 à 1 pour lower_height à higher_height
 		for attr, impact in self.TAILLE_IMPACTS.items():
 			ajustement = round(impact * taille_mod * 10)  # l'ajustement se fait de -3 à 3
 			self.stats[attr] = min(70, self.stats[attr] + ajustement)
@@ -499,28 +517,20 @@ def generer_pnj(nombre, sexe):
 			random_locale = pays_locales[country][0]
 
 		fake = Faker(random_locale)
-
-		if sexe.lower() == 'm':
-			prenom = fake.first_name_male()
-			taille_min, taille_max = 160, 200
-		elif sexe.lower() == 'f':
-			prenom = fake.first_name_female()
-			taille_min, taille_max = 155, 185
-		else:
-			raise ValueError("Le sexe doit être 'M' ou 'F'")
+		
+		prenom = fake.first_name_male() if sexe.lower() == 'm' else fake.first_name_female()
 		
 		nom = fake.last_name()
-		taille = random.randint(taille_min, taille_max)  # todo: La taille doit suivre une gaussienne
 		lvl = random.randint(1, 25)
 
 		if random_locale in ["ru_RU", "bg_BG", "uk_UA"]:
 			prenom = translit(prenom, "ru", reversed=True)
 			nom = translit(nom, "ru", reversed=True)
-		elif random_locale in ["el_GR","zh_CN", "ja_JP"]:
+		elif random_locale in ["el_GR", "zh_CN", "ja_JP"]:
 			prenom = unidecode(prenom)
 			nom = unidecode(nom)
 
-		personnage = Personnage(sexe, prenom, nom, country, taille, lvl)
+		personnage = Personnage(sexe, prenom, nom, country, lvl=lvl)
 		personnage.generer_statistique()
 		personnages_dico[f"{personnage.prenom} {personnage.nom}"] = personnage
 
@@ -530,6 +540,3 @@ def generer_pnj(nombre, sexe):
 def generer_pnj_thread(nb_joueurs, sexe, pool):
 	generated_pool = generer_pnj(nb_joueurs, sexe)
 	pool.update(generated_pool)
-	
-	
-personnage = Personnage("m", "Théo", "Poussard", "France", principal=True)
