@@ -88,7 +88,3 @@ class Classement:
         self.classement_atp_race = OrderedDict(
             (joueur, i) for i, joueur in enumerate(classement, 1)
         )
-# from Personnage import generer_pnj
-#
-# POOL = generer_pnj(100)
-# classement = Classement(POOL)

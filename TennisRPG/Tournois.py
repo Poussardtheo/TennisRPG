@@ -154,9 +154,9 @@ class Tournoi:
 		
 		resultats = {}
 		for joueur, dernier_tour in derniers_tours.items():
+			resultats[joueur] = self.POINTS_ATP.get(dernier_tour, 0)
 			self.attribuer_points_atp(joueur, dernier_tour)
 			xp_gagne = self.XP_PAR_TOUR.get(dernier_tour, 0)
-			resultats[joueur] = self.POINTS_ATP.get(dernier_tour, 0)
 			joueur.gagner_experience(xp_gagne)
 		
 		# Note the return will be useful when we'll save the info in a database
@@ -170,7 +170,10 @@ class Tournoi:
 		elif joueur2.blessure.gravite < joueur1.blessure.gravite:
 			return joueur1, joueur2, 0, 0
 		else:
-			return joueur1, joueur2, 0, 0 if joueur1.fatigue < joueur2.fatigue else joueur2, joueur1, 0, 0
+			if joueur1.fatigue < joueur2.fatigue:
+				return joueur1, joueur2, 0, 0
+			else:
+				return joueur2, joueur1, 0, 0
 
 	def simuler_match(self, joueur1, joueur2):
 		# Gère les abandons en tournoi si un (ou les deux) joueurs sont blessés
@@ -214,11 +217,11 @@ class Tournoi:
 		perdant.gerer_fatigue(self, sets_joues=sets_joues)
 
 		# Mise à jour des Elo
-		k = 32  # Todo: revoir cela pour l'évolution de l'elo dans le temps
-		elo_change = k * (1 - 1 / (1 + 10 ** ((perdant.elo - gagnant.elo) / 400)))
+		k_gagnant = gagnant.calculer_k()
+		k_perdant = perdant.calculer_k()
 		
-		gagnant.elo += elo_change
-		perdant.elo -= elo_change
+		gagnant.elo += k_gagnant * (1 - 1 / (1 + 10 ** ((perdant.elo - gagnant.elo) / 400)))
+		perdant.elo -= k_perdant * (1 - 1 / (1 + 10 ** ((gagnant.elo - perdant.elo) / 400)))
 		
 		return gagnant, perdant, sets_gagnant, sets_perdant
 
@@ -269,7 +272,6 @@ class ATPFinals(Tournoi):
 		for poule in [resultats_poule_a, resultats_poule_b]:
 			for joueur, resultat in poule.items():
 				points_victoires = resultat["victoires"] * 200  # +200 pts par victoire en poule
-				joueur.atp_points += points_victoires
 				resultats[joueur] = points_victoires
 		
 		# Sélectionner les deux meilleurs de chaque poule
@@ -303,6 +305,7 @@ class ATPFinals(Tournoi):
 		
 		for joueur, points in resultats.items():
 			joueur.atp_points += points
+			joueur.atp_race_points += points
 			
 		return resultats
 	
@@ -313,7 +316,8 @@ class ATPFinals(Tournoi):
 		# Gestion des remplaçants
 		for i, match in enumerate(matchs_restants):
 			joueur1, joueur2 = match
-			if not joueur1.peut_jouer() or not joueur2.peut_jouer():
+			# If one of the players can't play and there is substitutes left
+			if not joueur1.peut_jouer() or not joueur2.peut_jouer() and remplacants:
 				remplacant = remplacants.pop(0)
 				if not joueur1.peut_jouer():
 					resultats, matchs_restants = self.remplacer_joueur(resultats, matchs_restants, i, joueur1, remplacant)

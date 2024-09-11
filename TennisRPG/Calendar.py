@@ -15,21 +15,30 @@ class Calendar:
         self.current_atp_points: None | pd.DataFrame = None
 
     def avancer_semaine(self, classement, joueurs):
-        count = 0
         # Lorsque l'on entame une nouvelle année
         if self.current_week == self.SEMAINES_PAR_AN:
             self.current_year += 1      # Update l'année
             self.current_week = 0       # Reinitialize the week and the atp_race
             classement.reinitialiser_atp_race()
+            # Update sur l'age et le déclin du joueur
+            for joueur in joueurs.values():
+                joueur.age += 1
+                joueur.update_statistiques_declin()
+                
             # Rotation on the age system (update the year, retirement, and generate new players)
             # Todo: Don't forget to add the newest players to the current_atp_points dataframe
             
         self.current_week += 1
-
+        classement.update_classement("atp")
+        classement.update_classement("atp_race")
+        classement.update_classement("elo")
+        
         for joueur_str, joueur in joueurs.items():
             joueur.se_reposer()
-            joueur.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]
-            count += 1 if not joueur.peut_jouer() else 0
+            joueur.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]  # Todo : On retire plus de points que ce qui est attribué.
+            self.current_atp_points.loc[joueur_str, self.current_week] = 0
+            assert joueur.atp_points == sum(self.current_atp_points.loc[joueur_str]), f"semaine {self.current_week} : {joueur_str}: {joueur.atp_points}, current_atp_points:  {sum(self.current_atp_points.loc[joueur_str])}"
+        
             # réinitialiser l'aggravation à la fin de la semaine
             if joueur.blessure:
                 joueur.blessure.blessure_agravee_cette_semaine = False
@@ -153,20 +162,15 @@ class Calendar:
                 tournoi, joueurs_disponibles, classement
             )
             if tournoi == tournoi_choisi:
-                resultat = tournoi.jouer(joueur, participants, classement)
-                self.current_atp_points.loc[f"{joueur.prenom} {joueur.nom}", self.current_week] = resultat[joueur]
+                resultats = tournoi.jouer(joueur, participants, classement)
             else:
                 resultats = tournoi.simuler_tournoi(participants, classement, type="atp")
                 
-                for player, points in resultats.items():
-                    self.current_atp_points.loc[f"{player.prenom} {player.nom}", self.current_week] = points
+            for player, points in resultats.items():
+                self.current_atp_points.loc[f"{player.prenom} {player.nom}", self.current_week] = points
                     
             joueurs_disponibles -= set(participants)
             
-        classement.update_classement("atp")
-        classement.update_classement("atp_race")
-        classement.update_classement("elo")
-        
         if isinstance(tournoi_choisi, GrandSlam) or (isinstance(tournoi_choisi, Masters1000) and tournoi_choisi.nb_tours == 7):
             self.avancer_semaine(classement, joueurs)
         
@@ -186,10 +190,6 @@ class Calendar:
                 self.current_atp_points.loc[f"{player.prenom} {player.nom}", self.current_week] = points
 
             joueurs_disponibles -= set(participants)
-        
-        classement.update_classement("atp")
-        classement.update_classement("atp_race")
-        classement.update_classement("elo")
 
     @staticmethod
     def repos(joueur):

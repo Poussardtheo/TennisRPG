@@ -88,7 +88,7 @@ ARCHETYPES = {
 }
 
 
-def generer_taille(lower_bound, upper_bound):
+def generer_truncnorm(lower_bound, upper_bound):
 	std_dev = 10  # écart-type de la distribution
 	mean = (upper_bound + lower_bound) / 2  # moyenne de la distribution
 	
@@ -96,6 +96,22 @@ def generer_taille(lower_bound, upper_bound):
 	b = (upper_bound - mean) / std_dev
 	
 	return int(truncnorm.rvs(a, b, loc=mean, scale=std_dev, size=1))
+
+
+def niveau_proportionnel_age(age, age_min=16, age_max=37, lvl_min=1, lvl_max=30):
+	"""Calcule le niveau proportionnel à l'âge avec une légère variation aléatoire et une chance rare pour des talents
+	exceptionnels."""
+	
+	proportionnel = lvl_min + (lvl_max - lvl_min) * (age - age_min) / (age_max - age_min)
+	variation = random.normalvariate(0, 1.4)  # Ajouter une petite variation normale
+	niveau = proportionnel + variation
+	
+	# Chance rare pour un jeune joueur d'être une pépite
+	if age < 20 and random.random() < 0.003:  # 0.3% de chance
+		niveau = random.randint(2, 15)  # Niveau élevé pour une pépite
+	
+	# Assurer que le niveau est entre lvl_min et lvl_max
+	return int(max(lvl_min, min(lvl_max, niveau)))
 
 
 class Personnage:
@@ -131,9 +147,9 @@ class Personnage:
 		
 		# Height logic
 		if sexe.lower() == "m":
-			taille = taille if taille else generer_taille(160, 205)
+			taille = taille if taille else generer_truncnorm(160, 205)
 		if sexe.lower() == "f":
-			taille = taille if taille else generer_taille(155, 185)
+			taille = taille if taille else generer_truncnorm(155, 185)
 			
 		self.sexe = sexe.lower()
 		self.nom = nom
@@ -145,6 +161,7 @@ class Personnage:
 		self.archetype = archetype or random.choice(list(ARCHETYPES.keys()))
 		self.principal = principal  # Indique si le joueur est le personnage_principal ou un pnj
 		self.age = age
+		self.age_declin = generer_truncnorm(30, 37)  # Génération de l'âge de déclin du joueur
 		
 		# Niveau, XP et attributs
 		self.lvl = lvl
@@ -153,6 +170,7 @@ class Personnage:
 
 		# Classement
 		self.atp_points = 0
+		self.historique_atp_points = []
 		self.atp_race_points = 0
 
 		# Fatigue & Blessure
@@ -163,7 +181,8 @@ class Personnage:
 		self.stats = {attr: 30 for attr in list(self.POIDS_BASE.keys())}
 		self.elo = self.calculer_elo(initial=True)
 		self.generer_statistique()
-
+		self.historique_elo = [self.elo]
+		
 	def calculer_elo(self, surface=None, initial=False):
 		if surface:
 			poids = {attr: self.POIDS_BASE[attr] * SURFACE_IMPACTS[surface].get(attr, 1.0) for attr in self.POIDS_BASE}
@@ -172,12 +191,24 @@ class Personnage:
 
 		score_pondere = sum(self.stats[attr] * poids[attr] for attr in poids)
 		score_moyen = score_pondere / sum(poids.values())
-
+		
+		diff_age = self.age - self.age_declin
+		age_factor = 1 - diff_age * (0.01 * diff_age / self.age_declin) if self.age > self.age_declin else 1
+		elo_modif = (score_moyen * age_factor - 40) * 30
+		
 		# Convertir le score en ELO (sert à simuler l'issue d'un match)
-		elo_initial = 1500 + (score_moyen - 40) * 30 if initial else self.elo + (score_moyen - 40) * 30
+		elo = 1500 - self.age + elo_modif if initial else self.elo - self.age + elo_modif
 
-		return round(elo_initial)
-
+		return max(0, round(elo))
+	
+	def calculer_k(self):
+		"""Calcul k pour faire évoluer l'elo du joueur"""
+		if self.elo < 2400:
+			k = 20
+		else:
+			k = 10
+			
+		return k
 	def generer_statistique(self):
 		mean_height = 170 if self.sexe == "f" else 182.5
 		taille_mod = (self.taille - mean_height) / 20  # -1 à 1 pour lower_height à higher_height
@@ -212,7 +243,16 @@ class Personnage:
 
 			self.ap_points -= points
 		self.elo = self.calculer_elo()
-
+	
+	def update_statistiques_declin(self, taux_declin=0.002):
+		if self.age > self.age_declin:
+			facteur = 1 - taux_declin * (self.age - self.age_declin)**2.25
+			for key, stat in self.stats.items():
+				self.stats[key] = int(stat * facteur)
+		
+		# Update the elo once the stats have changed
+		self.elo = self.calculer_elo()
+				
 	def gagner_experience(self, earned_xp):
 		facteur_niveau = max(1 - (self.lvl/30) * 0.6, 0.4)
 		xp_ajuste = round(earned_xp * facteur_niveau)
@@ -270,10 +310,9 @@ class Personnage:
 
 			except (ValueError, IndexError):
 				print("Choix invalide, Veuillez réessayer.")
-
-	def attribuer_atp_points(self, earned_atp_points):
-		self.atp_points += earned_atp_points
-		print(f"{self.prenom} {self.nom} a gagné {earned_atp_points} points ATP.")
+		
+		# Update the elo of the player
+		self.elo = self.calculer_elo()
 	
 	###############################################################
 	#                           SECTION                           #
@@ -316,7 +355,6 @@ class Personnage:
 			if self.principal:
 				print(f"Attention ! {accord} et risque de se blesser. ")
 
-	# Fix: it doesn't for for now, must see why
 	def verifier_blessure(self, seuil=60):
 		k = np.where(self.fatigue < seuil, 0.2, 0.12)
 		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
@@ -523,8 +561,8 @@ def generer_pnj(nombre, sexe):
 		prenom = fake.first_name_male() if sexe.lower() == 'm' else fake.first_name_female()
 		
 		nom = fake.last_name()
-		lvl = random.randint(1, 25)  # Todo: Prendre en compte l'âge dans le calcul du niveau
 		age = random.randint(16, 37)  # Plage d'âge entre 16 et 37 ans
+		lvl = niveau_proportionnel_age(age)
 		# Note : A voir ce que cela donne dans la simulation des années préliminaires
 		
 		if random_locale in ["ru_RU", "bg_BG", "uk_UA"]:
