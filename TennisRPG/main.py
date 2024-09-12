@@ -35,7 +35,7 @@ def main():
 	prenom = input(f"\nEntrez le prénom de votre {joueurs_sexe} : ")
 	nom = input(f"\nEntrez le nom de votre {joueurs_sexe} : ")
 	pays = input(f"\nEntrez le pays de votre {joueurs_sexe} : ")
-	joueur_principal = Personnage(sexe, prenom, nom, pays, principal=True)
+	joueur_principal = Personnage(sexe, prenom, nom, pays, age=16, principal=True)
 	
 	# Wait for player POOL generation to complete
 	pool_thread.join()

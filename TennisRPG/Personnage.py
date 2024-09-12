@@ -135,7 +135,7 @@ class Personnage:
 		"Endurance": -0.2,  # Impact négatif modéré
 	}
 
-	def __init__(self, sexe, prenom, nom, country, age = None, taille=None, lvl=1, archetype=None, principal=False):
+	def __init__(self, sexe, prenom, nom, country, age=None, taille=None, lvl=1, archetype=None, principal=False):
 		# Validation
 		assert sexe.lower() in ["m", "f"], "le sexe doit être 'm' ou 'f'"
 		assert lvl >= 1, "niveau minimum = 1"
@@ -476,8 +476,10 @@ class Personnage:
 		print("├" + "─" * (largeur - 2) + "┤")
 		print(f"│ Nom     : {self.nom:<32} │")
 		print(f"│ Prénom  : {self.prenom:<32} │")
-		print(f"│ Taille  : {self.taille} cm{' ' * 26} │")
 		print(f"│ Nationalité  : {self.country:<27} │")
+		print(f"│ Âge  : {self.age} ans{' ' * (32 - len(str(self.age)) - 1)} │")
+		print(f"│ Taille  : {self.taille} cm{' ' * 26} │")
+		
 		print(f"│ Main    : {self.main_dominante:<32} │")
 		print(f"│ Revers  : {self.revers:<32} │")
 		print("├" + "─" * (largeur - 2) + "┤")
