@@ -317,7 +317,7 @@ class ATPFinals(Tournoi):
 		for i, match in enumerate(matchs_restants):
 			joueur1, joueur2 = match
 			# If one of the players can't play and there is substitutes left
-			if not joueur1.peut_jouer() or not joueur2.peut_jouer() and remplacants:
+			if (not joueur1.peut_jouer() or not joueur2.peut_jouer()) and remplacants:
 				remplacant = remplacants.pop(0)
 				if not joueur1.peut_jouer():
 					resultats, matchs_restants = self.remplacer_joueur(resultats, matchs_restants, i, joueur1, remplacant)

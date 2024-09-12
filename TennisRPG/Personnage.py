@@ -182,22 +182,33 @@ class Personnage:
 		self.elo = self.calculer_elo(initial=True)
 		self.generer_statistique()
 		self.historique_elo = [self.elo]
-		
+	
+	def check_retirement(self):
+		if self.age > self.age_declin:
+			elo_factor = max(0, 1 - (self.elo + 100) / 2000) # The higher the elo, the less probable the retirement
+			retirement_chance = (self.age - self.age_declin) * 0.05 * elo_factor
+			return random.random() < retirement_chance
+		return False
+	
 	def calculer_elo(self, surface=None, initial=False):
 		if surface:
 			poids = {attr: self.POIDS_BASE[attr] * SURFACE_IMPACTS[surface].get(attr, 1.0) for attr in self.POIDS_BASE}
-		else:
-			poids = self.POIDS_BASE
+			
+			score_pondere = sum(self.stats[attr] * poids[attr] for attr in poids)
+			score_moyen = score_pondere / sum(poids.values())
+			
+			diff_age = self.age - self.age_declin
+			age_factor = 1 - diff_age * (0.01 * diff_age / self.age_declin) if self.age > self.age_declin else 1
+			elo_modif = (score_moyen * age_factor - 40) * 30
 
-		score_pondere = sum(self.stats[attr] * poids[attr] for attr in poids)
-		score_moyen = score_pondere / sum(poids.values())
-		
-		diff_age = self.age - self.age_declin
-		age_factor = 1 - diff_age * (0.01 * diff_age / self.age_declin) if self.age > self.age_declin else 1
-		elo_modif = (score_moyen * age_factor - 40) * 30
-		
 		# Convertir le score en ELO (sert à simuler l'issue d'un match)
-		elo = 1500 - self.age + elo_modif if initial else self.elo - self.age + elo_modif
+		# if score_moyen * age_factor <= 40:
+		# 	elo_modif = (score_moyen * age_factor - 40) * 30
+		# 	# Convertir le score en ELO (sert à simuler l'issue d'un match)
+			elo = 1500 - self.age + elo_modif if initial else self.elo - self.age + elo_modif
+		else:
+			# If score_moyen * age_factor > 40, we keep the current ELO
+			elo = 1500 if initial else self.elo
 
 		return max(0, round(elo))
 	
@@ -209,6 +220,7 @@ class Personnage:
 			k = 10
 			
 		return k
+	
 	def generer_statistique(self):
 		mean_height = 170 if self.sexe == "f" else 182.5
 		taille_mod = (self.taille - mean_height) / 20  # -1 à 1 pour lower_height à higher_height
@@ -250,8 +262,8 @@ class Personnage:
 			for key, stat in self.stats.items():
 				self.stats[key] = int(stat * facteur)
 		
-		# Update the elo once the stats have changed
-		self.elo = self.calculer_elo()
+			# Update the elo once the stats have changed
+			self.elo = self.calculer_elo()
 				
 	def gagner_experience(self, earned_xp):
 		facteur_niveau = max(1 - (self.lvl/30) * 0.6, 0.4)
@@ -546,7 +558,7 @@ pays_locales = {
 }
 
 
-def generer_pnj(nombre, sexe):
+def generer_pnj(nombre, sexe, age_min=16, age_max=37):
 	personnages_dico = {}
 	for _ in range(nombre):
 		country = random.choice(list(pays_locales.keys()))
@@ -561,7 +573,7 @@ def generer_pnj(nombre, sexe):
 		prenom = fake.first_name_male() if sexe.lower() == 'm' else fake.first_name_female()
 		
 		nom = fake.last_name()
-		age = random.randint(16, 37)  # Plage d'âge entre 16 et 37 ans
+		age = random.randint(age_min, age_max)  # Plage d'âge entre 16 et 37 ans
 		lvl = niveau_proportionnel_age(age)
 		# Note : A voir ce que cela donne dans la simulation des années préliminaires
 		

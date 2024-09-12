@@ -5,3 +5,5 @@ pandas
 numpy
 setuptools
 pytest
+scipy
+tabulate

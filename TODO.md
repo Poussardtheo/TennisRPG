@@ -9,8 +9,8 @@
 - Intégrer une logique pour jouer un match, 
   - faire en sorte que lorsque l'on joue un tournoi, on puisse suivre l'évolution de notre joueur dans le tournoi
 - Revoir le système de points d'XP pour qu'il colle à la réalité (Pas lvl max au bout d'un an) ✔
-- Revoir la taille des joueurs avec une gaussienne
-- Ajouter l'âge des joueurs (avec une évolution). 
+- Revoir la taille des joueurs avec une gaussienne ✔
+- Ajouter l'âge des joueurs (avec une évolution). 🚧 [In progress]
     - Le niveau du joueur à sa création dépendra de son âge. 
 
 #### V.0.3

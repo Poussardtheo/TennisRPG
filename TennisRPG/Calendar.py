@@ -1,6 +1,8 @@
 import random
 
 import pandas as pd
+
+from TennisRPG.Personnage import generer_pnj
 from TennisRPG.Tournois import *
 
 
@@ -13,7 +15,33 @@ class Calendar:
         self.current_week = 1
         self.tournois = tournois
         self.current_atp_points: None | pd.DataFrame = None
-
+    
+    def rotation_roster(self, joueurs, classement):
+        retraites = []
+        sexe = next(iter(joueurs.values())).sexe  # Obtenir le sexe du pool de joueurs
+        # Supprimer les joueurs retraités du pool de joueurs
+        for nom, joueur in list(joueurs.items()):
+            if joueur.check_retirement():
+                retraites.append(nom)
+                del joueurs[nom]
+        
+        # Supprimer les joueurs retraités de current_atp_points une fois qu'ils n'ont plus de points atp
+        for nom in retraites:
+            if self.current_atp_points.loc[nom].sum() == 0:
+                self.current_atp_points.drop(nom, inplace=True)
+        
+        # Générer de nouveaux jeunes joueurs
+        nouveaux_joueurs = generer_pnj(len(retraites), sexe, age_max = 19)
+        for nom, joueur in nouveaux_joueurs.items():
+            joueurs[nom] = joueur
+            
+            # Ajouter les nouveaux joueurs à current_atp_points avec 0 points
+            self.current_atp_points.loc[nom] = [0] * self.SEMAINES_PAR_AN
+        
+        # Mettre à jour le classement
+        classement.update_classement("atp")
+        classement.update_classement("elo")
+        
     def avancer_semaine(self, classement, joueurs):
         # Lorsque l'on entame une nouvelle année
         if self.current_week == self.SEMAINES_PAR_AN:
@@ -24,10 +52,9 @@ class Calendar:
             for joueur in joueurs.values():
                 joueur.age += 1
                 joueur.update_statistiques_declin()
-                
-            # Rotation on the age system (update the year, retirement, and generate new players)
-            # Todo: Don't forget to add the newest players to the current_atp_points dataframe
             
+            self.rotation_roster(joueurs, classement)
+
         self.current_week += 1
         classement.update_classement("atp")
         classement.update_classement("atp_race")
@@ -35,11 +62,11 @@ class Calendar:
         
         for joueur_str, joueur in joueurs.items():
             joueur.se_reposer()
-            joueur.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]  # Todo : On retire plus de points que ce qui est attribué.
+            joueur.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]
             self.current_atp_points.loc[joueur_str, self.current_week] = 0
-            assert joueur.atp_points == sum(self.current_atp_points.loc[joueur_str]), f"semaine {self.current_week} : {joueur_str}: {joueur.atp_points}, current_atp_points:  {sum(self.current_atp_points.loc[joueur_str])}"
-        
-            # réinitialiser l'aggravation à la fin de la semaine
+            assert joueur.atp_points == sum(self.current_atp_points.loc[joueur_str])
+            
+            # réinitialiser l'aggravation de la blessure à la fin de la semaine
             if joueur.blessure:
                 joueur.blessure.blessure_agravee_cette_semaine = False
 

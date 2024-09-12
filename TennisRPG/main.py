@@ -2,6 +2,9 @@ import threading
 
 import pandas as pd
 import time
+
+from tabulate import tabulate
+
 # Local import
 from TennisRPG.Calendar import *
 from TennisRPG.Personnage import *
@@ -85,7 +88,10 @@ def main():
 		elif action.lower() == 'i':
 			joueur_principal.id_card(classement)
 		elif action.lower() == 'a':
-			print(calendar.current_atp_points.loc[:, calendar.current_week].sort_values(ascending=False))
+			data = (calendar.current_atp_points.loc[:, calendar.current_week][
+				        calendar.current_atp_points.loc[:, calendar.current_week] > 0].sort_values(ascending=False)
+			        .reset_index())
+			print(tabulate(data, headers=["name", "points"], tablefmt="mixed_grid", showindex=False))
 		elif action.lower() == 'b':
 			[print(personnage.blessure) for personnage in POOL_JOUEURS.values() if personnage.blessure]
 		elif action.lower() == 'e':
