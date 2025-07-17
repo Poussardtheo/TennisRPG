@@ -8,7 +8,6 @@ from transliterate import translit
 from unidecode import unidecode
 from scipy.stats import truncnorm
 
-from TennisRPG.Blessure import dico_blessures, Blessure
 from TennisRPG.Tournois import Tournoi
 
 SURFACE_IMPACTS = {
@@ -91,10 +90,10 @@ ARCHETYPES = {
 def generer_taille(lower_bound, upper_bound):
 	std_dev = 10  # écart-type de la distribution
 	mean = (upper_bound + lower_bound) / 2  # moyenne de la distribution
-	
+
 	a = (lower_bound - mean) / std_dev
 	b = (upper_bound - mean) / std_dev
-	
+
 	return int(truncnorm.rvs(a, b, loc=mean, scale=std_dev, size=1))
 
 
@@ -127,13 +126,13 @@ class Personnage:
 		assert taille is None or 145 < taille < 220
 		assert isinstance(principal, bool)
 		assert archetype is None or archetype in ARCHETYPES.keys()
-		
+
 		# Height logic
 		if sexe.lower() == "m":
 			taille = taille if taille else generer_taille(160, 205)
 		if sexe.lower() == "f":
 			taille = taille if taille else generer_taille(155, 185)
-			
+
 		self.sexe = sexe.lower()
 		self.nom = nom
 		self.prenom = prenom
@@ -153,15 +152,15 @@ class Personnage:
 		self.atp_points = 0
 		self.atp_race_points = 0
 
-		# Fatigue & Blessure
+		# Fatigue
 		self.fatigue = 0
-		self.blessure = None
 
 		# Stats et Elo
 		self.stats = {attr: 30 for attr in list(self.POIDS_BASE.keys())}
 		self.elo = self.calculer_elo(initial=True)
 		self.generer_statistique()
 
+	# Todo: Stocker directement dans le init les elo par surfaces plutôt que d'avoir à les recalculer à chaque fois
 	def calculer_elo(self, surface=None, initial=False):
 		if surface:
 			poids = {attr: self.POIDS_BASE[attr] * SURFACE_IMPACTS[surface].get(attr, 1.0) for attr in self.POIDS_BASE}
@@ -212,7 +211,7 @@ class Personnage:
 		self.elo = self.calculer_elo()
 
 	def gagner_experience(self, earned_xp):
-		facteur_niveau = max(1 - (self.lvl/30) * 0.6, 0.4)
+		facteur_niveau = max(1 - (self.lvl / 30) * 0.6, 0.4)
 		xp_ajuste = round(earned_xp * facteur_niveau)
 		self.xp_points += xp_ajuste
 		if self.principal:
@@ -272,151 +271,38 @@ class Personnage:
 	def attribuer_atp_points(self, earned_atp_points):
 		self.atp_points += earned_atp_points
 		print(f"{self.prenom} {self.nom} a gagné {earned_atp_points} points ATP.")
-	
+
 	###############################################################
 	#                           SECTION                           #
-	#                      FATIGUE & BLESSURES                    #
+	#                      		FATIGUE                  		  #
 	###############################################################
-	
+	# Todo: Reprendre cette partie là pour simplifier et améliorer le code
 	def gerer_fatigue(self, activite: Tournoi | str, sets_joues: int = 0):
-		fatigue_base = {
-			"Entrainement": random.randint(1, 3),
+		fatigue_activite = {
+			"Entrainement": random.randint(3, 7),
 			"Exhibition": random.randint(5, 15),
 		}
-		
-		# fatigue en fonction de la qualité du tournoi et du nombre de sets joués
-		tournoi_fatigue_mapping = {
-			1: lambda: sets_joues * 1.7,  # Grand Chelem: 1.7 pt de fatigue par sets joués
-			2: lambda: sets_joues * 1.4,  # Masters 1000 : 1.4 pt de fatigue par sets joués
-			3: lambda: sets_joues * 1.2,  # ATP 500 : 1.2 pt de fatigue par sets joués
-			4: lambda: sets_joues,  # ATP 250 : 1 pt de fatigue par sets joués
-			5: lambda: sets_joues * 0.9,   # Challenger 175 : 0.9 pt de fatigue par sets joués
-			6: lambda: sets_joues * 0.9,   # Challenger 125 : 0.9 pt de fatigue par sets joués
-			7: lambda: sets_joues * 0.9,   # Challenger 100 : 0.9 pt de fatigue par sets joués
-			8: lambda: sets_joues * 0.9,   # Challenger 75 : 0.9 pt de fatigue par sets joués
-			9: lambda: sets_joues * 0.8    # Challenger 50 : 0.8 pt de fatigue par sets joués
-		}
-	
+
+		# todo: Le coeff doit être proportionnel au tournoi
+		# plus le tournoi est exigent et plus on accumule de la fatigue.
+		coeff = 1
+
 		if isinstance(activite, Tournoi):
-			fatigue_ajoutee = tournoi_fatigue_mapping.get(activite.importance_tournoi, lambda: 0)()
+			fatigue_ajoute = sets_joues*coeff
 		else:
-			fatigue_ajoutee = fatigue_base.get(activite, 0)
+			fatigue_ajoute = fatigue_activite.get(activite, 0)
 
-		self.fatigue = min(100, self.fatigue + fatigue_ajoutee)
-
-		if self.blessure:
-			self.blessure.risque_aggravation_blessure(activite)
-		
-		self.verifier_blessure()
-
-		if self.fatigue >= 80 and not self.blessure:
-			accord = "la joueuse est très fatiguée" if self.sexe.lower() == 'f' else "Le joueur est très fatigué"
-			if self.principal:
-				print(f"Attention ! {accord} et risque de se blesser. ")
-
-	# Fix: it doesn't for for now, must see why
-	def verifier_blessure(self, seuil=60):
-		k = np.where(self.fatigue < seuil, 0.2, 0.12)
-		risque = 100 / (1 + math.exp(-k * (self.fatigue - seuil)))
-		if random.randint(1, 100) < risque:
-			self.infliger_blessure()
-
-	def infliger_blessure(self):
-		gravite = self.gravite_blessure()
-		blessures_possibles = dico_blessures[gravite]
-
-		blessure_infos = random.choice(blessures_possibles)
-		
-		self.blessure = Blessure(blessure_infos["nom"], blessure_infos["gravite"], blessure_infos["repos"])
-		
-		accord = "e" if self.sexe.lower() == 'f' else ""
-		accord2 = "s" if self.blessure.repos != 1 else ""
-
-		if self.principal:
-			print(f"{self.nom} s'est blessé{accord} : {self.blessure.nom} (Gravité: {self.blessure.gravite})"
-			      f". Indisponible pour {self.blessure.repos} semaine{accord2}.")
-
-	def reduire_temps_indisponibilite(self):
-		if self.blessure:
-			self.blessure.reduire_indisponibilite()
-			
-			if self.blessure.semaines_indisponibles == 0 or self.fatigue == 0:
-				self.guerir()
-				
-			if self.principal and self.blessure:
-				accord2 = "s" if self.blessure.semaines_indisponibles > 1 else ""
-				print(f"{self.prenom} {self.nom} récupère de sa blessure. Encore indisponible {self.blessure.repos} semaine{accord2}")
-				print(f"{self.prenom} {self.nom} s'est reposé.")
-				print(f"Fatigue : {self.fatigue}, Blessure : {self.blessure}")
+		self.fatigue = min(100, self.fatigue + fatigue_ajoute)
 
 	def se_reposer(self):
+		# Reprendre les valeurs
 		repos = random.randint(3, 5)
 		self.fatigue = max(0, self.fatigue - repos)
 
-		self.reduire_temps_indisponibilite()
-	
-	def gravite_blessure(self):
-		# Paramètres de la fonction logistique
-		k = 0.05  # Contrôle la pente des courbes
-		x0 = {1: 15, 2: 25, 3: 40, 4: 75, 5: 100, 6: 125, 7: 150}  # Points centraux pour chaque gravité
-		
-		# Calcul de la valeur logistique pour chaque gravité
-		logistic_values = [1 / (1 + np.exp(-k * (self.fatigue - x0[g]))) for g in range(1, 8)]
-		
-		# Normalisation pour s'assurer que la somme des probabilités est 1
-		total = sum(logistic_values)
-		normalized_values = [v / total for v in logistic_values]
-		
-		gravite = random.choices(range(1, 8), weights=normalized_values)[0]
-		return gravite
+	# Todo: affiner la logique
+	def should_participate(self):
+		return self.fatigue < 50
 
-	def guerir(self):
-		self.blessure = None
-		if self.principal:
-			print(f"{self.prenom} {self.nom} est guéri")
-		
-	def peut_jouer(self):
-		# Le joueur ne peut pas jouer s'il est blessé
-		return self.blessure is None or self.blessure.gravite <= 2
-	
-	def should_participate(self, tournoi, classement):
-		classement_limites = {
-			1: lambda c: True,                 # Grand Chelem: Pas de limite supérieure
-			2: lambda c: True,                 # Masters 1000: Top 1 à 150
-			3: lambda c: True,                 # ATP 500: Top 1 à 250
-			4: lambda c: True,                 # ATP 250: Top 1 à 300
-			5: lambda c: c >= 30,              # Challenger 175: Top 30+
-			6: lambda c: c >= 50,              # Challenger 125: Top 50+
-			7: lambda c: c >= 60,              # Challenger 100: Top 60+
-			8: lambda c: c >= 70,             # Challenger 75: Top 70+
-			9: lambda c: c >= 130              # Challenger 50: Top 130+
-		}
-	
-		classement_joueur = classement.obtenir_rang(self, 'atp')
-		# Vérification du classement du joueur pour le type de tournoi
-		if not classement_limites[tournoi.importance_tournoi](classement_joueur):
-			return False
-		
-		def f(x, seuil):
-			k = np.where(x < seuil, 0.3, 0.12)
-			return 1 - (1 / (1 + np.exp(-k * (x - seuil))))
-		
-		participation_chance = f(self.fatigue, seuil=45)
-		
-		# Ajuste la participation en fonction de l'importance du tournoi et du classement du joueur:
-		if tournoi.importance_tournoi <= 2:  # Grand Chelem, ATP Finals et Masters1000
-			participation_chance += 0.2
-		elif tournoi.importance_tournoi <= 4:  # ATP 500 et 250
-			if classement_joueur > 50:  # Les moins bien classé seront plus enclin à participer
-				participation_chance += 0.05
-		else:  # Tournoi Challengers
-			if classement_joueur < 40:
-				participation_chance -= 0.4
-			elif classement_joueur < 100:
-				participation_chance -= 0.2
-		
-		return random.random() < participation_chance
-		
 	def id_card(self, classement):
 		largeur = 46
 		print("┌" + "─" * (largeur - 2) + "┐")
@@ -431,11 +317,11 @@ class Personnage:
 		print("├" + "─" * (largeur - 2) + "┤")
 		print("│" + " SITUATION ".center(largeur - 2) + "│")
 		print("├" + "─" * (largeur - 2) + "┤")
-		print(f"│ Classement  ATP  : {classement.obtenir_rang(self,'atp'):<23} │")
+		print(f"│ Classement  ATP  : {classement.obtenir_rang(self, 'atp'):<23} │")
 		print(f"│ Points ATP  : {self.atp_points:<28} │")
 		print(f"│ ELO     : {int(self.elo):<32} │")
 		print(f"│ Niveau  : {self.lvl:<32} │")
-		
+
 		xp_requis = self.calculer_experience_requise()
 		xp_actuel = self.xp_points
 		max_barre = 20
@@ -445,10 +331,9 @@ class Personnage:
 		xp_space = len(xp_values)
 		left_space = largeur - 11 - max_barre - 2
 		middle_space = max(0, left_space - xp_space)
-		
-		print(f"│ XP      : {barre_xp}{espace_xp}{' ' * (middle_space-1)}{xp_values} │")
+
+		print(f"│ XP      : {barre_xp}{espace_xp}{' ' * (middle_space - 1)}{xp_values} │")
 		print(f"│ Fatigue : {self.fatigue:<32} │")
-		print(f"│ Blessure: {self.blessure if self.blessure else False} │")
 		print("├" + "─" * (largeur - 2) + "┤")
 		print("│" + " STATISTIQUES ".center(largeur - 2) + "│")
 		print("├" + "─" * (largeur - 2) + "┤")
@@ -517,9 +402,9 @@ def generer_pnj(nombre, sexe):
 			random_locale = pays_locales[country][0]
 
 		fake = Faker(random_locale)
-		
+
 		prenom = fake.first_name_male() if sexe.lower() == 'm' else fake.first_name_female()
-		
+
 		nom = fake.last_name()
 		lvl = random.randint(1, 25)
 
