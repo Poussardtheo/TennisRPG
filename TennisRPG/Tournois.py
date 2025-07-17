@@ -31,7 +31,7 @@ def seed(n):
 def selectionner_joueurs_pour_tournoi(
 		tournoi, joueurs_disponibles, classement, type="elo"
 ):
-	joueurs_eligibles = [j for j in joueurs_disponibles if j.peut_jouer() and j.should_participate(tournoi, classement)]
+	joueurs_eligibles = [j for j in joueurs_disponibles if j.should_participate()]
 	participants = sorted(
 		joueurs_eligibles, key=lambda j: classement.obtenir_rang(j, type)
 	)
@@ -162,37 +162,17 @@ class Tournoi:
 		# Note the return will be useful when we'll save the info in a database
 		return resultats
 
-	@staticmethod
-	def determiner_vainqueur(joueur1, joueur2):
-		"""Détermine le vainqueur de la finale selon la gravité de la blessure et la fatigue des joueurs"""
-		if joueur1.blessure.gravite < joueur2.blessure.gravite:
-			return joueur1, joueur2, 0, 0
-		elif joueur2.blessure.gravite < joueur1.blessure.gravite:
-			return joueur1, joueur2, 0, 0
-		else:
-			return joueur1, joueur2, 0, 0 if joueur1.fatigue < joueur2.fatigue else joueur2, joueur1, 0, 0
-
 	def simuler_match(self, joueur1, joueur2):
-		# Gère les abandons en tournoi si un (ou les deux) joueurs sont blessés
-		joueur1_peut_jouer = joueur1.peut_jouer()
-		joueur2_peut_jouer = joueur2.peut_jouer()
-
-		if not joueur1_peut_jouer and not joueur2_peut_jouer:
-			# Les deux joueurs sont blessés,
-			return self.determiner_vainqueur(joueur1, joueur2)
-		elif not joueur1_peut_jouer:
-			return joueur2, joueur1, 0, 0
-		elif not joueur2_peut_jouer:
-			return joueur1, joueur2, 0, 0
-
 		elo1 = joueur1.calculer_elo(surface=self.surface) - joueur1.fatigue ** 1.25  # La fatigue diminue les performances
 		elo2 = joueur2.calculer_elo(surface=self.surface) - joueur2.fatigue ** 1.25
-		
+
+		# Proba que le joueur 1 gagne
 		proba1 = 1 / (1 + 10 ** ((elo2 - elo1) / 400))
 		
 		# Logique sur le score du match.
 		sets_joueur1, sets_joueur2 = 0, 0
-		
+
+		# Reprendre pour une gestion de match au niveau du jeu et pas du set
 		while max(sets_joueur1, sets_joueur2) < self.sets_gagnants:
 			if random.random() < proba1:
 				sets_joueur1 += 1
@@ -200,14 +180,13 @@ class Tournoi:
 				sets_joueur2 += 1
 
 		# Détermine le gagnant
+		# Todo: simplifier cette partie
 		if sets_joueur1 > sets_joueur2:
 			gagnant, perdant = joueur1, joueur2
-			sets_gagnant, sets_perdant = sets_joueur1, sets_joueur2
 		else:
 			gagnant, perdant = joueur2, joueur1
-			sets_gagnant, sets_perdant = sets_joueur2, sets_joueur1
 
-		sets_joues = sets_gagnant+sets_perdant
+		sets_joues = sets_joueur1+sets_joueur2
 
 		# Gère la fatigue des deux joueurs
 		gagnant.gerer_fatigue(self, sets_joues=sets_joues)
@@ -220,7 +199,7 @@ class Tournoi:
 		gagnant.elo += elo_change
 		perdant.elo -= elo_change
 		
-		return gagnant, perdant, sets_gagnant, sets_perdant
+		return gagnant, perdant, max(sets_joueur1, sets_joueur2), min(sets_joueur1, sets_joueur2)
 
 
 ###############################################################
@@ -313,13 +292,6 @@ class ATPFinals(Tournoi):
 		# Gestion des remplaçants
 		for i, match in enumerate(matchs_restants):
 			joueur1, joueur2 = match
-			if not joueur1.peut_jouer() or not joueur2.peut_jouer():
-				remplacant = remplacants.pop(0)
-				if not joueur1.peut_jouer():
-					resultats, matchs_restants = self.remplacer_joueur(resultats, matchs_restants, i, joueur1, remplacant)
-				if not joueur2.peut_jouer():
-					resultats, matchs_restants = self.remplacer_joueur(resultats, matchs_restants, i, joueur2, remplacant)
-					
 			# Simuler le match
 			gagnant, perdant, sets_gagnant, sets_perdant = self.simuler_match(joueur1, joueur2)
 			
@@ -332,20 +304,8 @@ class ATPFinals(Tournoi):
 			resultats[perdant]['sets_gagnes'] += sets_perdant
 			resultats[perdant]["confrontations"][gagnant] = 'D'
 		return resultats
-	
-	@staticmethod
-	def remplacer_joueur(resultats, matchs_restants, index_match, joueur_blesse, remplacant):
-		if remplacant not in resultats:
-			resultats[remplacant] = {'victoires': 0, 'sets_gagnes': 0, 'confrontations': {}}
-			
-		for i in range(index_match, len(matchs_restants)):
-			joueur1, joueur2 = matchs_restants[i]
-			matchs_restants[i] = (
-				remplacant if joueur1 == joueur_blesse else joueur1,
-				remplacant if joueur2 == joueur_blesse else joueur2
-			)
-		return resultats, matchs_restants
-	
+
+
 	@staticmethod
 	def selectionner_qualifies(resultats_poule):
 		# Trier les joueurs par victoires, puis par sets gagnés et enfin par confrontations directes
@@ -357,12 +317,6 @@ class ATPFinals(Tournoi):
 		
 		# Prendre les deux premiers
 		qualifies = joueurs_tries[:2]
-		
-		# Vérifier les blessures et remplacer si nécessaire
-		if not qualifies[0].peut_jouer():
-			qualifies[0] = joueurs_tries[2]  # Remplacer par le 3ème de la poule
-		if not qualifies[1].peut_jouer():
-			qualifies[1] = joueurs_tries[2] if qualifies[0] != joueurs_tries[2] else joueurs_tries[3]
 		
 		return qualifies
 

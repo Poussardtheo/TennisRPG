@@ -14,7 +14,6 @@ class Calendar:
         self.current_atp_points = None
 
     def avancer_semaine(self, classement, joueurs):
-        count = 0
         if self.current_week == self.SEMAINES_PAR_AN:
             self.current_year += 1
             self.current_week = 0
@@ -23,12 +22,7 @@ class Calendar:
         self.current_week += 1
 
         for joueur_str, joueur in joueurs.items():
-            joueur.se_reposer()
             joueur.atp_points -= self.current_atp_points.loc[joueur_str, self.current_week]
-            count += 1 if not joueur.peut_jouer() else 0
-            # réinitialiser l'aggravation à la fin de la semaine
-            if joueur.blessure:
-                joueur.blessure.blessure_agravee_cette_semaine = False
 
     def obtenir_tournois_semaine(self):
         return self.tournois.get(self.current_week, [])
@@ -36,14 +30,9 @@ class Calendar:
     def choisir_activite(self, joueur, joueurs, classement):
         print(f"\nSemaine : {self.current_week} de l'année {self.current_year}")
 
-        if not joueur.peut_jouer():
-            print(f"{joueur.prenom} {joueur.nom} ne peut pas jouer cette semaine et doit se reposer.")
-            self.repos(joueur)
-            self.simuler_tournois_semaine(joueur, joueurs, classement)
-            self.avancer_semaine(classement, joueurs)
-            return
 
         tournois_semaines = self.obtenir_tournois_semaine()
+
         tournois_elligible = [t for t in tournois_semaines if est_eligible_pour_tournoi(joueur, t, classement)]
         
         activites_possibles = [act for act in self.ACTIVITES if act != "Tournoi"]
@@ -124,9 +113,8 @@ class Calendar:
     def selectionner_joueurs_disponibles(joueur, joueurs):
         """Sélectionne tous les joueurs disponibles pour jouer le tournoi sans prendre en compte le personnage
         principal"""
-        joueurs_disponibles = set(j for j in joueurs.values() if j.peut_jouer())
-        if joueur in joueurs_disponibles:
-            joueurs_disponibles.remove(joueur)
+        joueurs_disponibles = set(j for j in joueurs.values())
+        joueurs_disponibles.discard(joueur)
         return joueurs_disponibles
     
     def participer_tournoi(self, joueur, joueurs, classement):

@@ -28,6 +28,7 @@ class Classement:
             (joueur, i) for i, joueur in enumerate(classement, 1)
         )
 
+    # todo: Corriger la fonction, il faut trier le classement avant de l'afficher.
     def afficher_classement(self, top_n=100, type="atp"):
         print(f"\nClassement {'ELO' if type == 'elo' else 'ATP' if type == 'atp' else 'ATP Race'} :")
         if type == "elo":
