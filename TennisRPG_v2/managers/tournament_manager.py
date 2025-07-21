@@ -73,7 +73,7 @@ class TournamentManager:
 
                 # Simule une décision de participation basée sur fatigue et probabilité
                 participation_rate = get_participation_rate(tournament)
-                should_participate = self._should_player_participate(player, tournament, participation_rate)
+                should_participate = self._should_player_participate(player, participation_rate)
 
                 if should_participate:
                     eligible_players.append(player)
@@ -97,13 +97,12 @@ class TournamentManager:
         
         return selected
     
-    def _should_player_participate(self, player, tournament: Tournament, base_rate: float) -> bool:
+    def _should_player_participate(self, player, base_rate: float) -> bool:
         """
         Détermine si un joueur devrait participer à un tournoi
         
         Args:
             player: Le joueur
-            tournament: Le tournoi
             base_rate: Taux de base de participation
             
         Returns:
@@ -124,7 +123,7 @@ class TournamentManager:
         return random.random() < final_probability
     
     def simulate_week_tournaments(self, week: int, all_players: Dict[str, 'Player'], 
-                                ranking_manager=None, main_player=None, atp_points_manager=None) -> Dict[Tournament, 'TournamentResult']:
+                                ranking_manager=None, atp_points_manager=None) -> Dict[Tournament, 'TournamentResult']:
         """
         Simule tous les tournois d'une semaine
         
@@ -132,7 +131,6 @@ class TournamentManager:
             week: Numéro de la semaine
             all_players: Tous les joueurs disponibles
             ranking_manager: Gestionnaire de classement
-            main_player: Joueur principal (optionnel)
             
         Returns:
             Dictionnaire des résultats par tournoi
