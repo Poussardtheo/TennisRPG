@@ -5,3 +5,6 @@ pandas
 numpy
 setuptools
 pytest
+pytest-cov
+pytest-mock
+pytest-xdist
