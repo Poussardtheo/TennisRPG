@@ -375,13 +375,14 @@ class Player:
 
 		return "\n".join(lines)
 
-	def display_card(self, ranking_position: int = None):
+	def display_id_card(self, ranking_manager: Optional['RankingManager'] = None):
 		"""
 		Affiche la carte du joueur
 
 		Args:
 			ranking_position: Position dans le classement (optionnel)
 		"""
+		ranking_position = ranking_manager.atp_ranking.get_player_rank(self)
 		print(self.get_display_card(ranking_position))
 
 	def to_dict(self) -> Dict:

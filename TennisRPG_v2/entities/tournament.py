@@ -173,27 +173,75 @@ class Tournament(ABC):
 
 		return sorted_players[:min(num_seeds, len(sorted_players))]
 
-	def assign_atp_points(self, player: 'Player', round_reached: str) -> int:
+	def assign_atp_points(self, player: 'Player', round_reached: str, 
+						  atp_points_manager=None, week: int = None) -> int:
 		"""
 		Attribue les points ATP selon le tour atteint
 
 		Args:
 			player: Joueur
 			round_reached: Tour atteint
+			atp_points_manager: Gestionnaire des points ATP pour le système glissant
+			week: Semaine courante pour le système glissant
 
 		Returns:
 			Points ATP attribués
 		"""
-		points = self.atp_points_config.get(round_reached, 0)
+		# Détermine le nombre de tours pour les tournois avec configurations multiples
+		round_key = self._get_round_key_for_tournament(round_reached)
+		points = self.atp_points_config.get(round_key, 0)
 
 		if points > 0:
-			player.career.atp_points += points
-			player.career.atp_race_points += points
+			# Méthode préférée: utiliser l'ATPPointsManager pour le système glissant
+			if atp_points_manager and week is not None:
+				atp_points_manager.add_tournament_points(player, week, points)
+			else:
+				# Méthode de fallback: ajouter directement (pas de système glissant)
+				player.career.atp_points += points
+				player.career.atp_race_points += points
 
 			if hasattr(player, 'is_main_player') and player.is_main_player:
 				print(f"   💰 +{points} points ATP pour {player.full_name}")
 
 		return points
+
+	def _get_round_key_for_tournament(self, round_reached: str) -> str:
+		"""
+		Détermine la clé de configuration ATP en fonction du tournoi et du tour
+		
+		Args:
+			round_reached: Tour atteint (ex: "winner", "semifinalist")
+			
+		Returns:
+			Clé pour la configuration ATP (ex: "winner_6", "semifinalist_5")
+		"""
+		# Pour les catégories qui n'ont pas de variations de tours
+		if self.category not in [TournamentCategory.MASTERS_1000, TournamentCategory.ATP_500, TournamentCategory.ATP_250]:
+			return round_reached
+			
+		# Calcule le nombre de tours basé sur le nombre de joueurs
+		num_rounds = self._calculate_tournament_rounds()
+		
+		# Pour Masters 1000, ATP 500 et ATP 250 avec configurations multiples
+		round_key = f"{round_reached}_{num_rounds}"
+		
+		# Vérifie si la clé existe, sinon utilise la clé de base
+		if round_key in self.atp_points_config:
+			return round_key
+		else:
+			return round_reached
+
+	def _calculate_tournament_rounds(self) -> int:
+		"""
+		Calcule le nombre de tours du tournoi basé sur le nombre de joueurs
+		
+		Returns:
+			Nombre de tours
+		"""
+		import math
+		if self.num_players <= 0:
+			return 5  # Valeur par défaut
+		return int(math.ceil(math.log2(self.num_players)))
 
 	def assign_xp_points(self, player: 'Player', round_reached: str) -> int:
 		"""
@@ -279,12 +327,14 @@ class Tournament(ABC):
 		return any(hasattr(p, 'is_main_player') and p.is_main_player for p in self.participants)
 
 	@abstractmethod
-	def play_tournament(self, verbose: bool = None) -> TournamentResult:
+	def play_tournament(self, verbose: bool = None, atp_points_manager=None, week: int = None) -> TournamentResult:
 		"""
 		Joue le tournoi (méthode abstraite)
 
 		Args:
 			verbose: Si True, affiche tous les détails. Si None, détermine automatiquement.
+			atp_points_manager: Gestionnaire des points ATP pour le système glissant
+			week: Semaine courante
 
 		Returns:
 			Résultat du tournoi

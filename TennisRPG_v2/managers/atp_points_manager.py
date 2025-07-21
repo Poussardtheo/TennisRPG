@@ -18,9 +18,21 @@ class ATPPointsManager:
 		self.players = players
 		self.current_atp_points = pd.DataFrame(
 			0,
-			index=[p.full_names for p in players.values()],
-			columns=range(1, 53), # 52 semaines par an
+			index=[p.full_name for p in players.values()],
+			columns=range(1, 53), 	# 52 semaines par an
 		)
+
+	def add_player(self, player: 'Player'):
+		"""
+		Ajoute un nouveau joueur au système de points ATP.
+
+		Args:
+			player: Le nouveau joueur à ajouter
+		"""
+		if player.full_name not in self.current_atp_points.index:
+			# Ajoute une nouvelle ligne pour le joueur avec des zéros
+			new_row = pd.Series(0, index=self.current_atp_points.columns, name=player.full_name)
+			self.current_atp_points = pd.concat([self.current_atp_points, new_row.to_frame().T])
 
 	def add_tournament_points(self, player: 'Player', week: int, points: int):
 		"""
@@ -42,9 +54,10 @@ class ATPPointsManager:
 
 	def remove_weekly_points(self, player: 'Player', week: int):
 		"""
-		Retire les points ATP de la semaine précédente pour tous les joueurs.
+		Retire les points ATP de la même semaine l'année précédente (système glissant sur 52 semaines).
 
 		Args:
+			player: le joueur dont on veut retirer les points
 			week: Semaine de l'année (1-52)
 		"""
 		if week < 1 or week > 52:

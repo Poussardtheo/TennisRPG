@@ -112,7 +112,7 @@ class TournamentManager:
         # Facteurs influençant la participation
         fatigue_factor = 1.0
         if hasattr(player, 'physical') and hasattr(player.physical, 'fatigue'):
-            fatigue_factor = max(0.2, 1.0 - (player.physical.fatigue / 100) * 0.6)
+            fatigue_factor = max(0.2, 1.0 - (player.physical.fatigue / 100)) #Todo: Look at that value * 0.6)
         
         # Les joueurs principaux participent toujours (si éligibles)
         if hasattr(player, 'is_main_player') and player.is_main_player:
@@ -124,7 +124,7 @@ class TournamentManager:
         return random.random() < final_probability
     
     def simulate_week_tournaments(self, week: int, all_players: Dict[str, 'Player'], 
-                                ranking_manager=None, main_player=None) -> Dict[Tournament, 'TournamentResult']:
+                                ranking_manager=None, main_player=None, atp_points_manager=None) -> Dict[Tournament, 'TournamentResult']:
         """
         Simule tous les tournois d'une semaine
         
@@ -151,7 +151,7 @@ class TournamentManager:
             
             # Joue le tournoi (verbose seulement si joueur principal présent)
             if len(tournament.participants) >= 4:  # Minimum pour un tournoi
-                result = tournament.play_tournament()
+                result = tournament.play_tournament(atp_points_manager=atp_points_manager, week=week)
                 results[tournament] = result
             
             # Nettoie pour le prochain tournoi potentiel

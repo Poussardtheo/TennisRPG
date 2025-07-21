@@ -24,7 +24,7 @@ class RankingManager:
         # Crée les classements
         self.atp_ranking = Ranking(self.players, is_preliminary=False)
         self.atp_race_ranking = Ranking(self.players, is_preliminary=False)
-        self.elo_ranking = Ranking(self.players, is_preliminary=False)
+        self.elo_ranking = Ranking(self.players, is_preliminary=True)
         
         # DataFrame pour tracker les points ATP par semaine (52 semaines glissantes)
         self.atp_points_history = pd.DataFrame(
@@ -99,7 +99,7 @@ class RankingManager:
         self.atp_race_ranking.update_ranking()
     
     def display_ranking(self, ranking_type: RankingType = RankingType.ATP, 
-                       count: int = 50) -> None:
+                       count: Optional[int] = 50) -> None:
         """
         Affiche un classement
         
@@ -111,8 +111,8 @@ class RankingManager:
         print("=" * 60)
         
         if ranking_type == RankingType.ATP:
-            self.atp_ranking.display_ranking(count)
+            self.atp_ranking.display_ranking(ranking_type, count)
         elif ranking_type == RankingType.ATP_RACE:
-            self.atp_race_ranking.display_ranking(count)
+            self.atp_race_ranking.display_ranking(ranking_type, count)
         elif ranking_type == RankingType.ELO:
-            self.elo_ranking.display_ranking(count)
+            self.elo_ranking.display_ranking(ranking_type, count)

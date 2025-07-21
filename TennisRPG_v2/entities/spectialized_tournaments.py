@@ -13,7 +13,7 @@ from ..utils.constants import TOURNAMENT_CONSTANTS
 class EliminationTournament(Tournament):
 	"""Tournoi à élimination directe classique"""
 
-	def play_tournament(self, verbose: bool = None) -> TournamentResult:
+	def play_tournament(self, verbose: bool = None, atp_points_manager=None, week: int = None) -> TournamentResult:
 		"""Joue un tournoi à élimination directe"""
 		if len(self.participants) < 2:
 			raise ValueError("Pas assez de participants pour le tournoi")
@@ -86,7 +86,7 @@ class EliminationTournament(Tournament):
 						print(f"   ❌ Vous avez été éliminé(e) {phase_name}")
 
 					# Attribue points ATP et XP
-					self.assign_atp_points(match_result.loser, round_name)
+					self.assign_atp_points(match_result.loser, round_name, atp_points_manager, week)
 					self.assign_xp_points(match_result.loser, round_name)
 				else:
 					# Joueur qualifié d'office
@@ -106,7 +106,7 @@ class EliminationTournament(Tournament):
 				print(f"{'='*60}")
 
 		# Attribue les points au vainqueur
-		self.assign_atp_points(winner, "winner")
+		self.assign_atp_points(winner, "winner", atp_points_manager, week)
 		self.assign_xp_points(winner, "winner")
 
 		# Bonus d'expérience pour avoir terminé le tournoi
@@ -181,7 +181,7 @@ class EliminationTournament(Tournament):
 
 		return rounds
 
-	def _get_round_display_name(self, round_name: str, num_players: int) -> str:
+	def _get_round_display_name(self, round_name: str) -> str:
 		"""Convertit le nom interne du round en nom d'affichage"""
 		display_names = {
 			"finalist": "FINALE",
@@ -250,7 +250,7 @@ class ATPFinals(Tournament):
 
 		self.config = SPECIAL_TOURNAMENT_CONFIG["ATP_FINALS"]
 
-	def play_tournament(self, verbose: bool = None) -> TournamentResult:
+	def play_tournament(self, verbose: bool = None, atp_points_manager=None, week: int = None) -> TournamentResult:
 		"""Joue le tournoi ATP Finals"""
 		if len(self.participants) != 8:
 			print(f"⚠️ il n'y a actuellement que {len(self.participants)} joueurs.")
@@ -290,7 +290,7 @@ class ATPFinals(Tournament):
 				print(f"{'='*60}")
 
 		# Attribue les points au vainqueur
-		self.assign_atp_points(winner, "winner")
+		self.assign_atp_points(winner, "winner", atp_points_manager, week)
 		self.assign_xp_points(winner, "winner")
 
 		# Bonus pour avoir terminé le tournoi
@@ -351,7 +351,7 @@ class ATPFinals(Tournament):
 				results[match_result.loser]["sets_lost"] += match_result.sets_won
 
 				# Points ATP pour chaque victoire en poule
-				self.assign_atp_points(match_result.winner, "round_robin_win")
+				self.assign_atp_points(match_result.winner, "round_robin_win", atp_points_manager, week)
 				self.assign_xp_points(match_result.winner, "round_robin_win")
 
 		# Affiche le classement du groupe seulement si verbose
@@ -407,8 +407,8 @@ class ATPFinals(Tournament):
 		self.eliminated_players[semi2.loser] = "semifinalist"
 
 		# Attribue les points
-		self.assign_atp_points(semi1.loser, "semifinalist")
-		self.assign_atp_points(semi2.loser, "semifinalist")
+		self.assign_atp_points(semi1.loser, "semifinalist", atp_points_manager, week)
+		self.assign_atp_points(semi2.loser, "semifinalist", atp_points_manager, week)
 		self.assign_xp_points(semi1.loser, "semifinalist")
 		self.assign_xp_points(semi2.loser, "semifinalist")
 
@@ -429,7 +429,7 @@ class ATPFinals(Tournament):
 		self.eliminated_players[final_match.loser] = "finalist"
 
 		# Attribue les points au finaliste
-		self.assign_atp_points(final_match.loser, "finalist")
+		self.assign_atp_points(final_match.loser, "finalist", atp_points_manager, week)
 		self.assign_xp_points(final_match.loser, "finalist")
 
 		return final_match.winner

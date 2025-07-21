@@ -118,7 +118,7 @@ def get_participation_rate(tournament: 'Tournament') -> float:
 		Taux de participation
 	"""
 	if tournament.category in ["Grand Slam", "ATP Finals"]:
-		participation_rate = 1.5
+		participation_rate = 2 	# Huge participation rate for major tournaments
 	elif tournament.category == "Masters 1000":
 		participation_rate = 0.9
 	elif tournament.category == "ATP 500":

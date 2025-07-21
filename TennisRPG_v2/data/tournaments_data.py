@@ -62,29 +62,24 @@ ATP_POINTS_CONFIG = {
         "round_64_6": 5
     },
     TournamentCategory.CHALLENGER_175: {
-        "winner": 175, "finalist": 105, "semifinalist": 60,
-        "quarterfinalist": 30, "round_16": 15, "round_32": 7,
-        "round_64": 3, "round_128": 1
+        "winner": 175, "finalist": 100, "semifinalist": 60,
+        "quarterfinalist": 32, "round_16": 15, "round_32": 0,
     },
     TournamentCategory.CHALLENGER_125: {
-        "winner": 125, "finalist": 75, "semifinalist": 45,
-        "quarterfinalist": 22, "round_16": 11, "round_32": 5,
-        "round_64": 2, "round_128": 1
+        "winner": 125, "finalist": 64, "semifinalist": 35,
+        "quarterfinalist": 16, "round_16": 8, "round_32": 0,
     },
     TournamentCategory.CHALLENGER_100: {
-        "winner": 100, "finalist": 60, "semifinalist": 35,
-        "quarterfinalist": 18, "round_16": 8, "round_32": 4,
-        "round_64": 2, "round_128": 1
+        "winner": 100, "finalist": 50, "semifinalist": 25,
+        "quarterfinalist": 14, "round_16": 7, "round_32": 0,
     },
     TournamentCategory.CHALLENGER_75: {
-        "winner": 75, "finalist": 45, "semifinalist": 27,
-        "quarterfinalist": 14, "round_16": 6, "round_32": 3,
-        "round_64": 1, "round_128": 1
+        "winner": 75, "finalist": 44, "semifinalist": 22,
+        "quarterfinalist": 12, "round_16": 6, "round_32": 0,
     },
     TournamentCategory.CHALLENGER_50: {
-        "winner": 50, "finalist": 30, "semifinalist": 18,
-        "quarterfinalist": 9, "round_16": 4, "round_32": 2,
-        "round_64": 1, "round_128": 1
+        "winner": 50, "finalist": 25, "semifinalist": 14,
+        "quarterfinalist": 8, "round_16": 4, "round_32": 0,
     },
     TournamentCategory.ITF_M25: {
         "winner": 25, "finalist": 15, "semifinalist": 9,

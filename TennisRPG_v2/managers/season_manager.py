@@ -36,16 +36,24 @@ class SeasonManager:
 
 	def _apply_weekly_updates(self, players: Dict[str, 'Player'], atp_points_manager):
 		"""Applique les mises à jour hebdomadaires aux joueurs."""
-		for player_key, player in players.items():
+		for player_name, player in players.items():
 			# récupération naturelle de la fatigue
 			player.fatigue -= TIME_CONSTANTS["FATIGUE_NATURAL_RECOVERY"]
 
-			# perte des points ATP de la semaine précédente (système glissant)
+			# perte des points ATP de la même semaine l'année précédente (système glissant sur 52 semaines)
 			if hasattr(atp_points_manager, 'current_atp_points'):
-				points_to_remove = atp_points_manager.current_atp_points.loc[
-					player_key, self.current_week
-				]
-				player.career.atp_points -= points_to_remove
+				try:
+					# Retire les points de la même semaine l'année précédente
+					points_to_remove = atp_points_manager.current_atp_points.loc[
+						player.full_name, self.current_week
+					]
+					if points_to_remove > 0:
+						player.career.atp_points -= points_to_remove
+						# Remet à zéro les points de cette semaine pour la nouvelle année
+						atp_points_manager.current_atp_points.loc[player.full_name, self.current_week] = 0
+				except (KeyError, IndexError):
+					# Le joueur n'existe pas dans le DataFrame ou la semaine est invalide
+					continue
 
 	@property
 	def week_info(self) -> str:

@@ -43,7 +43,7 @@ def main():
 	classement = Classement(pool_joueurs, preliminaire=True)
 	calendar.current_atp_points = pd.DataFrame(0, index=pool_joueurs.keys(), columns=[i for i in range(1, 53)])
 	start = time.time()
-	for _ in range(1, 53):  # 10 ans de simulation
+	for _ in range(1, 521):  # 10 ans de simulation
 		calendar.simuler_tournois_semaine(joueur_principal, pool_joueurs, classement, preliminaire=True)
 		calendar.avancer_semaine(classement, pool_joueurs)
 	print(f"Temps de simulation année préliminaire: {time.time() - start}")

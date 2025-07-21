@@ -52,6 +52,17 @@ class Ranking:
 
 		self._initialize_rankings()
 
+	def add_player(self, player: 'Player') -> None:
+		"""
+		Ajoute un joueur au classement
+
+		Args:
+			player: Joueur à ajouter
+		"""
+		if player not in self.players.values():
+			self.players[player.full_name] = player
+			self._initialize_rankings()
+
 	def _initialize_rankings(self):
 		"""Initialise tous les classements"""
 		if self.is_preliminary:

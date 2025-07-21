@@ -11,6 +11,7 @@ from ..managers.player_generator import PlayerGenerator
 from ..managers.tournament_manager import TournamentManager
 from ..managers.ranking_manager import RankingManager
 from ..managers.weekly_activity_manager import WeeklyActivityManager
+from ..managers.atp_points_manager import ATPPointsManager
 from ..utils.constants import TIME_CONSTANTS
 from .save_manager import SaveManager, GameState
 
@@ -29,6 +30,7 @@ class GameSession:
         self.ranking_manager: Optional[RankingManager] = None
         self.player_generator = PlayerGenerator()
         self.activity_manager: Optional[WeeklyActivityManager] = None
+        self.atp_points_manager: Optional[ATPPointsManager] = None
         self.save_manager = SaveManager()
         
         # Timing pour playtime
@@ -129,6 +131,9 @@ class GameSession:
         # Initialise le ranking manager
         self.ranking_manager = RankingManager(list(self.all_players.values()))
         
+        # Initialise l'ATP points manager
+        self.atp_points_manager = ATPPointsManager(self.all_players)
+        
         # Initialise l'activity manager
         self.activity_manager = WeeklyActivityManager(
             self.tournament_manager, self.ranking_manager
@@ -137,7 +142,7 @@ class GameSession:
         start_time = time.time()
         
         # Simule 520 semaines (10 ans)
-        for year in range(10):
+        for year in range(1):
             print(f"   📈 Année {2014 + year}...")
             
             for week in range(1, 53):  # 52 semaines par an
@@ -157,7 +162,8 @@ class GameSession:
         self.tournament_manager.simulate_week_tournaments(
             week=week, 
             all_players=self.all_players,
-            ranking_manager=self.ranking_manager
+            ranking_manager=self.ranking_manager,
+            atp_points_manager=self.atp_points_manager
         )
         # Met à jour les classements
         self.ranking_manager.update_weekly_rankings()
@@ -322,7 +328,7 @@ class GameSession:
         print("-" * 30)
         
         result = self.activity_manager.execute_activity(
-            self.main_player, chosen_activity, self.current_week, self.all_players
+            self.main_player, chosen_activity, self.current_week, self.all_players, self.atp_points_manager
         )
         
         # Affiche le résultat
@@ -415,6 +421,7 @@ class GameSession:
         # Recrée les managers avec les données chargées
         if self.all_players:
             self.ranking_manager = RankingManager(list(self.all_players.values()))
+            self.atp_points_manager = ATPPointsManager(self.all_players)
             self.activity_manager = WeeklyActivityManager(
                 self.tournament_manager, self.ranking_manager
             )
