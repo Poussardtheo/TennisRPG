@@ -128,10 +128,9 @@ class GameFlowHandler:
 		gender_suffix = "e" if player.gender.lower() == 'f' else ""
 		print(f"\n{player.first_name} a participé{gender_suffix} au tournoi: {chosen_tournament.name}.")
 
-		# Participer au tournoi choisi et simuler les autres
-		self.tournament_manager.participate_in_tournament(
-			player, chosen_tournament, players, ranking,
-			self.season_manager.current_week, self.atp_points_manager
+		# Participer au tournoi choisi
+		self._participate_in_chosen_tournament(
+			player, chosen_tournament, players, ranking
 		)
 
 		# Simuler les autres tournois de la semaine
@@ -140,11 +139,39 @@ class GameFlowHandler:
 			self._simulate_other_tournaments(player, players, ranking, other_tournaments)
 
 		# Mettre à jour les classements
-		ranking.update_all_rankings()
+		ranking.update_weekly_rankings()
 
 		# Avancer d'une semaine supplémentaire pour les Grand Slams et Masters 1000 à 7 tours
 		if self._is_long_tournament(chosen_tournament):
 			self.season_manager.advance_week(ranking, players, self.atp_points_manager)
+
+	def _participate_in_chosen_tournament(self, player: 'Player', tournament: 'Tournament',
+										 players: Dict[str, 'Player'], ranking: 'Ranking'):
+		"""Fait participer le joueur au tournoi choisi"""
+		# Sélectionne tous les autres participants pour ce tournoi
+		available_players = {k: v for k, v in players.items() if k != player.full_name}
+		participants = self.tournament_manager.select_players_for_tournament(
+			tournament, available_players, ranking
+		)
+		
+		# Ajoute le joueur principal
+		participants.append(player)
+		
+		# Ajoute tous les participants au tournoi
+		for participant in participants:
+			tournament.add_participant(participant)
+		
+		# Joue le tournoi
+		if len(tournament.participants) >= 2:
+			tournament.play_tournament(
+				atp_points_manager=self.atp_points_manager,
+				week=self.season_manager.current_week
+			)
+		
+		# Nettoie le tournoi pour la prochaine utilisation
+		tournament.participants.clear()
+		tournament.match_results.clear()
+		tournament.eliminated_players.clear()
 
 	def _choose_tournament(self, eligible_tournaments: List['Tournament']) -> Optional['Tournament']:
 		"""Permet au joueur de choisir son tournoi"""
@@ -184,7 +211,7 @@ class GameFlowHandler:
 		)
 
 		# Mettre à jour les classements
-		ranking.update_all_rankings()
+		ranking.update_weekly_rankings()
 
 	@staticmethod
 	def _is_long_tournament(tournament: 'Tournament') -> bool:

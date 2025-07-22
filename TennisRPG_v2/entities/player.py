@@ -7,15 +7,15 @@ from typing import Dict, Optional
 from dataclasses import dataclass
 from enum import Enum
 
-from ..utils.constants import (
+from TennisRPG_v2.utils.constants import (
 	ARCHETYPES, PLAYER_CONSTANTS, STATS_WEIGHTS, HEIGHT_IMPACTS
 )
-from ..utils.helpers import (
+from TennisRPG_v2.utils.helpers import (
 	generate_height, calculate_weighted_elo, calculate_experience_required, get_random_hand,
 	get_random_backhand, get_gender_agreement, calculate_fatigue_level
 )
 
-from ..data.surface_data import SURFACE_IMPACTS
+from TennisRPG_v2.data.surface_data import SURFACE_IMPACTS
 
 
 class Gender(Enum):

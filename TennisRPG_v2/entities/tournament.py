@@ -122,11 +122,43 @@ class Tournament(ABC):
 		Returns:
 			True si éligible
 		"""
-		# TODO: Utiliser le classement ATP si ranking_manager est fourni
+		# Priorité au classement ATP si disponible (plus réaliste)
 		if ranking_manager:
 			atp_rank = ranking_manager.atp_ranking.get_player_rank(player)
-			return atp_rank and atp_rank <= self.eligibility_threshold
-		return player.elo >= self.eligibility_threshold
+			if atp_rank:  # Si le joueur a un classement ATP
+				return atp_rank <= self.eligibility_threshold
+		
+		# Fallback sur ELO si pas de classement ATP
+		# Utilise un seuil ELO équivalent basé sur une conversion approximative
+		elo_threshold = self._convert_atp_rank_to_elo_threshold(self.eligibility_threshold)
+		return player.elo >= elo_threshold
+
+	def _convert_atp_rank_to_elo_threshold(self, atp_rank_threshold: int) -> int:
+		"""
+		Convertit un seuil de rang ATP en seuil ELO équivalent
+		
+		Args:
+			atp_rank_threshold: Rang ATP maximum autorisé
+			
+		Returns:
+			ELO minimum équivalent
+		"""
+		# Conversion approximative basée sur la corrélation ATP/ELO
+		# Plus le rang ATP est élevé (mauvais), plus l'ELO requis est bas
+		if atp_rank_threshold <= 10:      # Top 10
+			return 1700
+		elif atp_rank_threshold <= 50:    # Top 50
+			return 1500
+		elif atp_rank_threshold <= 100:   # Top 100
+			return 1300
+		elif atp_rank_threshold <= 200:   # Top 200
+			return 1100
+		elif atp_rank_threshold <= 500:   # Top 500
+			return 900
+		elif atp_rank_threshold <= 1000:  # Top 1000
+			return 700
+		else:                             # Au-delà
+			return 500
 
 	def add_participant(self, player: 'Player', ranking_manager=None) -> bool:
 		"""
@@ -193,9 +225,6 @@ class Tournament(ABC):
 
 		if points > 0:
 			atp_points_manager.add_tournament_points(player, week, points)
-
-			if hasattr(player, 'is_main_player') and player.is_main_player:
-				print(f"   💰 +{points} points ATP pour {player.full_name}")
 
 		return points
 

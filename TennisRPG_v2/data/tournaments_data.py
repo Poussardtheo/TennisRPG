@@ -4,6 +4,8 @@ Données de configuration pour tous les types de tournois
 from enum import Enum
 from typing import Dict, List, Tuple
 
+import numpy as np
+
 
 class TournamentCategory(Enum):
     """Catégories de tournois"""
@@ -169,21 +171,21 @@ XP_POINTS_CONFIG = {
     }
 }
 
-# Seuils d'éligibilité par catégorie (ELO minimum)
-# Todo: a reprendre avec les classement ATP
+# Seuils d'éligibilité par catégorie (rang ATP maximum autorisé)
+# Si pas de classement ATP, conversion automatique vers seuil ELO équivalent
 ELIGIBILITY_THRESHOLDS = {
-    TournamentCategory.GRAND_SLAM: 150,
-    TournamentCategory.ATP_FINALS: 12,
-    TournamentCategory.MASTERS_1000: 150,
-    TournamentCategory.ATP_500: 200,
-    TournamentCategory.ATP_250: 300,
-    TournamentCategory.CHALLENGER_175: 500,
-    TournamentCategory.CHALLENGER_125: 500,
-    TournamentCategory.CHALLENGER_100: 800,
-    TournamentCategory.CHALLENGER_75: 1000,
-    TournamentCategory.CHALLENGER_50: 1000,
-    TournamentCategory.ITF_M25: 1000,
-    TournamentCategory.ITF_M15: 1000
+    TournamentCategory.GRAND_SLAM: 150,        # Directement qualifiés + invitations
+    TournamentCategory.ATP_FINALS: 12,          # Top 8 seulement
+    TournamentCategory.MASTERS_1000: 150,      # Top 100 + qualifiés + invitations
+    TournamentCategory.ATP_500: 200,           # Plus ouvert que Masters
+    TournamentCategory.ATP_250: 250,           # Accessible aux Top 200
+    TournamentCategory.CHALLENGER_175: 500,    # Semi-pro niveau élevé
+    TournamentCategory.CHALLENGER_125: 600,    # Semi-pro standard
+    TournamentCategory.CHALLENGER_100: 800,    # Semi-pro accessible
+    TournamentCategory.CHALLENGER_75: np.inf,     # Développement
+    TournamentCategory.CHALLENGER_50: np.inf,    # Jeunes pro
+    TournamentCategory.ITF_M25: np.inf,          # Futures haut niveau
+    TournamentCategory.ITF_M15: np.inf         # Ouvert à tous (pas de limite)
 }
 
 # Configurations spéciales

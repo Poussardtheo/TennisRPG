@@ -226,7 +226,7 @@ class GameSession:
         """Affiche le menu principal"""
         print("\n📋 ACTIONS DISPONIBLES:")
         print("━━━━━━━━━━━━━━━━━━━━━━")
-        print("⏭️  [ENTRÉE] Continuer vers les activités de la semaine")
+        print("⏭️ [ENTRÉE] Continuer vers les activités de la semaine")
         print("📊 [C] Voir les classements")  
         print("🏆 [A] Points ATP à défendre cette semaine")
         print("👤 [I] Carte d'identité de votre joueur")
@@ -326,7 +326,7 @@ class GameSession:
             for week, points in future_points:
                 print(f"   Semaine {week}: {points} points")
         else:
-            print("   Aucun point important à défendre dans les 4 prochaines semaines")
+            print("   Aucun point à défendre dans les 4 prochaines semaines")
     
     def _display_player_id_card(self) -> None:
         """Affiche la carte d'identité du joueur"""

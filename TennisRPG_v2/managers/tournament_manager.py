@@ -78,10 +78,12 @@ class TournamentManager:
                 if should_participate:
                     eligible_players.append(player)
         
-        # Trie par force (ELO ou classement ATP)
+        # Trie par force décroissante (meilleurs en premier, plus faibles en dernier)
         if ranking_manager:
+            # Pour ATP: rang plus bas = meilleur, donc tri croissant
             eligible_players.sort(key=lambda p: ranking_manager.get_player_rank(p) or 999999)
         else:
+            # Pour ELO: valeur plus haute = meilleur, donc tri décroissant  
             eligible_players.sort(key=lambda p: p.elo, reverse=True)
         
         # Prend les premiers selon la capacité du tournoi

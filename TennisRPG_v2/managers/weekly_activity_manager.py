@@ -207,11 +207,6 @@ class WeeklyActivityManager:
         """Exécute la participation à un tournoi"""
         tournament = tournament_activity.tournament
         
-        # Choix du tournoi spécifique si plusieurs options
-        chosen_tournament = self._choose_specific_tournament(player, week)
-        if chosen_tournament:
-            tournament = chosen_tournament
-        
         # Sélectionne les autres participants
         available_players = {name: p for name, p in all_players.items() 
                            if p != player and p.gender == player.gender}
@@ -219,6 +214,11 @@ class WeeklyActivityManager:
         participants = self.tournament_manager.select_players_for_tournament(
             tournament, available_players, self.ranking_manager
         )
+
+        # Remplace le PNJ le plus faible par le joueur principal
+        if len(participants) >= tournament.num_players:
+            # Le tournoi est plein, retire le joueur le plus faible (dernier de la liste triée)
+            participants = participants[:tournament.num_players - 1]
         
         # Ajoute le joueur principal
         participants.append(player)

@@ -8,9 +8,9 @@ import os
 # Ajoute le chemin du projet
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from entities.player import Player, Gender
-from managers.tournament_manager import TournamentManager
-from managers.player_generator import PlayerGenerator
+from TennisRPG_v2.entities.player import Player, Gender
+from TennisRPG_v2.managers.tournament_manager import TournamentManager
+from TennisRPG_v2.managers.player_generator import PlayerGenerator
 
 
 class TestPlayerCreation:
