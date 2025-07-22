@@ -294,8 +294,8 @@ class Tournament(ABC):
 			Résultat du match
 		"""
 		# Calcul des ELO ajustés pour la surface
-		elo1 = player1._calculate_elo(self.surface)
-		elo2 = player2._calculate_elo(self.surface)
+		elo1 = player1.get_elo(self.surface)
+		elo2 = player2.get_elo(self.surface)
 
 		# Probabilité de victoire basée sur l'ELO
 		expected_score1 = 1 / (1 + 10 ** ((elo2 - elo1) / 400))

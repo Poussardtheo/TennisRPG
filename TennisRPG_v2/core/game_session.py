@@ -208,7 +208,8 @@ class GameSession:
         
         # Ajoute le joueur principal au pool
         self.all_players[self.main_player.full_name] = self.main_player
-        
+        self.atp_points_manager.add_player(self.main_player)   # Ajoute les points ATP du joueur principal
+
         # Réinitialise les classements avec le joueur principal
         self.ranking_manager.add_player(self.main_player)
         self.ranking_manager.reset_atp_race()

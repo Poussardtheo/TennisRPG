@@ -74,6 +74,8 @@ class PlayerCareer:
 	atp_points: int = 0
 	atp_race_points: int = 0
 	age: int = 20  # Âge du joueur (nouveau champ)
+	# ELO stocké pour chaque surface pour éviter les recalculs
+	elo_ratings: Optional[Dict[str, int]] = None
 
 
 @dataclass
@@ -122,6 +124,9 @@ class Player:
 		self.stats = PlayerStats()
 		self.career = PlayerCareer(level=level, ap_points=PLAYER_CONSTANTS["BASE_POINTS"] * (level - 1), age=age)
 		self.physical = PlayerPhysical()
+		
+		# Initialiser les ratings ELO pour toutes les surfaces
+		self._initialize_elo_ratings()
 
 		# Génération de la taille selon le genre
 		if height is None:
@@ -156,12 +161,21 @@ class Player:
 
 	@property
 	def elo(self) -> int:
-		"""Calcul l'ELO basé sur les statistiques du joueur"""
-		return self._calculate_elo()
+		"""Retourne l'ELO général stocké du joueur"""
+		return self.get_elo()
 
-	# Todo: stocker l'elo pour chaque surface plutôt que de le recalculer à chaque fois.
-	def _calculate_elo(self, surface: Optional[str] = None) -> int:
-		"""Calcul de l'Elo pour une surface donnée ou général"""
+	def get_elo(self, surface: Optional[str] = None) -> int:
+		"""Retourne l'ELO pour une surface donnée ou général"""
+		if surface and surface in self.career.elo_ratings:
+			return self.career.elo_ratings[surface]
+		elif not surface and "General" in self.career.elo_ratings:
+			return self.career.elo_ratings["General"]
+		else:
+			# Si l'ELO n'est pas encore calculé, le calculer et le stocker
+			return self._calculate_and_store_elo(surface)
+
+	def _calculate_and_store_elo(self, surface: Optional[str] = None) -> int:
+		"""Calcule et stocke l'ELO pour une surface donnée ou général"""
 		stats_dict = self.stats.to_dict()
 
 		if surface and surface in SURFACE_IMPACTS:
@@ -174,11 +188,32 @@ class Player:
 				stat: STATS_WEIGHTS[stat] * SURFACE_IMPACTS[surface].get(stat, 1.0)
 				for stat in STATS_WEIGHTS
 			}
+			key = surface
 		else:
 			modified_stats = stats_dict
 			weights = STATS_WEIGHTS
+			key = "General"
 
-		return calculate_weighted_elo(modified_stats, weights)
+		elo = calculate_weighted_elo(modified_stats, weights)
+		self.career.elo_ratings[key] = elo
+		return elo
+
+	def _initialize_elo_ratings(self):
+		"""Initialise les ratings ELO pour toutes les surfaces"""
+		if self.career.elo_ratings is None:
+			self.career.elo_ratings = {}
+
+	def _recalculate_all_elo_ratings(self):
+		"""Recalcule tous les ELO ratings stockés après un changement de stats/niveau"""
+		if self.career.elo_ratings is None:
+			self.career.elo_ratings = {}
+		
+		# Recalculer l'ELO général
+		self._calculate_and_store_elo()
+		
+		# Recalculer l'ELO pour toutes les surfaces connues
+		for surface in SURFACE_IMPACTS.keys():
+			self._calculate_and_store_elo(surface)
 
 	def _apply_height_modifiers(self):
 		"""Modifie les statistiques du joueur en fonction de la taille"""
@@ -224,12 +259,14 @@ class Player:
 
 	def _check_level_up(self):
 		"""Vérifie et gère la montée de niveau"""
+		level_changed = False
 		while (self.career.xp_points >= calculate_experience_required(self.career.level) and
 			   self.career.level < PLAYER_CONSTANTS["MAX_LEVEL"]):
 
 			self.career.xp_points -= calculate_experience_required(self.career.level)
 			self.career.level += 1
 			self.career.ap_points += PLAYER_CONSTANTS["BASE_POINTS"]
+			level_changed = True
 
 			if self.is_main_player:
 				gender_suffix = get_gender_agreement(self.gender.value)
@@ -237,6 +274,10 @@ class Player:
 				print(f"{self.first_name} a gagné {PLAYER_CONSTANTS['BASE_POINTS']} AP points.")
 			else:
 				self._auto_assign_ap_points()
+		
+		# Recalculer les ELO si le niveau a changé
+		if level_changed:
+			self._recalculate_all_elo_ratings()
 
 	def _auto_assign_ap_points(self):
 		"""Assigne automatiquement les points AP selon l'archetype"""
@@ -266,6 +307,8 @@ class Player:
 				self.career.ap_points -= 1
 
 		self.stats.update_from_dict(stats_dict)
+		# Recalculer les ELO après changement de stats
+		self._recalculate_all_elo_ratings()
 
 	def assign_ap_points_manually(self):
 		"""Interface pour l'attribution manuelle des points AP"""
@@ -309,6 +352,8 @@ class Player:
 				print("Choix invalide. Veuillez réessayer.")
 
 		self.stats.update_from_dict(stats_dict)
+		# Recalculer les ELO après changement de stats
+		self._recalculate_all_elo_ratings()
 
 	def add_atp_points(self, points: int):
 		"""Ajoute des points ATP au joueur"""
@@ -420,6 +465,13 @@ class Player:
 		"""Convertit le joueur en dictionnaire pour la sauvegarde"""
 		from dataclasses import asdict
 
+		career_dict = asdict(self.career)
+		# S'assurer que elo_ratings est sérialisé correctement
+		if self.career.elo_ratings is None:
+			career_dict["elo_ratings"] = {}
+		else:
+			career_dict["elo_ratings"] = self.career.elo_ratings
+
 		return {
 			"gender": self.gender.value,
 			"first_name": self.first_name,
@@ -428,7 +480,7 @@ class Player:
 			"archetype": self.archetype,
 			"is_main_player": self.is_main_player,
 			"stats": asdict(self.stats),
-			"career": asdict(self.career),
+			"career": career_dict,
 			"physical": asdict(self.physical)
 		}
 
@@ -471,6 +523,8 @@ class Player:
 		player.career.atp_race_points = career_data["atp_race_points"]
 		# Support pour l'âge (rétrocompatibilité)
 		player.career.age = career_data.get("age", 20)
+		# Support pour les ELO ratings (rétrocompatibilité)
+		player.career.elo_ratings = career_data.get("elo_ratings", {})
 
 		# Todo : Ceci sera utilisé dans une version future
 		#player.career.matches_played = career_data["matches_played"]
