@@ -7,15 +7,15 @@ from typing import Dict, Optional
 from dataclasses import dataclass
 from enum import Enum
 
-from TennisRPG_v2.utils.constants import (
+from ..utils.constants import (
 	ARCHETYPES, PLAYER_CONSTANTS, STATS_WEIGHTS, HEIGHT_IMPACTS
 )
-from TennisRPG_v2.utils.helpers import (
+from ..utils.helpers import (
 	generate_height, calculate_weighted_elo, calculate_experience_required, get_random_hand,
 	get_random_backhand, get_gender_agreement, calculate_fatigue_level
 )
 
-from TennisRPG_v2.data.surface_data import SURFACE_IMPACTS
+from ..data.surface_data import SURFACE_IMPACTS
 
 
 class Gender(Enum):
@@ -293,16 +293,23 @@ class Player:
 		if self.is_main_player:
 			print(f"{self.first_name} {self.last_name} a gagné {points} points ATP.")
 
-	def manage_fatigue(self, activity: str, sets_played: int = 0, tournament_category: str = None):
+	def manage_fatigue(self, activity: str, sets_played: int = 0, tournament_category: str = None,
+					   display: bool = False) -> Optional[int]:
 		"""Gère la fatigue du joueur selon l'activité"""
 		fatigue_added = calculate_fatigue_level(activity, sets_played, tournament_category)
 		self.physical.fatigue = min(PLAYER_CONSTANTS["MAX_FATIGUE"],
 									self.physical.fatigue + fatigue_added)
 
+		return fatigue_added if display else None
+
 	def rest(self):
 		"""Le joueur se repose"""
 		rest_amount = calculate_fatigue_level("Repos")
 		self.physical.fatigue = max(0, self.physical.fatigue - rest_amount)
+
+	def recover_fatigue(self, recovery_amount: int):
+		"""Récupère de la fatigue naturellement"""
+		self.physical.fatigue = max(0, self.physical.fatigue - recovery_amount)
 
 	def should_participate(self) -> bool:
 		"""

@@ -191,21 +191,36 @@ class RankingManager:
             self.atp_points_history[week_col] = 0
     
     def display_ranking(self, ranking_type: RankingType = RankingType.ATP, 
-                       count: Optional[int] = 50) -> None:
+                       count: Optional[int] = 50, 
+                       start_rank: int = 1) -> None:
         """
         Affiche un classement
         
         Args:
             ranking_type: Type de classement à afficher
             count: Nombre de joueurs à afficher
+            start_rank: Rang de départ pour l'affichage (1-based)
         """
         print(f"\n🏆 CLASSEMENT {ranking_type.value.upper()}")
+        if start_rank > 1:
+            print(f"📍 Affichage du rang {start_rank} à {start_rank + count - 1}")
         print("=" * 60)
         
         ranking_obj = self._get_ranking_by_type(ranking_type)
-        players = ranking_obj.get_ranked_players(count)
+        # Récupérer plus de joueurs pour permettre l'affichage à partir du rang souhaité
+        total_players_needed = start_rank + count - 1
+        all_players = ranking_obj.get_ranked_players(total_players_needed)
         
-        for rank, player in enumerate(players, 1):
+        # Sélectionner seulement les joueurs dans la plage demandée
+        if start_rank > len(all_players):
+            print("❌ Rang de départ trop élevé - pas assez de joueurs dans le classement")
+            return
+            
+        end_index = min(start_rank + count - 1, len(all_players))
+        players_to_display = all_players[start_rank - 1:end_index]
+        
+        for i, player in enumerate(players_to_display):
+            rank = start_rank + i
             if ranking_type == RankingType.ATP:
                 points = player.career.atp_points
                 points_label = "ATP Points"

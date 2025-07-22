@@ -5,7 +5,7 @@ import json
 import pickle
 import os
 from typing import Dict, Optional, Any, List
-from dataclasses import asdict
+# from dataclasses import asdict  # TODO: Supprimé - non utilisé actuellement
 from datetime import datetime
 
 from ..entities.player import Player

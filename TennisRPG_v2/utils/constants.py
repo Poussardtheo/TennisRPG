@@ -57,6 +57,7 @@ HEIGHT_IMPACTS = {
 }
 
 # Valeurs de fatigue par activité
+# TODO: Cette constante peut être supprimée dans une prochaine version - gestion centralisée dans Player
 FATIGUE_VALUES = {
     "Entrainement": (3, 7),
     "Exhibition": (5, 15),

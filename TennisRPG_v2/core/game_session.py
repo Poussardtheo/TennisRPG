@@ -6,7 +6,7 @@ import threading
 from typing import Dict, List, Optional
 
 from ..entities.player import Player, Gender
-from ..entities.ranking import Ranking, RankingType  
+from ..entities.ranking import RankingType  
 from ..managers.player_generator import PlayerGenerator
 from ..managers.tournament_manager import TournamentManager
 from ..managers.ranking_manager import RankingManager
@@ -131,8 +131,8 @@ class GameSession:
         # Initialise le ranking manager
         self.ranking_manager = RankingManager(list(self.all_players.values()))
         
-        # Initialise l'ATP points manager
-        self.atp_points_manager = ATPPointsManager(self.all_players)
+        # Initialise l'ATP points manager avec le ranking manager pour synchronisation
+        self.atp_points_manager = ATPPointsManager(self.all_players, self.ranking_manager)
         
         # Initialise l'activity manager
         self.activity_manager = WeeklyActivityManager(
@@ -168,10 +168,9 @@ class GameSession:
         # Met à jour les classements
         self.ranking_manager.update_weekly_rankings()
         
-        # Récupération naturelle de fatigue
+        # Récupération naturelle de fatigue - utilisation méthode centralisée
         for player in self.all_players.values():
-            if hasattr(player, 'physical'):
-                player.physical.recover_fatigue(TIME_CONSTANTS["FATIGUE_NATURAL_RECOVERY"])
+            player.recover_fatigue(TIME_CONSTANTS["FATIGUE_NATURAL_RECOVERY"])
     
     def _initialize_main_game(self) -> None:
         """Initialise le jeu principal après la simulation préliminaire"""
@@ -277,16 +276,39 @@ class GameSession:
         print("1. Classement ATP (52 semaines glissantes)")
         print("2. ATP Race (année en cours)")
         
+        ranking_type = None
         while True:
             choice = input("\n🎯 Votre choix (1-2) : ").strip()
             if choice == '1':
-                self.ranking_manager.display_ranking(RankingType.ATP)
+                ranking_type = RankingType.ATP
                 break
             elif choice == '2':
-                self.ranking_manager.display_ranking(RankingType.ATP_RACE)  
+                ranking_type = RankingType.ATP_RACE
                 break
             else:
                 print("❌ Choix invalide. Utilisez 1 ou 2.")
+        
+        # Demander la plage d'affichage
+        print("\n📍 PLAGE D'AFFICHAGE")
+        try:
+            start_rank = int(input("🎯 Rang de départ (par défaut 1) : ").strip() or "1")
+            if start_rank < 1:
+                start_rank = 1
+                print("⚠️  Rang de départ ajusté à 1")
+        except ValueError:
+            start_rank = 1
+            print("⚠️  Valeur invalide, rang de départ défini à 1")
+            
+        try:
+            count = int(input("🎯 Nombre de joueurs à afficher (par défaut 50) : ").strip() or "50")
+            if count < 1:
+                count = 50
+                print("⚠️  Nombre ajusté à 50")
+        except ValueError:
+            count = 50
+            print("⚠️  Valeur invalide, nombre défini à 50")
+        
+        self.ranking_manager.display_ranking(ranking_type, count, start_rank)
     
     def _display_atp_points_to_defend(self) -> None:
         """Affiche les points ATP à défendre"""
@@ -480,7 +502,7 @@ class GameSession:
         # Recrée les managers avec les données chargées
         if self.all_players:
             self.ranking_manager = RankingManager(list(self.all_players.values()))
-            self.atp_points_manager = ATPPointsManager(self.all_players)
+            self.atp_points_manager = ATPPointsManager(self.all_players, self.ranking_manager)
             self.activity_manager = WeeklyActivityManager(
                 self.tournament_manager, self.ranking_manager
             )
@@ -536,9 +558,8 @@ class GameSession:
             if self.ranking_manager:
                 self.ranking_manager.reset_atp_race()
         
-        # Récupération naturelle de fatigue
-        if hasattr(self.main_player, 'physical'):
-            self.main_player.physical.recover_fatigue(TIME_CONSTANTS["FATIGUE_NATURAL_RECOVERY"])
+        # Récupération naturelle de fatigue - utilisation méthode centralisée
+        self.main_player.recover_fatigue(TIME_CONSTANTS["FATIGUE_NATURAL_RECOVERY"])
 
 
 def display_entry_menu():

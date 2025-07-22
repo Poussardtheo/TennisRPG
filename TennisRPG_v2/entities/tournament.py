@@ -29,8 +29,6 @@ class MatchResult:
 	loser: 'Player'
 	sets_won: int
 	sets_lost: int
-	fatigue_winner: int
-	fatigue_loser: int
 
 
 @dataclass
@@ -323,20 +321,10 @@ class Tournament(ABC):
 		sets_won = self.sets_to_win
 		sets_lost = random.randint(0, self.sets_to_win - 1)
 
-		# Calcul de la fatigue de base
-		base_fatigue_winner = random.randint(8, 15) + (sets_won + sets_lost - 2) * 3
-		base_fatigue_loser = random.randint(10, 18) + (sets_won + sets_lost - 2) * 4
-		
-		# Application du coefficient spécifique au tournoi
-		from ..utils.constants import TOURNAMENT_FATIGUE_MULTIPLIERS
-		multiplier = TOURNAMENT_FATIGUE_MULTIPLIERS.get(self.category.value, 1.0)
-		
-		fatigue_winner = int(base_fatigue_winner * multiplier)
-		fatigue_loser = int(base_fatigue_loser * multiplier)
-
-		# Applique la fatigue
-		winner.physical.fatigue = min(100, winner.physical.fatigue + fatigue_winner)
-		loser.physical.fatigue = min(100, loser.physical.fatigue + fatigue_loser)
+		# Gestion de la fatigue - utilisation des méthodes centralisées
+		sets_played_total = sets_won + sets_lost
+		winner.manage_fatigue("Tournament", sets_played_total, self.category.value)
+		loser.manage_fatigue("Tournament", sets_played_total, self.category.value)
 
 		# Gain d'expérience pour le match
 		winner.gain_experience(TOURNAMENT_CONSTANTS["MATCH_BASE_XP"])
@@ -346,9 +334,7 @@ class Tournament(ABC):
 			winner=winner,
 			loser=loser,
 			sets_won=sets_won,
-			sets_lost=sets_lost,
-			fatigue_winner=fatigue_winner,
-			fatigue_loser=fatigue_loser
+			sets_lost=sets_lost
 		)
 
 	@property

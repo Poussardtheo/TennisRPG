@@ -8,14 +8,16 @@ from typing import Dict, Optional
 class ATPPointsManager:
 	"""Gestionnaire des points ATP avec système glissant sur 52 semaines."""
 
-	def __init__(self, players: Dict[str, 'Player']):
+	def __init__(self, players: Dict[str, 'Player'], ranking_manager: 'RankingManager'=None):
 		"""
 		Initialise le gestionnaire avec les joueurs.
 
 		Args:
 			players: Dictionnaire des joueurs
+			ranking_manager: Gestionnaire des classements (optionnel)
 		"""
 		self.players = players
+		self.ranking_manager = ranking_manager
 		self.current_atp_points = pd.DataFrame(
 			0,
 			index=[p.full_name for p in players.values()],
@@ -51,6 +53,10 @@ class ATPPointsManager:
 		# Met à jour les points ATP totaux du joueur
 		player.career.atp_points += points
 		player.career.atp_race_points += points
+		
+		# Synchronise avec le ranking manager si disponible
+		if self.ranking_manager:
+			self.ranking_manager.add_atp_points(player.full_name, points, week)
 
 	def remove_weekly_points(self, player: 'Player', week: int):
 		"""

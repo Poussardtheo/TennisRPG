@@ -2,8 +2,8 @@
 Tests de régression pour TennisRPG v2
 """
 import pytest
-from TennisRPG_v2.entities.player import Player, Gender
-from TennisRPG_v2.managers.player_generator import PlayerGenerator
+from TennisRPG.entities.player import Player, Gender
+from TennisRPG.managers.player_generator import PlayerGenerator
 
 
 class TestRegression:
@@ -33,7 +33,7 @@ class TestRegression:
         
     def test_tournament_eligibility_regression(self):
         """Test régression éligibilité tournois"""
-        from TennisRPG_v2.managers.tournament_manager import TournamentManager
+        from TennisRPG.managers.tournament_manager import TournamentManager
         
         manager = TournamentManager()
         
@@ -91,7 +91,7 @@ class TestRegression:
         
     def test_tournament_database_integrity(self):
         """Test intégrité base de données tournois"""
-        from TennisRPG_v2.data.tournaments_database import tournois
+        from TennisRPG.data.tournaments_database import tournois
         
         # Vérifie que les semaines clés existent
         assert 1 in tournois  # Début d'année

@@ -2,9 +2,9 @@
 Script de profiling mémoire pour TennisRPG v2
 """
 from memory_profiler import profile
-from TennisRPG_v2.entities.player import Player, Gender
-from TennisRPG_v2.managers.player_generator import PlayerGenerator
-from TennisRPG_v2.managers.tournament_manager import TournamentManager
+from TennisRPG.entities.player import Player, Gender
+from TennisRPG.managers.player_generator import PlayerGenerator
+from TennisRPG.managers.tournament_manager import TournamentManager
 
 
 @profile
@@ -23,7 +23,7 @@ def test_player_generation():
 @profile  
 def test_tournament_simulation():
     """Test profiling simulation tournoi"""
-    from TennisRPG_v2.data.tournaments_database import tournois
+    from TennisRPG.data.tournaments_database import tournois
     
     # Prend un tournoi
     week_tournaments = tournois.get(10, [])
@@ -52,7 +52,7 @@ def test_tournament_simulation():
 @profile
 def test_ranking_system():
     """Test profiling système de classement"""
-    from TennisRPG_v2.managers.ranking_manager import RankingManager
+    from TennisRPG.managers.ranking_manager import RankingManager
     
     generator = PlayerGenerator()
     players = [generator.generate_player(Gender.MALE) for _ in range(500)]

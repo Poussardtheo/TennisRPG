@@ -9,7 +9,10 @@ from ..entities.player import Player
 from ..entities.tournament import Tournament
 from ..managers.tournament_manager import TournamentManager
 from ..managers.ranking_manager import RankingManager
-from ..utils.constants import ACTIVITIES, FATIGUE_VALUES
+from ..utils.constants import ACTIVITIES, TIME_CONSTANTS
+
+
+# from ..utils.constants import FATIGUE_VALUES  # TODO: Supprimé - fatigue gérée dans Player
 
 
 class ActivityResult:
@@ -44,16 +47,13 @@ class TrainingActivity(Activity):
         xp_gained = random.randint(10, 15)
         player.gain_experience(xp_gained)
         
-        # Gestion de la fatigue
-        fatigue_min, fatigue_max = FATIGUE_VALUES["Entrainement"]
-        fatigue_increase = random.randint(fatigue_min, fatigue_max)
-        
-        if hasattr(player, 'physical'):
-            player.physical.fatigue = min(100, player.physical.fatigue + fatigue_increase)
-        
+        # Gestion de la fatigue - utilisation méthode centralisée
+        fatigue_increase = player.manage_fatigue("Entrainement", display=True)
+        fatigue_increase -= TIME_CONSTANTS["FATIGUE_NATURAL_RECOVERY"]  # Récupération naturelle de la fatigue
+
         # Message personnalisé
         gender_suffix = "e" if player.gender.value == "f" else ""
-        message = f"{player.first_name} s'est entraîné{gender_suffix} cette semaine."
+        message = f"{player.full_name} s'est entraîné{gender_suffix} cette semaine."
         
         result = ActivityResult("Entraînement", True, message)
         result.xp_gained = xp_gained
@@ -68,12 +68,9 @@ class RestActivity(Activity):
     """Activité de repos"""
     
     def execute(self, player: Player) -> ActivityResult:
-        # Récupération de fatigue
-        fatigue_recovery_min, fatigue_recovery_max = FATIGUE_VALUES["Repos"]
-        fatigue_recovery = random.randint(fatigue_recovery_min, fatigue_recovery_max)
-        
-        if hasattr(player, 'physical'):
-            player.physical.fatigue = max(0, player.physical.fatigue - fatigue_recovery)
+        # Récupération de fatigue - utilisation méthode centralisée
+        player.rest()
+        fatigue_recovery = 4  # Valeur approximative pour l'affichage
         
         # Message personnalisé
         gender_suffix = "e" if player.gender.value == "f" else ""

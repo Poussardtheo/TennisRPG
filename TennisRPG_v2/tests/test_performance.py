@@ -3,9 +3,9 @@ Tests de performance pour TennisRPG v2
 """
 import time
 import pytest
-from TennisRPG_v2.entities.player import Player, Gender
-from TennisRPG_v2.managers.player_generator import PlayerGenerator
-from TennisRPG_v2.managers.tournament_manager import TournamentManager
+from TennisRPG.entities.player import Player, Gender
+from TennisRPG.managers.player_generator import PlayerGenerator
+from TennisRPG.managers.tournament_manager import TournamentManager
 
 
 class TestPerformance:
@@ -37,7 +37,7 @@ class TestPerformance:
     @pytest.mark.slow
     def test_tournament_simulation_performance(self):
         """Test performance simulation tournoi"""
-        from TennisRPG_v2.data.tournaments_database import tournois
+        from TennisRPG.data.tournaments_database import tournois
         
         # Prend un tournoi ATP 250
         week_tournaments = tournois.get(10, [])
@@ -92,7 +92,7 @@ class TestPerformance:
     @pytest.mark.slow
     def test_ranking_system_performance(self):
         """Test performance système de classement"""
-        from TennisRPG_v2.managers.ranking_manager import RankingManager
+        from TennisRPG.managers.ranking_manager import RankingManager
         
         generator = PlayerGenerator()
         players = [generator.generate_player(Gender.MALE) for _ in range(500)]
