@@ -29,11 +29,16 @@ ARCHETYPES = {
 # Constantes pour les joueurs
 PLAYER_CONSTANTS = {
     "BASE_POINTS": 6,
-    "MAX_LEVEL": 30,
+    "MAX_LEVEL": 50,  # Augmenté pour une carrière plus réaliste
     "BASE_STAT_VALUE": 30,
     "MAX_STAT_VALUE": 100,
     "MAX_FATIGUE": 100,
-    "FATIGUE_PARTICIPATION_THRESHOLD": 90
+    "FATIGUE_PARTICIPATION_THRESHOLD": 90,
+    "STARTING_AGE_MIN": 16,  # Âge minimum de début de carrière
+    "STARTING_AGE_MAX": 24,  # Âge maximum de début de carrière
+    "PEAK_AGE_START": 23,    # Début de l'âge de pic
+    "PEAK_AGE_END": 26,      # Fin de l'âge de pic
+    "DECLINE_AGE_START": 31  # Début du déclin
 }
 
 # Poids des statistiques pour le calcul ELO
@@ -104,6 +109,33 @@ TOURNAMENT_CONSTANTS = {
     "TOURNAMENT_COMPLETION_BONUS": 100
 }
 
+# XP rewards par catégorie de tournoi (victoire finale)
+TOURNAMENT_XP_REWARDS = {
+    "Grand Slam": 120,
+    "ATP Finals": 100,
+    "Masters 1000": 80,
+    "ATP 500": 60,
+    "ATP 250": 40,
+    "Challenger 175": 30,
+    "Challenger 125": 25,
+    "Challenger 100": 20,
+    "Challenger 75": 15,
+    "Challenger 50": 12,
+    "ITF M25": 8,
+    "ITF M15": 5
+}
+
+# Multiplicateurs XP selon le round atteint (relatif à la récompense finale)
+ROUND_XP_MULTIPLIERS = {
+    "Champion": 1.0,
+    "Finale": 0.7,
+    "Demi-finale": 0.5,
+    "Quart de finale": 0.35,
+    "Huitième de finale": 0.25,
+    "Deuxième tour": 0.15,
+    "Premier tour": 0.1
+}
+
 # Formats de tournois
 TOURNAMENT_FORMATS = {
     "ELIMINATION": "elimination",
@@ -123,9 +155,33 @@ TOURNAMENT_SURFACES = {
 # Activités disponibles
 ACTIVITIES = ["Entrainement", "Tournoi", "Repos", "Exhibition"]
 
+# XP de base pour les activités
+BASE_TRAINING_XP = {"min": 6, "max": 10}  # Réduit par rapport à l'ancien système
+
 # Constantes pour la gestion du temps
 TIME_CONSTANTS = {
     "WEEKS_PER_YEAR": 52,
     "FATIGUE_NATURAL_RECOVERY": 3
+}
+
+# Facteurs de progression par âge
+AGE_PROGRESSION_FACTORS = {
+    "16-19": 1.4,  # Progression très rapide (jeune talent)
+    "20-22": 1.2,  # Progression rapide (développement)
+    "23-26": 1.0,  # Progression normale (pic de carrière)
+    "27-30": 0.8,  # Progression ralentie (expérience)
+    "31-33": 0.6,  # Progression lente (vétéran)
+    "34+": 0.4     # Progression très lente (fin de carrière)
+}
+
+# Constantes pour le système de retraite
+RETIREMENT_CONSTANTS = {
+    "MIN_RETIREMENT_AGE": 30,      # Âge minimum pour prendre sa retraite
+    "MAX_CAREER_AGE": 45,          # Âge maximum (retraite forcée)
+    "BASE_RETIREMENT_PROBABILITY": 0.02,  # Probabilité de base à 30 ans (2%)
+    "AGE_RETIREMENT_MULTIPLIER": 0.8,     # Multiplicateur par année après 30 ans
+    "EARLY_RETIREMENT_BONUS": 0.1,        # Bonus pour blessures/mauvaise forme
+    "YOUNG_PLAYER_MIN_AGE": 16,           # Âge minimum des nouveaux joueurs
+    "YOUNG_PLAYER_MAX_AGE": 20,           # Âge maximum des nouveaux joueurs
 }
 

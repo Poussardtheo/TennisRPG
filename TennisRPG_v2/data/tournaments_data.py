@@ -101,30 +101,30 @@ ATP_POINTS_CONFIG = {
 # Configuration de l'XP par catégorie et tour
 XP_POINTS_CONFIG = {
     TournamentCategory.GRAND_SLAM: {
-        "winner": 500, "finalist": 350, "semifinalist": 250,
-        "quarterfinalist": 180, "round_16": 130, "round_32": 90,
+        "winner": 2000, "finalist": 1000, "semifinalist": 500,
+        "quarterfinalist": 250, "round_16": 130, "round_32": 90,
         "round_64": 60, "round_128": 40
     },
     TournamentCategory.ATP_FINALS: {
-        "winner": 400, "finalist": 300, "semifinalist": 200,
-        "round_robin_win": 50, "participation": 0
+        "winner": 1500, "finalist": 750, "semifinalist": 300,
+        "round_robin_win": 100, "participation": 0
     },
     TournamentCategory.MASTERS_1000: {
         # Configuration pour 6 tours
-        "winner_6": 350, "finalist_6": 250, "semifinalist_6": 180,
+        "winner_6": 1000, "finalist_6": 500, "semifinalist_6": 250,
         "quarterfinalist_6": 130, "round_16_6": 90, "round_32_6": 60,
         "round_64_6": 40,
         # Configuration pour 7 tours
-        "winner_7": 350, "finalist_7": 250, "semifinalist_7": 180,
+        "winner_7": 1000, "finalist_7": 500, "semifinalist_7": 250,
         "quarterfinalist_7": 130, "round_16_7": 90, "round_32_7": 60,
         "round_64_7": 40, "round_128_7": 30
     },
     TournamentCategory.ATP_500: {
         # Configuration pour 5 tours
-        "winner_5": 300, "finalist_5": 200, "semifinalist_5": 140,
+        "winner_5": 500, "finalist_5": 250, "semifinalist_5": 130,
         "quarterfinalist_5": 100, "round_16_5": 70, "round_32_5": 50,
         # Configuration pour 6 tours
-        "winner_6": 300, "finalist_6": 200, "semifinalist_6": 140,
+        "winner_6": 500, "finalist_6": 250, "semifinalist_6": 130,
         "quarterfinalist_6": 100, "round_16_6": 70, "round_32_6": 50,
         "round_64_6": 35
     },

@@ -3,6 +3,7 @@ Session de jeu principale - Cœur du gameplay TennisRPG v2
 """
 import time
 import threading
+import random
 from typing import Dict, List, Optional
 
 from ..entities.player import Player, Gender
@@ -12,7 +13,8 @@ from ..managers.tournament_manager import TournamentManager
 from ..managers.ranking_manager import RankingManager
 from ..managers.weekly_activity_manager import WeeklyActivityManager
 from ..managers.atp_points_manager import ATPPointsManager
-from ..utils.constants import TIME_CONSTANTS
+from ..managers.retirement_manager import RetirementManager
+from ..utils.constants import TIME_CONSTANTS, RETIREMENT_CONSTANTS
 from .save_manager import SaveManager, GameState
 
 
@@ -31,6 +33,7 @@ class GameSession:
         self.player_generator = PlayerGenerator()
         self.activity_manager: Optional[WeeklyActivityManager] = None
         self.atp_points_manager: Optional[ATPPointsManager] = None
+        self.retirement_manager = RetirementManager(self.player_generator)
         self.save_manager = SaveManager()
         
         # Timing pour playtime
@@ -141,7 +144,7 @@ class GameSession:
         
         start_time = time.time()
         
-        # Simule 520 semaines (10 ans)
+        # Simule 1 année préliminaire (réduit pour performance)
         for year in range(1):
             print(f"   📈 Année {2014 + year}...")
             
@@ -151,6 +154,32 @@ class GameSession:
                 # Progress tous les 6 mois
                 if week % 26 == 0:
                     print(f"      ⌛ Semestre {week//26} terminé")
+            
+            # Vieillit les joueurs en fin d'année et traite quelques retraites préliminaires
+            self.retirement_manager.force_aging_simulation(self.all_players, 1)
+            
+            # Applique quelques retraites préliminaires pour créer de la rotation
+            if year == 0:  # Seulement lors de la dernière année de simulation
+                # Force quelques retraites pour les plus vieux joueurs
+                very_old_players = [p for p in self.all_players.values() 
+                                  if hasattr(p.career, 'age') and p.career.age >= 35]
+                if very_old_players:
+                    # Retire 10% des joueurs les plus âgés
+                    num_to_retire = max(1, len(very_old_players) // 10)
+                    players_to_retire = random.sample(very_old_players, num_to_retire)
+                    
+                    for player in players_to_retire:
+                        if player.full_name in self.all_players:
+                            del self.all_players[player.full_name]
+
+                    gender = players_to_retire[0].gender    # Gènère des remplacements du même genre
+
+                    # Génère des remplacements
+                    for _ in range(num_to_retire):
+                        new_player = self.player_generator.generate_player(gender, level_range=(1, 10))
+                        mini, maxi = RETIREMENT_CONSTANTS["YOUNG_PLAYER_MIN_AGE"], RETIREMENT_CONSTANTS["YOUNG_PLAYER_MAX_AGE"]
+                        new_player.career.age = random.randint(mini, maxi)
+                        self.all_players[new_player.full_name] = new_player
         
         simulation_time = time.time() - start_time
         print(f"✅ Simulation préliminaire terminée en {simulation_time:.1f} secondes")
@@ -232,6 +261,7 @@ class GameSession:
         print("📈 [E] Attribuer des points d'attributs")
         print("💾 [S] Sauvegarder le jeu")
         print("📂 [L] Charger une autre sauvegarde")
+        print("🔄 [R] Voir les retraites récentes")
         print("❌ [Q] Quitter le jeu")
     
     def _get_user_input(self) -> str:
@@ -254,6 +284,8 @@ class GameSession:
             self._save_game()
         elif action == 'l':
             self._load_game_menu()
+        elif action == 'r':
+            self._display_recent_retirements()
         elif action == '' or action == 'continue':
             self._start_weekly_activities()
         else:
@@ -555,11 +587,223 @@ class GameSession:
             self.current_year += 1
             print(f"\n🎊 NOUVELLE ANNÉE: {self.current_year}")
             
+            # Remet à zéro l'ATP Race
             if self.ranking_manager:
                 self.ranking_manager.reset_atp_race()
+            
+            # Traite les retraites et la rotation des joueurs en fin d'année
+            self._process_end_of_year_retirements()
         
         # Récupération naturelle de fatigue - utilisation méthode centralisée
         self.main_player.recover_fatigue(TIME_CONSTANTS["FATIGUE_NATURAL_RECOVERY"])
+    
+    def _process_end_of_year_retirements(self) -> None:
+        """Traite les retraites et la rotation des joueurs en fin d'année"""
+        if not self.retirement_manager or not self.ranking_manager:
+            return
+        
+        # Vieillit le joueur principal d'un an
+        if self.main_player and hasattr(self.main_player.career, 'age'):
+            self.main_player.career.age += 1
+            print(f"🎂 {self.main_player.full_name} a maintenant {self.main_player.career.age} ans")
+        
+        # Traite les retraites et remplacements
+        retired_players, new_players = self.retirement_manager.process_end_of_season_retirements(
+            self.all_players, self.ranking_manager, self.current_year - 1
+        )
+        
+        # Met à jour les classements si de nouveaux joueurs ont été ajoutés
+        if new_players:
+            for new_player in new_players:
+                self.ranking_manager.add_player(new_player)
+        
+        # Affichage interactif des retraites
+        if retired_players or new_players:
+            print(f"\n🎭 CHANGEMENTS DU CIRCUIT PROFESSIONNEL - FIN {self.current_year - 1}")
+            print("═" * 60)
+            
+            # Offre des options d'affichage
+            while True:
+                print(f"\n📋 OPTIONS D'AFFICHAGE:")
+                print("1️⃣  Voir le résumé des retraites")
+                print("2️⃣  Voir les statistiques détaillées")
+                print("3️⃣  Comparer avec les années précédentes")
+                print("4️⃣  Continuer vers la nouvelle saison")
+                
+                choice = input("\n🎯 Votre choix (1-4): ").strip()
+                
+                if choice == '1':
+                    self._display_retirement_details(retired_players, new_players)
+                elif choice == '2':
+                    self._display_retirement_statistics(self.current_year - 1)
+                elif choice == '3':
+                    self._display_retirement_trends()
+                elif choice == '4':
+                    break
+                else:
+                    print("❌ Choix invalide. Utilisez 1, 2, 3 ou 4.")
+            
+            print("═" * 60)
+        
+        # Résumé final automatique
+        retirement_stats = self.retirement_manager.get_retirement_stats(self.current_year - 1)
+        if retirement_stats and retirement_stats.get("total_retirements", 0) > 0:
+            print(f"\n📊 RÉSUMÉ RAPIDE - {retirement_stats['total_retirements']} retraites, âge moyen {retirement_stats['average_retirement_age']:.1f} ans")
+            print(f"🎂 {self.main_player.full_name} commence l'année à {self.main_player.career.age} ans")
+            
+            # Pause pour que l'utilisateur puisse lire
+            input("\n⏎ Appuyez sur ENTRÉE pour démarrer la nouvelle saison...")
+    
+    def _display_retirement_details(self, retired_players: list, new_players: list) -> None:
+        """Affiche les détails des retraites de manière organisée"""
+        if retired_players:
+            print(f"\n👋 RETRAITÉS CETTE ANNÉE ({len(retired_players)}):")
+            print("─" * 50)
+            
+            # Trie par classement (meilleurs d'abord)
+            retired_sorted = sorted(retired_players, 
+                                  key=lambda p: self.ranking_manager.get_player_rank(p) or 9999)
+            
+            for i, player in enumerate(retired_sorted[:15], 1):  # Limite à 15 pour l'affichage
+                ranking = self.ranking_manager.get_player_rank(player) or "N/C"
+                atp_points = player.career.atp_points or 0
+                country_flag = "🇫🇷" if player.country == "France" else "🌍"
+                print(f"{i:2}. #{ranking:<4} {player.full_name:<25} {country_flag} {player.career.age} ans ({atp_points} pts ATP)")
+            
+            if len(retired_players) > 15:
+                print(f"   ... et {len(retired_players) - 15} autres retraites")
+        
+        if new_players:
+            print(f"\n🌟 NOUVEAUX SUR LE CIRCUIT ({len(new_players)}):")
+            print("─" * 50)
+            
+            # Échantillon aléatoire des nouveaux
+            sample_new = random.sample(new_players, min(15, len(new_players)))
+            for i, player in enumerate(sample_new, 1):
+                country_flag = "🇫🇷" if player.country == "France" else "🌍"
+                print(f"{i:2}. {player.full_name:<25} {country_flag} {player.career.age} ans (Débutant)")
+    
+    def _display_retirement_statistics(self, year: int) -> None:
+        """Affiche des statistiques détaillées sur les retraites"""
+        stats = self.retirement_manager.get_retirement_stats(year)
+        
+        if not stats or stats.get("total_retirements", 0) == 0:
+            print(f"\n📊 Aucune retraite enregistrée pour {year}")
+            return
+        
+        print(f"\n📈 STATISTIQUES DÉTAILLÉES - {year}")
+        print("─" * 40)
+        print(f"📊 Total des retraites: {stats['total_retirements']}")
+        print(f"🎂 Âge moyen de retraite: {stats['average_retirement_age']:.1f} ans")
+        print(f"👶 Plus jeune retraité: {stats['youngest_retiree']} ans")
+        print(f"👴 Plus âgé: {stats['oldest_retiree']} ans")
+        
+        if 'countries' in stats and stats['countries']:
+            print(f"🌍 Pays touchés: {len(stats['countries'])}")
+            print(f"   Exemples: {', '.join(stats['countries'][:5])}")
+        
+        # Analyse comparative
+        current_year_players = len(self.all_players)
+        retirement_rate = (stats['total_retirements'] / current_year_players) * 100
+        print(f"📉 Taux de retraite: {retirement_rate:.1f}% du circuit")
+    
+    def _display_retirement_trends(self) -> None:
+        """Affiche les tendances des retraites sur plusieurs années"""
+        print(f"\n📈 TENDANCES DES RETRAITES")
+        print("─" * 35)
+        
+        # Récupère les stats des dernières années
+        years_to_check = range(max(2024, self.current_year - 5), self.current_year)
+        
+        print("Année  | Retraites | Âge moyen")
+        print("────── | ───────── | ─────────")
+        
+        total_retirements = 0
+        for year in years_to_check:
+            stats = self.retirement_manager.get_retirement_stats(year)
+            if stats and stats.get("total_retirements", 0) > 0:
+                retirements = stats["total_retirements"]
+                avg_age = stats["average_retirement_age"]
+                total_retirements += retirements
+                print(f"{year}   | {retirements:9} | {avg_age:7.1f} ans")
+            else:
+                print(f"{year}   | {0:9} | {'N/A':>9}")
+        
+        if total_retirements > 0:
+            avg_per_year = total_retirements / len(years_to_check)
+            print("────── | ───────── | ─────────")
+            print(f"Moy.   | {avg_per_year:9.1f} | -")
+            
+            # Prédiction pour l'année suivante
+            current_players = len(self.all_players)
+            older_players = len([p for p in self.all_players.values() 
+                               if hasattr(p.career, 'age') and p.career.age >= 32])
+            
+            print(f"\n🔮 PRÉDICTIONS {self.current_year}:")
+            print(f"   • Joueurs 32+ ans: {older_players}")
+            print(f"   • Retraites estimées: {int(avg_per_year * 1.1)}-{int(avg_per_year * 1.3)}")
+        else:
+            print("\n💭 Pas assez de données historiques pour les tendances")
+    
+    def _display_recent_retirements(self) -> None:
+        """Affiche les retraites récentes et les nouvelles arrivées"""
+        print("\n🔄 MOUVEMENTS RÉCENTS SUR LE CIRCUIT")
+        print("=" * 45)
+        
+        # Affiche les retraites de l'année actuelle et précédente
+        years_to_check = [self.current_year - 1, self.current_year - 2] if self.current_year > 2024 else [2024]
+        
+        total_recent_retirements = 0
+        for year in years_to_check:
+            stats = self.retirement_manager.get_retirement_stats(year)
+            if stats and stats.get("total_retirements", 0) > 0:
+                total_recent_retirements += stats["total_retirements"]
+                print(f"\n📅 ANNÉE {year}:")
+                print(f"   • {stats['total_retirements']} retraites")
+                print(f"   • Âge moyen: {stats['average_retirement_age']:.1f} ans")
+                if stats.get('youngest_retiree') and stats.get('oldest_retiree'):
+                    print(f"   • Tranche d'âge: {stats['youngest_retiree']}-{stats['oldest_retiree']} ans")
+        
+        if total_recent_retirements == 0:
+            print("\n💭 Aucune retraite récente enregistrée")
+            print("🔮 Le circuit professionnel est stable pour le moment")
+        else:
+            # Statistiques du circuit actuel
+            current_players = len(self.all_players)
+            older_players = len([p for p in self.all_players.values() 
+                               if hasattr(p.career, 'age') and p.career.age >= 30])
+            
+            print(f"\n📊 ÉTAT ACTUEL DU CIRCUIT:")
+            print(f"   • Total de joueurs: {current_players}")
+            print(f"   • Joueurs 30+ ans: {older_players} ({(older_players/current_players*100):.1f}%)")
+            
+            # Prédiction des retraites à venir
+            very_old = len([p for p in self.all_players.values() 
+                          if hasattr(p.career, 'age') and p.career.age >= 35])
+            if very_old > 0:
+                print(f"   • Joueurs 35+ ans: {very_old} (retraites probables)")
+        
+        # Information sur le joueur principal
+        if self.main_player:
+            player_age = self.main_player.career.age
+            peers = len([p for p in self.all_players.values() 
+                        if hasattr(p.career, 'age') and 
+                        abs(p.career.age - player_age) <= 2 and p != self.main_player])
+            
+            print(f"\n👤 VOTRE GÉNÉRATION:")
+            print(f"   • Votre âge: {player_age} ans")
+            print(f"   • Joueurs de votre âge (±2 ans): {peers}")
+            
+            if player_age >= 30:
+                from ..utils.helpers import calculate_retirement_probability
+                retirement_prob = calculate_retirement_probability(
+                    player_age, 
+                    self.ranking_manager.get_player_rank(self.main_player) if self.ranking_manager else None
+                )
+                print(f"   • Probabilité de retraite: {retirement_prob*100:.1f}%")
+        
+        print("\n" + "=" * 45)
+        input("⏎ Appuyez sur ENTRÉE pour revenir au menu...")
 
 
 def display_entry_menu():

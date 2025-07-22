@@ -326,9 +326,8 @@ class Tournament(ABC):
 		winner.manage_fatigue("Tournament", sets_played_total, self.category.value)
 		loser.manage_fatigue("Tournament", sets_played_total, self.category.value)
 
-		# Gain d'expérience pour le match
-		winner.gain_experience(TOURNAMENT_CONSTANTS["MATCH_BASE_XP"])
-		loser.gain_experience(TOURNAMENT_CONSTANTS["MATCH_BASE_XP"] // 2)
+		# Note: L'XP de tournoi est attribuée seulement à la fin selon le tour atteint
+		# Pas d'XP attribuée à chaque match pour éviter la double attribution
 
 		return MatchResult(
 			winner=winner,

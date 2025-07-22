@@ -9,6 +9,7 @@ from unidecode import unidecode
 
 from ..entities.player import Player, Gender
 from ..data.countries import COUNTRIES_LOCALES
+from ..utils.constants import RETIREMENT_CONSTANTS
 
 
 class PlayerGenerator:
@@ -59,7 +60,8 @@ class PlayerGenerator:
 			last_name=last_name,
 			country=country,
 			level=level,
-			is_main_player=False
+			is_main_player=False,
+			age=random.randint(RETIREMENT_CONSTANTS["YOUNG_PLAYER_MIN_AGE"], RETIREMENT_CONSTANTS["YOUNG_PLAYER_MAX_AGE"])
 		)
 
 	def _get_random_locale(self, country: str) -> str:

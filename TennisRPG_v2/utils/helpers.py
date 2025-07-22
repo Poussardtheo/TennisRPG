@@ -5,7 +5,7 @@ import random
 from typing import Dict
 from scipy.stats import truncnorm
 
-from .constants import STATS_WEIGHTS
+from .constants import STATS_WEIGHTS, AGE_PROGRESSION_FACTORS, RETIREMENT_CONSTANTS
 
 
 def generate_height(lower_bound: int, upper_bound: int) -> int:
@@ -58,7 +58,7 @@ def calculate_experience_required(level: int) -> int:
 	Returns:
 		Expérience requise
 	"""
-	return int(200 * level ** 1.2)
+	return int(150 * (level ** 1.2) + level * 25)
 
 
 def get_gender_agreement(gender: str) -> str:
@@ -137,3 +137,109 @@ def get_participation_rate(tournament: 'Tournament') -> float:
 	else:
 		participation_rate = 0.7
 	return participation_rate
+
+
+def get_age_progression_factor(age: int) -> float:
+	"""
+	Retourne le facteur de progression en fonction de l'âge
+	
+	Args:
+		age: Âge du joueur
+		
+	Returns:
+		Facteur multiplicateur pour la progression
+	"""
+	if age <= 19:
+		return AGE_PROGRESSION_FACTORS["16-19"]
+	elif age <= 22:
+		return AGE_PROGRESSION_FACTORS["20-22"]
+	elif age <= 26:
+		return AGE_PROGRESSION_FACTORS["23-26"]
+	elif age <= 30:
+		return AGE_PROGRESSION_FACTORS["27-30"]
+	elif age <= 33:
+		return AGE_PROGRESSION_FACTORS["31-33"]
+	else:
+		return AGE_PROGRESSION_FACTORS["34+"]
+
+
+def calculate_tournament_xp(tournament_category: str, round_reached: str, base_xp: int = None) -> int:
+	"""
+	Calcule l'XP gagnée pour une performance en tournoi
+	
+	Args:
+		tournament_category: Catégorie du tournoi
+		round_reached: Round atteint ("Champion", "Finale", etc.)
+		base_xp: XP de base (optionnel, utilise les constantes par défaut)
+		
+	Returns:
+		XP calculée
+	"""
+	from .constants import TOURNAMENT_XP_REWARDS, ROUND_XP_MULTIPLIERS
+	
+	if base_xp is None:
+		base_xp = TOURNAMENT_XP_REWARDS.get(tournament_category, 20)  # Défaut si catégorie inconnue
+	
+	multiplier = ROUND_XP_MULTIPLIERS.get(round_reached, 0.1)  # Défaut = premier tour
+	
+	return int(base_xp * multiplier)
+
+
+def calculate_retirement_probability(age: int, atp_ranking: int = None) -> float:
+	"""
+	Calcule la probabilité de retraite d'un joueur basée sur son âge et son classement
+	
+	Args:
+		age: Âge du joueur
+		atp_ranking: Classement ATP du joueur (optionnel, pour ajuster la probabilité)
+		
+	Returns:
+		Probabilité de retraite (entre 0 et 1)
+	"""
+	# Âge minimum pour prendre sa retraite
+	if age < RETIREMENT_CONSTANTS["MIN_RETIREMENT_AGE"]:
+		return 0.0
+	
+	# Retraite forcée à l'âge maximum
+	if age >= RETIREMENT_CONSTANTS["MAX_CAREER_AGE"]:
+		return 1.0
+	
+	# Calcul de la probabilité de base selon l'âge
+	years_past_min = age - RETIREMENT_CONSTANTS["MIN_RETIREMENT_AGE"]
+	base_probability = RETIREMENT_CONSTANTS["BASE_RETIREMENT_PROBABILITY"]
+	age_multiplier = RETIREMENT_CONSTANTS["AGE_RETIREMENT_MULTIPLIER"]
+	
+	# Probabilité exponentielle croissante avec l'âge
+	probability = base_probability * (1 + age_multiplier) ** years_past_min
+	
+	# Ajustement selon le classement ATP (les joueurs mieux classés restent plus longtemps)
+	if atp_ranking is not None:
+		if atp_ranking <= 50:  # Top 50: réduction significative de la probabilité
+			probability *= 0.3
+		elif atp_ranking <= 100:  # Top 100: réduction modérée
+			probability *= 0.5
+		elif atp_ranking <= 200:  # Top 200: légère réduction
+			probability *= 0.7
+		elif atp_ranking > 500:  # Joueurs mal classés: augmentation
+			probability *= 1.5
+	
+	# Assure que la probabilité reste dans les limites [0, 1]
+	return min(1.0, max(0.0, probability))
+
+
+def should_player_retire(player: 'Player', atp_ranking: int = None) -> bool:
+	"""
+	Détermine si un joueur devrait prendre sa retraite
+	
+	Args:
+		player: Instance du joueur
+		atp_ranking: Classement ATP du joueur (optionnel)
+		
+	Returns:
+		True si le joueur devrait prendre sa retraite
+	"""
+	if not hasattr(player, 'career') or not hasattr(player.career, 'age'):
+		return False
+		
+	probability = calculate_retirement_probability(player.career.age, atp_ranking)
+	return random.random() < probability

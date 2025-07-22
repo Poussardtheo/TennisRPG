@@ -12,7 +12,8 @@ from ..utils.constants import (
 )
 from ..utils.helpers import (
 	generate_height, calculate_weighted_elo, calculate_experience_required, get_random_hand,
-	get_random_backhand, get_gender_agreement, calculate_fatigue_level
+	get_random_backhand, get_gender_agreement, calculate_fatigue_level, get_age_progression_factor,
+	calculate_tournament_xp
 )
 
 from ..data.surface_data import SURFACE_IMPACTS
@@ -21,6 +22,7 @@ from ..data.surface_data import SURFACE_IMPACTS
 class Gender(Enum):
 	MALE = "m"
 	FEMALE = "f"
+
 
 @dataclass
 class PlayerStats:
@@ -71,12 +73,13 @@ class PlayerCareer:
 	ap_points: int = 0
 	atp_points: int = 0
 	atp_race_points: int = 0
+	age: int = 20  # Âge du joueur (nouveau champ)
 
 
 @dataclass
 class PlayerPhysical:
 	"""Données physiques d'un joueur"""
-	height: int = 180 	# Todo: modification possible
+	height: int = 180  # Todo: modification possible
 	dominant_hand: str = ""
 	backhand_style: str = ""
 	fatigue: int = 0
@@ -91,13 +94,14 @@ class PlayerPhysical:
 		"""Récupère une certaine quantité de fatigue"""
 		self.fatigue = max(0, self.fatigue - amount)
 
+
 class Player:
 	"""Joueur de tennis"""
 
 	def __init__(self, gender: Gender, first_name: str, last_name: str,
 				 country: str, height: Optional[int] = None,
 				 level: int = 1, archetype: Optional[str] = None,
-				 is_main_player : bool = False):
+				 is_main_player: bool = False, age: Optional[int] = None):
 
 		# Validation des paramètres
 		self._validate_init_params(gender, first_name, last_name, country, height, level)
@@ -110,9 +114,13 @@ class Player:
 		self.archetype = archetype or random.choice(list(ARCHETYPES.keys()))
 		self.is_main_player = is_main_player
 
+		# Génération de l'âge si non spécifié
+		if age is None:
+			age = random.randint(PLAYER_CONSTANTS["STARTING_AGE_MIN"], PLAYER_CONSTANTS["STARTING_AGE_MAX"])
+
 		# Initialisation des composants
 		self.stats = PlayerStats()
-		self.career = PlayerCareer(level=level, ap_points=PLAYER_CONSTANTS["BASE_POINTS"] * (level - 1))
+		self.career = PlayerCareer(level=level, ap_points=PLAYER_CONSTANTS["BASE_POINTS"] * (level - 1), age=age)
 		self.physical = PlayerPhysical()
 
 		# Génération de la taille selon le genre
@@ -127,7 +135,6 @@ class Player:
 
 		if self.career.level == 1:
 			self._auto_assign_ap_points()
-
 
 	def _validate_init_params(self, gender: Gender, first_name: str, last_name: str,
 							  country: str, height: Optional[int], level: int):
@@ -190,14 +197,30 @@ class Player:
 
 	def gain_experience(self, xp: int):
 		"""Gagne de l'xp et gère la montée de niveau"""
-		level_factor = max(1 - (self.career.level / PLAYER_CONSTANTS["MAX_LEVEL"]) * 0.6, 0.4)
-		adjusted_xp = round(xp * level_factor)
+		# Ancien facteur de niveau (réduit légèrement)
+		level_factor = max(1 - ((self.career.level-1) / PLAYER_CONSTANTS["MAX_LEVEL"]) * 0.4, 0.5)
+
+		# Nouveau: facteur d'âge pour plus de réalisme
+		age_factor = get_age_progression_factor(self.career.age)
+
+		# Combinaison des facteurs
+		total_factor = level_factor * age_factor
+		adjusted_xp = round(xp * total_factor)
+
 		self.career.xp_points += adjusted_xp
 
 		if self.is_main_player:
 			print(f"\n{self.full_name} a gagné {adjusted_xp} pts d'xp.")
 
 		self._check_level_up()
+
+	def gain_tournament_experience(self, tournament_category: str, round_reached: str):
+		"""Gagne de l'XP spécifique à une performance en tournoi"""
+		tournament_xp = calculate_tournament_xp(tournament_category, round_reached)
+		self.gain_experience(tournament_xp, source=f"tournoi ({round_reached})")
+
+		if self.is_main_player and tournament_xp > 0:
+			print(f"Bonus XP tournoi: {tournament_xp} pts pour {round_reached} en {tournament_category}")
 
 	def _check_level_up(self):
 		"""Vérifie et gère la montée de niveau"""
@@ -351,6 +374,7 @@ class Player:
 		lines.append("│" + " SITUATION ".center(width - 2) + "│")
 		lines.append("├" + "─" * (width - 2) + "┤")
 
+		lines.append(f"│ Âge     : {self.career.age} ans{' ' * 26} │")
 		if ranking_position:
 			lines.append(f"│ Classement ATP : {ranking_position:<23} │")
 		lines.append(f"│ Points ATP : {self.career.atp_points:<28} │")
@@ -395,7 +419,7 @@ class Player:
 	def to_dict(self) -> Dict:
 		"""Convertit le joueur en dictionnaire pour la sauvegarde"""
 		from dataclasses import asdict
-		
+
 		return {
 			"gender": self.gender.value,
 			"first_name": self.first_name,
@@ -411,18 +435,22 @@ class Player:
 	@classmethod
 	def from_dict(cls, data: Dict) -> 'Player':
 		"""Crée un joueur depuis un dictionnaire"""
-		
+
+		# Récupère l'âge depuis les données sauvegardées ou utilise une valeur par défaut
+		saved_age = data.get("career", {}).get("age", 20)
+
 		player = cls(
 			gender=Gender(data["gender"]),
 			first_name=data["first_name"],
 			last_name=data["last_name"],
 			country=data["country"],
-			is_main_player=data.get("is_main_player", False)
+			is_main_player=data.get("is_main_player", False),
+			age=saved_age
 		)
-		
+
 		# Restaure les attributs principaux
 		player.archetype = data["archetype"]
-		
+
 		# Restaure les statistiques
 		stats_data = data["stats"]
 		player.stats.coup_droit = stats_data["coup_droit"]
@@ -433,7 +461,7 @@ class Player:
 		player.stats.vitesse = stats_data["vitesse"]
 		player.stats.endurance = stats_data["endurance"]
 		player.stats.reflexes = stats_data["reflexes"]
-		
+
 		# Restaure la carrière
 		career_data = data["career"]
 		player.career.level = career_data["level"]
@@ -441,17 +469,19 @@ class Player:
 		player.career.ap_points = career_data["ap_points"]
 		player.career.atp_points = career_data["atp_points"]
 		player.career.atp_race_points = career_data["atp_race_points"]
+		# Support pour l'âge (rétrocompatibilité)
+		player.career.age = career_data.get("age", 20)
 
 		# Todo : Ceci sera utilisé dans une version future
 		#player.career.matches_played = career_data["matches_played"]
 		#player.career.matches_won = career_data["matches_won"]
 		#player.career.tournaments_won = career_data["tournaments_won"]
-		
+
 		# Restaure le physique
 		physical_data = data["physical"]
 		player.physical.height = physical_data["height"]
 		player.physical.dominant_hand = physical_data["dominant_hand"]
 		player.physical.backhand_style = physical_data["backhand_style"]
 		player.physical.fatigue = physical_data["fatigue"]
-		
+
 		return player

@@ -1,58 +1,87 @@
-## Futures Améliorations :
+# TennisRPG - Roadmap & TODO
 
-- Ajouter un système de sponsor pour les joueurs
-  - Plus un joueur est bon, plus il a de chance d'avoir un sponsor important
-  - On pourrait imaginer un système d'objectif que nous donnerait le sponsor
-  - On pourrait imaginer un système de points de sponsor qui permettrait de débloquer des bonus (comme dans les jeux de foot)
+## Version 0.2 - Core Game Improvements
+*Objectif : Améliorer les mécaniques de base du jeu*
 
-- Ajouter un système de blessure adosser au système de fatigue
-  - Les blessures pourraient influencer le choix des tournois
-  - Les blessures pourraient influencer le choix des matchs à jouer
-  - Les blessures pourraient influencer le choix des adversaires à affronter
+### Système de blessures et fatigue
+- [ ] Ajouter un système de blessure adossé au système de fatigue
+  - [ ] Les blessures influencent le choix des tournois
+  - [ ] Les blessures influencent le choix des matchs à jouer
+  - [ ] Les blessures influencent le choix des adversaires à affronter
 
-- revoir le système d'XP pour qu'il colle à la réalité
-  - Progression suffisement interessante pour ne pas lasser le joueur
-    - Pas de niveau max au bout d'un an
-    - Progression qui colle à la réalité
+### Système d'âge et rotation des joueurs
+- [ ] Ajouter un système d'âge avec rotation des joueurs sur le circuit
+  - [ ] L'âge du joueur à sa création influence son niveau
+  - [ ] L'âge du joueur influence ses performances au fil du temps
 
-- Ajouter un système d'age avec une rotation des joueurs sur le circuit
-  - L'âge du joueur à sa création influencera son niveau
-  - L'âge du joueur influencera ses performances
+## Version 0.3 - Économie et Management
+*Objectif : Introduire les aspects financiers et de management*
 
-- Intégrer un système d'argent et de coach
-  - L'argent servira à payer les coachs et à financer les déplacements du joueur lorsqu'on ira jouer des tournois
-  - Plus on ira loin dans un tournoi prestigieux et plus, on gagnera d'argent
-  - Le système de sponsor mentionné plus haut pourrait aussi nous permettre de gagner de l'argent
-    - Plus un joueur serait bon et plus, il aurait de chance d'avoir un sponsor important
-    - On pourrait même imaginer un système d'objectif que nous donnerait le sponsor
-  - On pourrait avoir des coachs dans le jeu, mais aussi dans le mental 
-(Possibilité de créer de nouveaux attributs) ou même qui réduisent la fatigue, le risque de blessure ou le coût de transport
+### Système économique
+- [ ] Intégrer un système d'argent
+  - [ ] Financer les déplacements pour les tournois
+  - [ ] Gains proportionnels aux performances en tournoi
+  - [ ] Coûts de transport et de participation
 
-- Intégrer une interface visuelle
-  - Plus de RPG textuel, mais un jeu un peu plus vivant
-  - Avoir une map du monde avec les tournois disponible sur la semaine
-  - Avoir dans la sélection de tournois des images pour rendre la sélection un peu plus agréable
-  - Avoir tout le temps la carte d'identité du joueur sur une colonne pour rendre l'expérience plus agréable
-  - Avoir historique de confrontations entre joueurs (pour moral)
+### Système de coaching
+- [ ] Intégrer un système de coach
+  - [ ] Coachs techniques pour améliorer le jeu
+  - [ ] Coachs mentaux pour nouveaux attributs
+  - [ ] Coachs spécialisés (fatigue, blessures, transport)
+  - [ ] Coût des coachs à payer avec l'argent gagné
 
-- Intégrer un historique des matchs joués
-  - Permettre de voir les performances passées du joueur
-  - Permettre de voir les performances passées des adversaires
+### Système de sponsors
+- [ ] Ajouter un système de sponsor pour les joueurs
+  - [ ] Plus un joueur est bon, plus il a de chances d'avoir un sponsor important
+  - [ ] Système d'objectifs donnés par le sponsor
+  - [ ] Points de sponsor pour débloquer des bonus
+  - [ ] Revenus supplémentaires via les sponsors
 
-- Intégrer un historique des tournois remportés, par qui etc
+## Version 0.4 - Historique et Statistiques
+*Objectif : Enrichir l'expérience avec des données historiques*
 
-- Intégrer dans l'interface visuelle une salle des trophées ? 
-  - Permettre de voir les trophées remportés par le joueur
-  - Les tournois non gagnés serait affichés avec une couleur différente
+### Système d'historique
+- [ ] Intégrer un historique des matchs joués
+  - [ ] Voir les performances passées du joueur
+  - [ ] Voir les performances passées des adversaires
+  - [ ] Historique de confrontations entre joueurs (impact sur le moral)
 
-- Intégrer un système de messages avec des nouvelles du circuit
-  - Permettre de suivre l'actualité du circuit
-  - Permettre de suivre les performances des autres joueurs
-  - Permettre de centralisé les informations sur les tournois à venir
-  - Permettre de regarder les propositions des sponsors 
+- [ ] Intégrer un historique des tournois
+  - [ ] Tournois remportés et par qui
+  - [ ] Palmarès détaillé par saison
+  - [ ] Statistiques comparatives
 
-- Avoir une page de statistiques de notre joueur et pouvoir le comparer aux légendes du tennis
+### Système de statistiques avancées
+- [ ] Page de statistiques complète du joueur
+  - [ ] Comparaison avec les légendes du tennis
+  - [ ] Graphiques d'évolution des performances
+  - [ ] Analyses détaillées par surface, tournoi, etc.
 
-Structurer ce fichier TODO en différentes versions pour mieux suivre l'évolution du projet.
+## Version 0.5 - Interface Visuelle
+*Objectif : Passer d'un RPG textuel à une interface graphique*
 
+### Interface graphique de base
+- [ ] Développer une interface visuelle
+  - [ ] Map du monde avec les tournois disponibles
+  - [ ] Images pour la sélection de tournois
+  - [ ] Carte d'identité du joueur toujours visible
+  - [ ] Interface plus vivante et engageante
 
+### Fonctionnalités visuelles avancées
+- [ ] Salle des trophées virtuelle
+  - [ ] Affichage des trophées remportés
+  - [ ] Tournois non gagnés avec couleur différente
+  - [ ] Visualisation du palmarès
+
+### Système de notifications
+- [ ] Intégrer un système de messages et actualités
+  - [ ] Nouvelles du circuit ATP
+  - [ ] Performances des autres joueurs
+  - [ ] Informations centralisées sur les tournois à venir
+  - [ ] Propositions des sponsors
+
+## Versions futures (0.6+)
+*Idées pour l'expansion du jeu*
+
+- [ ] Intégration avec des données ATP réelles
+- [ ] Mode carrière étendu sur plusieurs décennies

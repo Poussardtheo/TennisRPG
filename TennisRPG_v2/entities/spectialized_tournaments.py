@@ -23,11 +23,12 @@ class EliminationTournament(Tournament):
 		# Trouve le joueur principal et initialise le tracking
 		main_player = None
 		main_player_atp_points = 0
-		main_player_xp_points = 0
+		main_player_initial_xp = 0
 		
 		for player in self.participants:
 			if hasattr(player, 'is_main_player') and player.is_main_player:
 				main_player = player
+				main_player_initial_xp = player.career.xp_points
 				break
 
 		# Détermine si on affiche les détails (automatiquement si joueur principal présent)
@@ -91,15 +92,15 @@ class EliminationTournament(Tournament):
 					# Affiche l'élimination du joueur principal (toujours affiché)
 					if hasattr(match_result.loser, 'is_main_player') and match_result.loser.is_main_player:
 						phase_name = self._get_elimination_message(round_name)
+						print(f"\n❌ {main_player.full_name} éliminé(e) {phase_name}!")
 
 					# Attribue points ATP et XP
 					atp_points = self.assign_atp_points(match_result.loser, round_name, atp_points_manager, week)
 					xp_points = self.assign_xp_points(match_result.loser, round_name)
 					
-					# Suit les points du joueur principal
+					# Suit les points ATP du joueur principal
 					if main_player and match_result.loser == main_player:
 						main_player_atp_points += atp_points
-						main_player_xp_points += xp_points
 				else:
 					# Joueur qualifié d'office
 					if verbose:
@@ -129,11 +130,13 @@ class EliminationTournament(Tournament):
 			if winner == main_player:
 				# Le joueur principal a gagné
 				main_player_atp_points += atp_points_winner
-				main_player_xp_points += xp_points_winner + TOURNAMENT_CONSTANTS["TOURNAMENT_COMPLETION_BONUS"]
+			
+			# Calcule les XP réellement gagnés
+			main_player_xp_gained = main_player.career.xp_points - main_player_initial_xp
 			
 			print(f"\n📊 RÉCAPITULATIF DU TOURNOI:")
 			print(f"   💰 Points ATP gagnés: {main_player_atp_points}")
-			print(f"   ⭐ Points XP gagnés: {main_player_xp_points}")
+			print(f"   ⭐ Points XP gagnés: {main_player_xp_gained}")
 
 		self.status = TournamentStatus.COMPLETED
 
@@ -281,6 +284,17 @@ class ATPFinals(Tournament):
 
 		self.status = TournamentStatus.IN_PROGRESS
 
+		# Trouve le joueur principal et initialise le tracking
+		main_player = None
+		main_player_atp_points = 0
+		main_player_initial_xp = 0
+		
+		for player in self.participants:
+			if hasattr(player, 'is_main_player') and player.is_main_player:
+				main_player = player
+				main_player_initial_xp = player.career.xp_points
+				break
+
 		# Détermine si on affiche les détails
 		if verbose is None:
 			verbose = self.has_main_player
@@ -313,11 +327,24 @@ class ATPFinals(Tournament):
 				print(f"{'='*60}")
 
 		# Attribue les points au vainqueur
-		self.assign_atp_points(winner, "winner", atp_points_manager, week)
+		atp_points_winner = self.assign_atp_points(winner, "winner", atp_points_manager, week)
 		self.assign_xp_points(winner, "winner")
 
 		# Bonus pour avoir terminé le tournoi
 		winner.gain_experience(TOURNAMENT_CONSTANTS["TOURNAMENT_COMPLETION_BONUS"])
+
+		# Récapitulatif pour le joueur principal
+		if main_player:
+			if winner == main_player:
+				# Le joueur principal a gagné
+				main_player_atp_points += atp_points_winner
+			
+			# Calcule les XP réellement gagnés
+			main_player_xp_gained = main_player.career.xp_points - main_player_initial_xp
+			
+			print(f"\n📊 RÉCAPITULATIF DU TOURNOI:")
+			print(f"   💰 Points ATP gagnés: {main_player_atp_points}")
+			print(f"   ⭐ Points XP gagnés: {main_player_xp_gained}")
 
 		self.status = TournamentStatus.COMPLETED
 
