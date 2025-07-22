@@ -232,7 +232,7 @@ class GameSession:
         print("👤 [I] Carte d'identité de votre joueur")
         print("📈 [E] Attribuer des points d'attributs")
         print("💾 [S] Sauvegarder le jeu")
-        print("📂 [L] Charger une sauvegarde")
+        print("📂 [L] Charger une autre sauvegarde")
         print("❌ [Q] Quitter le jeu")
     
     def _get_user_input(self) -> str:
@@ -462,13 +462,13 @@ class GameSession:
             else:
                 print("❌ Choix invalide")
     
-    def _load_game(self, filename: str) -> None:
+    def _load_game(self, filename: str) -> bool:
         """Charge une sauvegarde"""
         game_state = self.save_manager.load_game(filename)
         
         if not game_state:
             print("❌ Impossible de charger la sauvegarde")
-            return
+            return False
         
         # Restaure l'état du jeu
         self.main_player = game_state.main_player
@@ -493,6 +493,36 @@ class GameSession:
         
         if game_state.playtime_hours > 0:
             print(f"⏱️  Temps de jeu: {game_state.playtime_hours:.1f} heures")
+            
+        return True
+    
+    def load_game_from_entry(self) -> bool:
+        """Charge une partie depuis le menu d'entrée"""
+        print("\n📂 CHARGER UNE SAUVEGARDE")
+        print("-" * 25)
+        
+        self.save_manager.display_saves_menu()
+        saves = self.save_manager.list_saves()
+        
+        if not saves:
+            input("\n⏎ Appuyez sur ENTRÉE pour retourner au menu principal...")
+            return False
+        
+        while True:
+            choice = input(f"\n🎯 Choisir sauvegarde (1-{len(saves)}) ou 'q' pour retourner au menu : ").strip()
+            
+            if choice.lower() == 'q':
+                return False
+            
+            if choice.isdigit() and 1 <= int(choice) <= len(saves):
+                filename = self.save_manager.get_save_by_index(int(choice))
+                print("là ça marche j'ai le nom du fichier:", filename)
+                if filename and self._load_game(filename):
+                    return True
+                else:
+                    print("❌ Erreur lors du chargement. Réessayez.")
+            else:
+                print("❌ Choix invalide")
     
     def _advance_week(self) -> None:
         """Avance d'une semaine"""
@@ -511,11 +541,45 @@ class GameSession:
             self.main_player.physical.recover_fatigue(TIME_CONSTANTS["FATIGUE_NATURAL_RECOVERY"])
 
 
+def display_entry_menu():
+    """Affiche le menu d'entrée du jeu"""
+    print("="*60)
+    print("🎾 BIENVENUE DANS TENNISRPG v2!")
+    print("="*60)
+    print("\n📋 QUE SOUHAITEZ-VOUS FAIRE ?")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("🆕 [1] Commencer une nouvelle partie")
+    print("📂 [2] Reprendre une partie existante") 
+    print("❌ [3] Quitter")
+
+
 def main():
     """Point d'entrée principal"""
     try:
-        game = GameSession()
-        game.start_new_game()
+        while True:
+            display_entry_menu()
+            
+            choice = input("\n🎯 Votre choix (1-3) : ").strip()
+            
+            if choice == '1':
+                # Nouvelle partie
+                game = GameSession()
+                game.start_new_game()
+                break
+            elif choice == '2':
+                # Charger une partie
+                game = GameSession()
+                if game.load_game_from_entry():
+                    game._main_game_loop()
+                else:
+                    continue
+                break
+            elif choice == '3':
+                print("\n👋 À bientôt !")
+                break
+            else:
+                print("❌ Choix invalide. Utilisez 1, 2 ou 3.")
+                
     except KeyboardInterrupt:
         print("\n\n👋 Jeu interrompu par l'utilisateur. À bientôt!")
     except Exception as e:

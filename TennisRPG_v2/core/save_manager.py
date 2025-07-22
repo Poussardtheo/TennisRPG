@@ -122,7 +122,6 @@ class SaveManager:
 			print(f"❌ Erreur lors de la sauvegarde: {e}")
 			return False
 
-	# Todo: It doesn't seem to work, we will need to debug it
 	def load_game(self, filename: str) -> Optional[GameState]:
 		"""
 		Charge l'état du jeu

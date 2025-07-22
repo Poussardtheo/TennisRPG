@@ -394,12 +394,8 @@ class Player:
 			"first_name": self.first_name,
 			"last_name": self.last_name,
 			"country": self.country,
-			"height": self.height,
-			"dominant_hand": self.physical.dominant_hand,
-			"backhand_style": self.physical.backhand_style,
 			"archetype": self.archetype,
 			"is_main_player": self.is_main_player,
-			"elo": self.elo,
 			"stats": asdict(self.stats),
 			"career": asdict(self.career),
 			"physical": asdict(self.physical)
@@ -417,12 +413,8 @@ class Player:
 			is_main_player=data.get("is_main_player", False)
 		)
 		
-		# Restaure les attributs
-		player.height = data["height"]
-		player.physical.dominant_hand = data["dominant_hand"]
-		player.physical.backhand_style = data["backhand_style"]
+		# Restaure les attributs principaux
 		player.archetype = data["archetype"]
-		player.elo = data["elo"]
 		
 		# Restaure les statistiques
 		stats_data = data["stats"]
@@ -439,14 +431,20 @@ class Player:
 		career_data = data["career"]
 		player.career.level = career_data["level"]
 		player.career.xp_points = career_data["xp_points"]
+		player.career.ap_points = career_data["ap_points"]
 		player.career.atp_points = career_data["atp_points"]
 		player.career.atp_race_points = career_data["atp_race_points"]
-		player.career.matches_played = career_data["matches_played"]
-		player.career.matches_won = career_data["matches_won"]
-		player.career.tournaments_won = career_data["tournaments_won"]
+
+		# Todo : Ceci sera utilisé dans une version future
+		#player.career.matches_played = career_data["matches_played"]
+		#player.career.matches_won = career_data["matches_won"]
+		#player.career.tournaments_won = career_data["tournaments_won"]
 		
 		# Restaure le physique
 		physical_data = data["physical"]
+		player.physical.height = physical_data["height"]
+		player.physical.dominant_hand = physical_data["dominant_hand"]
+		player.physical.backhand_style = physical_data["backhand_style"]
 		player.physical.fatigue = physical_data["fatigue"]
 		
 		return player
