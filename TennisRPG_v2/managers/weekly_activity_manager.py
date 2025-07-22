@@ -302,9 +302,9 @@ class WeeklyActivityManager:
         available_pool = {name: p for name, p in available_players.items() 
                          if p not in exclude_players}
         
-        # Trie par ordre d'importance (comme dans v1)
+        # Trie par ordre d'importance décroissant (plus prestigieux d'abord)
         sorted_tournaments = sorted(tournaments, 
-                                  key=lambda t: t.tournament_importance)
+                                  key=lambda t: t.tournament_importance, reverse=True)
         
         for tournament in sorted_tournaments:
             participants = self.tournament_manager.select_players_for_tournament(

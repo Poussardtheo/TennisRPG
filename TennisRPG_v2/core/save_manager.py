@@ -203,64 +203,6 @@ class SaveManager:
 		saves.sort(key=lambda x: x["save_date"], reverse=True)
 		return saves
 
-	def delete_save(self, filename: str) -> bool:
-		"""
-		Supprime une sauvegarde
-
-		Args:
-			filename: Nom du fichier à supprimer
-
-		Returns:
-			True si la suppression a réussi
-		"""
-		try:
-			if not filename.endswith('.json'):
-				filename += '.json'
-
-			filepath = os.path.join(self.save_directory, filename)
-
-			if os.path.exists(filepath):
-				os.remove(filepath)
-				print(f"✅ Sauvegarde supprimée: {filename}")
-				return True
-			else:
-				print(f"❌ Fichier non trouvé: {filename}")
-				return False
-
-		except Exception as e:
-			print(f"❌ Erreur lors de la suppression: {e}")
-			return False
-
-	def backup_save(self, filename: str) -> bool:
-		"""
-		Crée une copie de sauvegarde
-
-		Args:
-			filename: Nom du fichier à sauvegarder
-
-		Returns:
-			True si la copie a réussi
-		"""
-		try:
-			if not filename.endswith('.json'):
-				filename += '.json'
-
-			source_path = os.path.join(self.save_directory, filename)
-			backup_name = filename.replace('.json', '_backup.json')
-			backup_path = os.path.join(self.save_directory, backup_name)
-
-			if os.path.exists(source_path):
-				import shutil
-				shutil.copy2(source_path, backup_path)
-				print(f"✅ Copie créée: {backup_name}")
-				return True
-			else:
-				print(f"❌ Fichier source non trouvé: {filename}")
-				return False
-
-		except Exception as e:
-			print(f"❌ Erreur lors de la copie: {e}")
-			return False
 
 	def display_saves_menu(self) -> None:
 		"""Affiche le menu des sauvegardes"""

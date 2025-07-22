@@ -12,27 +12,27 @@ class SeasonManager:
 		self.current_year = year
 		self.current_week = 1
 
-	def advance_week(self, ranking: 'Ranking', players: Dict[str, 'Player'], atp_points_manager):
+	def advance_week(self, ranking_manager: 'RankingManager', players: Dict[str, 'Player'], atp_points_manager):
 		"""
 		Avance d'une semaine et effectue les mises à jour nécessaires.
 
 		Args:
-            ranking: Gestionnaire des classements
+            ranking_manager: Gestionnaire des classements
             players: Dictionnaire des joueurs
             atp_points_manager: Gestionnaire des points ATP
 		"""
 		if self.current_week == TIME_CONSTANTS["WEEKS_PER_YEAR"]:
-			self._start_new_year(ranking)
+			self._start_new_year(ranking_manager)
 		else:
 			self.current_week += 1
 
 		self._apply_weekly_updates(players, atp_points_manager)
 
-	def _start_new_year(self, ranking: 'Ranking'):
+	def _start_new_year(self, ranking_manager: 'RankingManager'):
 		"""Réinitialise l'année et les points ATP pour la nouvelle saison."""
 		self.current_year += 1
 		self.current_week = 0
-		ranking.reset_atp_race()
+		ranking_manager.reset_atp_race()
 
 	def _apply_weekly_updates(self, players: Dict[str, 'Player'], atp_points_manager):
 		"""Applique les mises à jour hebdomadaires aux joueurs."""
@@ -60,7 +60,3 @@ class SeasonManager:
 		"""Retourne une chaîne d'information sur la semaine actuelle."""
 		return f"Semaine {self.current_week} de l'année {self.current_year}"
 
-	# Possiblement inutile
-	def _is_year_end(self) -> bool:
-		"""Vérifie si c'est la fin de l'année."""
-		return self.current_week == TIME_CONSTANTS["WEEKS_PER_YEAR"]

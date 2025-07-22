@@ -112,15 +112,3 @@ TIME_CONSTANTS = {
     "FATIGUE_NATURAL_RECOVERY": 3
 }
 
-# Énumérations pour les caractéristiques des joueurs
-from enum import Enum
-
-class Hand(Enum):
-    """Main dominante du joueur"""
-    LEFT = "Gaucher"
-    RIGHT = "Droitier"
-
-class BackhandStyle(Enum):
-    """Style de revers"""
-    ONE_HANDED = "Revers à une main"
-    TWO_HANDED = "Revers à deux mains"

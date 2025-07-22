@@ -192,13 +192,7 @@ class Tournament(ABC):
 		points = self.atp_points_config.get(round_key, 0)
 
 		if points > 0:
-			# Méthode préférée: utiliser l'ATPPointsManager pour le système glissant
-			if atp_points_manager and week is not None:
-				atp_points_manager.add_tournament_points(player, week, points)
-			else:
-				# Méthode de fallback: ajouter directement (pas de système glissant)
-				player.career.atp_points += points
-				player.career.atp_race_points += points
+			atp_points_manager.add_tournament_points(player, week, points)
 
 			if hasattr(player, 'is_main_player') and player.is_main_player:
 				print(f"   💰 +{points} points ATP pour {player.full_name}")

@@ -51,7 +51,7 @@ class EliminationTournament(Tournament):
 
 			# Affichage du round seulement si verbose
 			if verbose:
-				round_display = self._get_round_display_name(round_name, len(current_round))
+				round_display = self._get_round_display_name(round_name)
 				print(f"\n📊 {round_display} ({len(current_round)} joueurs)")
 				print("-" * 40)
 

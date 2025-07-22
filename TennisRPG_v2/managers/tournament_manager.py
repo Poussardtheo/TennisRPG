@@ -137,10 +137,18 @@ class TournamentManager:
         """
         tournaments = self.get_tournaments_for_week(week)
         results = {}
-        for tournament in tournaments:
-            # Sélectionne les participants
+        
+        # CRUCIAL: Trie les tournois par prestige décroissant
+        # Les meilleurs joueurs vont d'abord aux tournois les plus prestigieux
+        sorted_tournaments = sorted(tournaments, key=lambda t: t.tournament_importance, reverse=True)
+        
+        # Pool de joueurs disponibles (copie pour éviter de modifier l'original)
+        available_players = dict(all_players)
+        
+        for tournament in sorted_tournaments:
+            # Sélectionne les participants parmi les joueurs encore disponibles
             participants = self.select_players_for_tournament(
-                tournament, all_players, ranking_manager
+                tournament, available_players, ranking_manager
             )
 
             # Ajoute les participants au tournoi
@@ -151,6 +159,11 @@ class TournamentManager:
             if len(tournament.participants) >= 4:  # Minimum pour un tournoi
                 result = tournament.play_tournament(atp_points_manager=atp_points_manager, week=week)
                 results[tournament] = result
+            
+            # CRUCIAL: Retire les participants du pool disponible
+            for participant in participants:
+                if participant.full_name in available_players:
+                    del available_players[participant.full_name]
             
             # Nettoie pour le prochain tournoi potentiel
             tournament.participants.clear()

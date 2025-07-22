@@ -22,9 +22,12 @@ class RankingManager:
         self.players = {player.full_name: player for player in players}
         
         # Crée les classements
-        self.atp_ranking = Ranking(self.players, is_preliminary=False)
-        self.atp_race_ranking = Ranking(self.players, is_preliminary=False)
-        self.elo_ranking = Ranking(self.players, is_preliminary=True)
+        self.atp_ranking = Ranking(self.players)
+        self.atp_race_ranking = Ranking(self.players)
+        self.elo_ranking = Ranking(self.players)
+        
+        # Initialise les classements
+        self._initialize_all_rankings()
         
         # DataFrame pour tracker les points ATP par semaine (52 semaines glissantes)
         self.atp_points_history = pd.DataFrame(
@@ -35,32 +38,65 @@ class RankingManager:
         
         self.current_week = 1
         
+    def _initialize_all_rankings(self) -> None:
+        """Initialise tous les classements avec les données actuelles des joueurs"""
+        # Classement ATP
+        atp_players = sorted(
+            self.players.values(),
+            key=lambda p: p.career.atp_points,
+            reverse=True
+        )
+        self.atp_ranking.update_rankings(atp_players)
+        
+        # Classement ATP Race
+        race_players = sorted(
+            self.players.values(),
+            key=lambda p: p.career.atp_race_points,
+            reverse=True
+        )
+        self.atp_race_ranking.update_rankings(race_players)
+        
+        # Classement ELO
+        elo_players = sorted(
+            self.players.values(),
+            key=lambda p: p.elo,
+            reverse=True
+        )
+        self.elo_ranking.update_rankings(elo_players)
+        
+    def _get_ranking_by_type(self, ranking_type: RankingType) -> Ranking:
+        """Retourne l'objet ranking correspondant au type"""
+        if ranking_type == RankingType.ATP:
+            return self.atp_ranking
+        elif ranking_type == RankingType.ATP_RACE:
+            return self.atp_race_ranking
+        elif ranking_type == RankingType.ELO:
+            return self.elo_ranking
+        else:
+            raise ValueError(f"Type de classement inconnu: {ranking_type}")
+        
     def add_player(self, player: Player) -> None:
         """Ajoute un nouveau joueur aux classements"""
         if player.full_name not in self.players:
             self.players[player.full_name] = player
             
-            # Ajoute aux classements
-            self.atp_ranking.add_player(player)
-            self.atp_race_ranking.add_player(player)  
-            self.elo_ranking.add_player(player)
-            
             # Ajoute à l'historique ATP
             new_row = pd.Series(0, index=self.atp_points_history.columns, name=player.full_name)
             self.atp_points_history = pd.concat([self.atp_points_history, new_row.to_frame().T])
+            
+            # Met à jour tous les classements
+            self._initialize_all_rankings()
     
     def remove_player(self, player: Player) -> None:
         """Retire un joueur des classements"""
         if player.full_name in self.players:
             del self.players[player.full_name]
             
-            # Retire des classements
-            self.atp_ranking.remove_player(player)
-            self.atp_race_ranking.remove_player(player)
-            self.elo_ranking.remove_player(player)
-            
             # Retire de l'historique
             self.atp_points_history = self.atp_points_history.drop(player.full_name, errors='ignore')
+            
+            # Met à jour tous les classements
+            self._initialize_all_rankings()
     
     def get_player_rank(self, player: Player, ranking_type: RankingType = RankingType.ATP) -> Optional[int]:
         """
@@ -84,19 +120,21 @@ class RankingManager:
     
     def update_weekly_rankings(self) -> None:
         """Met à jour tous les classements à la fin d'une semaine"""
-        # Met à jour les classements
-        self.atp_ranking.update_ranking()
-        self.atp_race_ranking.update_ranking()
-        self.elo_ranking.update_ranking()
+        self._initialize_all_rankings()
     
     def reset_atp_race(self) -> None:
         """Remet à zéro la race ATP (début d'année)"""
+        # Remet à zéro les points de race de tous les joueurs
         for player in self.players.values():
-            if hasattr(player, 'career'):
-                player.career.atp_race_points = 0
+            player.career.atp_race_points = 0
         
-        # Met à jour le classement race
-        self.atp_race_ranking.update_ranking()
+        # Met à jour le classement ATP Race
+        race_players = sorted(
+            self.players.values(),
+            key=lambda p: p.career.atp_race_points,
+            reverse=True
+        )
+        self.atp_race_ranking.update_rankings(race_players)
     
     def display_ranking(self, ranking_type: RankingType = RankingType.ATP, 
                        count: Optional[int] = 50) -> None:
@@ -110,9 +148,18 @@ class RankingManager:
         print(f"\n🏆 CLASSEMENT {ranking_type.value.upper()}")
         print("=" * 60)
         
-        if ranking_type == RankingType.ATP:
-            self.atp_ranking.display_ranking(ranking_type, count)
-        elif ranking_type == RankingType.ATP_RACE:
-            self.atp_race_ranking.display_ranking(ranking_type, count)
-        elif ranking_type == RankingType.ELO:
-            self.elo_ranking.display_ranking(ranking_type, count)
+        ranking_obj = self._get_ranking_by_type(ranking_type)
+        players = ranking_obj.get_ranked_players(count)
+        
+        for rank, player in enumerate(players, 1):
+            if ranking_type == RankingType.ATP:
+                points = player.career.atp_points
+                points_label = "ATP Points"
+            elif ranking_type == RankingType.ATP_RACE:
+                points = player.career.atp_race_points
+                points_label = "ATP Race Points"
+            elif ranking_type == RankingType.ELO:
+                points = player.elo
+                points_label = "ELO"
+            
+            print(f"{rank}. {player.first_name} {player.last_name} - {points_label}: {points} - Pays: {player.country}")
