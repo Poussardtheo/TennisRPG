@@ -1,0 +1,7 @@
+Cette liste sert de guide de route pour ce qui reste à faire pour avoir un v0.1 efficace :
+
+- Inclure la logique de fenêtre glissante sur le classement ATP
+- Faire un essai de jeu sur une année complète pour voir s'il n'y a pas d'autres problèmes
+- Faire un vrai README.md et éventuellement un todo.md pour savoir les prochaines choses à faire dans les versions ultérieures
+-> Si tout bon alors release de la v.0.1
+
