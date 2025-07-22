@@ -136,6 +136,60 @@ class RankingManager:
         )
         self.atp_race_ranking.update_rankings(race_players)
     
+    def add_atp_points(self, player_name: str, points: int, week: Optional[int] = None) -> None:
+        """
+        Ajoute des points ATP à un joueur pour une semaine donnée
+        
+        Args:
+            player_name: Nom du joueur
+            points: Points à ajouter
+            week: Semaine (par défaut semaine courante)
+        """
+        if week is None:
+            week = self.current_week
+            
+        week_col = f"week_{week}"
+        if player_name in self.atp_points_history.index and week_col in self.atp_points_history.columns:
+            self.atp_points_history.loc[player_name, week_col] += points
+    
+    def get_points_to_defend(self, player_name: str, week: Optional[int] = None) -> int:
+        """
+        Calcule les points que le joueur doit défendre cette semaine
+        (points gagnés il y a exactement 52 semaines)
+        
+        Args:
+            player_name: Nom du joueur
+            week: Semaine à vérifier (par défaut semaine courante)
+            
+        Returns:
+            Nombre de points à défendre
+        """
+        if week is None:
+            week = self.current_week
+            
+        # Points gagnés il y a 52 semaines (qui vont expirer)
+        defend_week = ((week - 1 + TIME_CONSTANTS["WEEKS_PER_YEAR"]) % TIME_CONSTANTS["WEEKS_PER_YEAR"]) + 1
+        defend_week_col = f"week_{defend_week}"
+        
+        if player_name in self.atp_points_history.index and defend_week_col in self.atp_points_history.columns:
+            return int(self.atp_points_history.loc[player_name, defend_week_col])
+        return 0
+    
+    def advance_week(self) -> None:
+        """Avance d'une semaine et met à jour les points ATP en conséquence"""
+        # Calcule les points qui expirent pour chaque joueur
+        for player_name, player in self.players.items():
+            points_to_lose = self.get_points_to_defend(player_name, self.current_week)
+            player.career.atp_points = max(0, player.career.atp_points - points_to_lose)
+        
+        # Avance la semaine
+        self.current_week = (self.current_week % TIME_CONSTANTS["WEEKS_PER_YEAR"]) + 1
+        
+        # Remet à zéro la colonne de la nouvelle semaine
+        week_col = f"week_{self.current_week}"
+        if week_col in self.atp_points_history.columns:
+            self.atp_points_history[week_col] = 0
+    
     def display_ranking(self, ranking_type: RankingType = RankingType.ATP, 
                        count: Optional[int] = 50) -> None:
         """

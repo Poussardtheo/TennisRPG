@@ -294,9 +294,16 @@ class Tournament(ABC):
 		sets_won = self.sets_to_win
 		sets_lost = random.randint(0, self.sets_to_win - 1)
 
-		# Calcul de la fatigue
-		fatigue_winner = random.randint(8, 15) + (sets_won + sets_lost - 2) * 3
-		fatigue_loser = random.randint(10, 18) + (sets_won + sets_lost - 2) * 4
+		# Calcul de la fatigue de base
+		base_fatigue_winner = random.randint(8, 15) + (sets_won + sets_lost - 2) * 3
+		base_fatigue_loser = random.randint(10, 18) + (sets_won + sets_lost - 2) * 4
+		
+		# Application du coefficient spécifique au tournoi
+		from ..utils.constants import TOURNAMENT_FATIGUE_MULTIPLIERS
+		multiplier = TOURNAMENT_FATIGUE_MULTIPLIERS.get(self.category.value, 1.0)
+		
+		fatigue_winner = int(base_fatigue_winner * multiplier)
+		fatigue_loser = int(base_fatigue_loser * multiplier)
 
 		# Applique la fatigue
 		winner.physical.fatigue = min(100, winner.physical.fatigue + fatigue_winner)

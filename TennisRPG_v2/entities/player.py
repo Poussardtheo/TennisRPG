@@ -293,9 +293,9 @@ class Player:
 		if self.is_main_player:
 			print(f"{self.first_name} {self.last_name} a gagné {points} points ATP.")
 
-	def manage_fatigue(self, activity: str, sets_played: int = 0):
+	def manage_fatigue(self, activity: str, sets_played: int = 0, tournament_category: str = None):
 		"""Gère la fatigue du joueur selon l'activité"""
-		fatigue_added = calculate_fatigue_level(activity, sets_played)
+		fatigue_added = calculate_fatigue_level(activity, sets_played, tournament_category)
 		self.physical.fatigue = min(PLAYER_CONSTANTS["MAX_FATIGUE"],
 									self.physical.fatigue + fatigue_added)
 

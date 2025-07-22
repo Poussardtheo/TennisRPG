@@ -290,9 +290,43 @@ class GameSession:
     
     def _display_atp_points_to_defend(self) -> None:
         """Affiche les points ATP à défendre"""
-        # TODO: Implémenter la logique des points à défendre
         print("🏆 Points ATP à défendre cette semaine:")
-        print("💡 Fonctionnalité en cours de développement...")
+        
+        if not self.ranking_manager or not self.main_player:
+            print("❌ Données non disponibles")
+            return
+            
+        points_to_defend = self.ranking_manager.get_points_to_defend(self.main_player.full_name)
+        
+        if points_to_defend == 0:
+            print("💚 Aucun point à défendre cette semaine !")
+        else:
+            print(f"⚠️  Vous devez défendre {points_to_defend} points ATP cette semaine")
+            print(f"📊 Si vous ne participez à aucun tournoi, vous perdrez {points_to_defend} points")
+            
+        # Affiche aussi le classement actuel pour contexte
+        current_rank = self.ranking_manager.get_player_rank(self.main_player)
+        if current_rank:
+            print(f"📈 Classement actuel: #{current_rank} ({self.main_player.career.atp_points} points)")
+            potential_points = max(0, self.main_player.career.atp_points - points_to_defend)
+            print(f"💭 Points potentiels si aucune participation: {potential_points}")
+        
+        # Affiche les semaines suivantes avec des points à défendre
+        print("\n📅 Points à défendre dans les prochaines semaines:")
+        future_points = []
+        for i in range(1, 5):  # 4 semaines suivantes
+            future_week = (self.ranking_manager.current_week + i - 1) % 52 + 1
+            future_defend = self.ranking_manager.get_points_to_defend(
+                self.main_player.full_name, future_week
+            )
+            if future_defend > 0:
+                future_points.append((future_week, future_defend))
+        
+        if future_points:
+            for week, points in future_points:
+                print(f"   Semaine {week}: {points} points")
+        else:
+            print("   Aucun point important à défendre dans les 4 prochaines semaines")
     
     def _display_player_id_card(self) -> None:
         """Affiche la carte d'identité du joueur"""
@@ -303,9 +337,34 @@ class GameSession:
     
     def _assign_attribute_points(self) -> None:
         """Permet d'attribuer des points d'attributs"""
-        # TODO: Implémenter le système d'attribution
         print("📈 Attribution de points d'attributs:")
-        print("💡 Fonctionnalité en cours de développement...")
+        if not self.main_player:
+            print("❌ Aucun joueur principal défini")
+            return
+        
+        if self.main_player.career.ap_points == 0:
+            print("💡 Aucun point AP disponible à attribuer")
+            return
+            
+        print(f"🎯 Points AP disponibles: {self.main_player.career.ap_points}")
+        print("\nChoix d'attribution:")
+        print("1. Attribution manuelle")
+        print("2. Attribution automatique basée sur l'archétype")
+        print("3. Retour au menu")
+        
+        choice = input("\nVotre choix (1-3): ").strip()
+        
+        if choice == "1":
+            self.main_player.assign_ap_points_manually()
+        elif choice == "2":
+            points_before = self.main_player.career.ap_points
+            self.main_player._auto_assign_ap_points()
+            points_used = points_before - self.main_player.career.ap_points
+            print(f"✅ {points_used} points attribués automatiquement selon votre archétype!")
+        elif choice == "3":
+            return
+        else:
+            print("❌ Choix invalide")
     
     def _start_weekly_activities(self) -> None:
         """Démarre les activités hebdomadaires"""

@@ -38,7 +38,7 @@ class SeasonManager:
 		"""Applique les mises à jour hebdomadaires aux joueurs."""
 		for player_name, player in players.items():
 			# récupération naturelle de la fatigue
-			player.fatigue -= TIME_CONSTANTS["FATIGUE_NATURAL_RECOVERY"]
+			player.physical.fatigue = max(0, player.physical.fatigue - TIME_CONSTANTS["FATIGUE_NATURAL_RECOVERY"])
 
 			# perte des points ATP de la même semaine l'année précédente (système glissant sur 52 semaines)
 			if hasattr(atp_points_manager, 'current_atp_points'):
