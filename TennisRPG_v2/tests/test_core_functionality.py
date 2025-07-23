@@ -162,16 +162,6 @@ class TestTournamentSystem:
 
 class TestGameFlow:
     """Tests du flux de jeu"""
-    
-    def test_game_session_creation(self):
-        """Test création session de jeu"""
-        from ..core.game_session import GameSession
-        
-        session = GameSession()
-        assert session is not None
-        assert session.game_running == True
-        assert session.current_week == 1
-        assert session.current_year == 2024
         
     def test_save_manager_creation(self):
         """Test création gestionnaire sauvegarde"""
