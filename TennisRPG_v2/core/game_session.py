@@ -46,7 +46,7 @@ class GameSession:
     def start_new_game(self) -> None:
         """Démarre une nouvelle partie"""
         print("="*60)
-        print("🎾 BIENVENUE DANS TENNISRPG v2!")
+        print("🎾 BIENVENUE DANS TENNISRPG !")
         print("="*60)
         
         # Démarre le chronométrage

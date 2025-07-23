@@ -35,7 +35,7 @@ PLAYER_CONSTANTS = {
     "MAX_FATIGUE": 100,
     "FATIGUE_PARTICIPATION_THRESHOLD": 90,
     "STARTING_AGE_MIN": 16,  # Âge minimum de début de carrière
-    "STARTING_AGE_MAX": 24,  # Âge maximum de début de carrière
+    "STARTING_AGE_MAX": 19,  # Âge maximum de début de carrière
     "PEAK_AGE_START": 23,    # Début de l'âge de pic
     "PEAK_AGE_END": 26,      # Fin de l'âge de pic
     "DECLINE_AGE_START": 31  # Début du déclin
@@ -179,7 +179,7 @@ RETIREMENT_CONSTANTS = {
     "MIN_RETIREMENT_AGE": 30,      # Âge minimum pour prendre sa retraite
     "MAX_CAREER_AGE": 45,          # Âge maximum (retraite forcée)
     "BASE_RETIREMENT_PROBABILITY": 0.02,  # Probabilité de base à 30 ans (2%)
-    "AGE_RETIREMENT_MULTIPLIER": 0.8,     # Multiplicateur par année après 30 ans
+    "AGE_RETIREMENT_MULTIPLIER": 0.5,     # Multiplicateur par année après 30 ans
     "EARLY_RETIREMENT_BONUS": 0.1,        # Bonus pour blessures/mauvaise forme
     "YOUNG_PLAYER_MIN_AGE": 16,           # Âge minimum des nouveaux joueurs
     "YOUNG_PLAYER_MAX_AGE": 20,           # Âge maximum des nouveaux joueurs

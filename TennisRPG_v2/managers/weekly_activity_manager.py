@@ -10,6 +10,7 @@ from ..entities.tournament import Tournament
 from ..managers.tournament_manager import TournamentManager
 from ..managers.ranking_manager import RankingManager
 from ..utils.constants import ACTIVITIES, TIME_CONSTANTS, BASE_TRAINING_XP
+from ..utils.helpers import get_round_display_name
 
 
 # from ..utils.constants import FATIGUE_VALUES  # TODO: Supprimé - fatigue gérée dans Player
@@ -45,7 +46,7 @@ class TrainingActivity(Activity):
     def execute(self, player: Player) -> ActivityResult:
         # Gain d'expérience (réduit pour équilibrer avec les nouvelles sources d'XP)
         xp_gained = random.randint(BASE_TRAINING_XP["min"], BASE_TRAINING_XP["max"])
-        player.gain_experience(xp_gained, source="entrainement")
+        player.gain_experience(xp_gained)
         
         # Gestion de la fatigue - utilisation méthode centralisée
         fatigue_increase = player.manage_fatigue("Entrainement", display=True)
@@ -247,7 +248,8 @@ class WeeklyActivityManager:
             result.message += f"\n🏆 FÉLICITATIONS! Vous avez remporté {tournament.name}!"
         else:
             elimination_round = tournament.eliminated_players.get(player, "Participation")
-            result.message += f"\n📊 Éliminé: {elimination_round}"
+            formatted_round = get_round_display_name(elimination_round)
+            result.message += f"\n📊 Éliminé: {formatted_round}"
         
         return result
     

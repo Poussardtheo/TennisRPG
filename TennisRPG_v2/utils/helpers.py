@@ -243,3 +243,16 @@ def should_player_retire(player: 'Player', atp_ranking: int = None) -> bool:
 		
 	probability = calculate_retirement_probability(player.career.age, atp_ranking)
 	return random.random() < probability
+
+def get_round_display_name(round_name: str) -> str:
+	"""Convertit le nom interne du round en nom d'affichage"""
+	display_names = {
+		"finalist": "FINALE",
+		"semifinalist": "DEMI-FINALES",
+		"quarterfinalist": "QUARTS DE FINALE",
+		"round_16": "8ème DE FINALE",
+		"round_32": "16ème DE FINALE",
+		"round_64": "32ème DE FINALE",
+		"round_128": "64ème DE FINALE"
+	}
+	return display_names.get(round_name, f"TOUR {round_name.upper()}")

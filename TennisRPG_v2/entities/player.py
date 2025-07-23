@@ -252,7 +252,7 @@ class Player:
 	def gain_tournament_experience(self, tournament_category: str, round_reached: str):
 		"""Gagne de l'XP spécifique à une performance en tournoi"""
 		tournament_xp = calculate_tournament_xp(tournament_category, round_reached)
-		self.gain_experience(tournament_xp, source=f"tournoi ({round_reached})")
+		self.gain_experience(tournament_xp)
 
 		if self.is_main_player and tournament_xp > 0:
 			print(f"Bonus XP tournoi: {tournament_xp} pts pour {round_reached} en {tournament_category}")

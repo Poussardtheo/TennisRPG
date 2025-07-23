@@ -3,9 +3,10 @@ Tests de performance pour TennisRPG v2
 """
 import time
 import pytest
-from TennisRPG.entities.player import Player, Gender
-from TennisRPG.managers.player_generator import PlayerGenerator
-from TennisRPG.managers.tournament_manager import TournamentManager
+from TennisRPG_v2.entities.player import Player, Gender
+from TennisRPG_v2.managers.atp_points_manager import ATPPointsManager
+from TennisRPG_v2.managers.player_generator import PlayerGenerator
+from TennisRPG_v2.managers.tournament_manager import TournamentManager
 
 
 class TestPerformance:
@@ -37,18 +38,20 @@ class TestPerformance:
     @pytest.mark.slow
     def test_tournament_simulation_performance(self):
         """Test performance simulation tournoi"""
-        from TennisRPG.data.tournaments_database import tournois
-        
+        from TennisRPG_v2.data.tournaments_database import tournois
+
+        week = 10
         # Prend un tournoi ATP 250
-        week_tournaments = tournois.get(10, [])
+        week_tournaments = tournois.get(week, [])
         if not week_tournaments:
-            pytest.skip("No tournaments found for week 10")
+            pytest.skip(f"No tournaments found for week {week}")
             
         tournament = week_tournaments[0]
         
         # Génère des joueurs
         generator = PlayerGenerator()
-        players = [generator.generate_player(Gender.MALE) for _ in range(32)]
+        players = {generator.generate_player(Gender.MALE).full_name: generator.generate_player(Gender.MALE)
+                   for _ in range(32)}
         
         # Nettoie le tournoi
         tournament.participants.clear()
@@ -56,11 +59,14 @@ class TestPerformance:
         tournament.eliminated_players.clear()
         
         # Ajoute les participants
-        for player in players:
+        for player in players.values():
             tournament.add_participant(player)
-            
+
+        # Génère le gestionnaire de points ATP
+        atp_points_manager = ATPPointsManager(players)
+
         start_time = time.time()
-        result = tournament.play_tournament(verbose=False)
+        result = tournament.play_tournament(verbose=False, atp_points_manager=atp_points_manager, week=week)
         end_time = time.time()
         
         simulation_time = end_time - start_time
@@ -82,7 +88,7 @@ class TestPerformance:
         
         # Met à jour tous les ELOs
         for player in players:
-            player.update_elo()
+            player._recalculate_all_elo_ratings()
             
         end_time = time.time()
         calculation_time = end_time - start_time
@@ -92,7 +98,7 @@ class TestPerformance:
     @pytest.mark.slow
     def test_ranking_system_performance(self):
         """Test performance système de classement"""
-        from TennisRPG.managers.ranking_manager import RankingManager
+        from TennisRPG_v2.managers.ranking_manager import RankingManager
         
         generator = PlayerGenerator()
         players = [generator.generate_player(Gender.MALE) for _ in range(500)]
@@ -104,13 +110,13 @@ class TestPerformance:
         initialization_time = end_time - start_time
         
         start_time = time.time()
-        atp_ranking = ranking_manager.get_atp_ranking()
-        elo_ranking = ranking_manager.get_elo_ranking()
+        atp_ranking = ranking_manager.atp_ranking
+        elo_ranking = ranking_manager.elo_ranking
         end_time = time.time()
-        
+
         ranking_time = end_time - start_time
         
         assert initialization_time < 1.0  # Moins d'1 seconde
         assert ranking_time < 0.5  # Moins de 500ms
-        assert len(atp_ranking) == 500
-        assert len(elo_ranking) == 500
+        assert len(atp_ranking.rankings) == 500
+        assert len(elo_ranking.rankings) == 500

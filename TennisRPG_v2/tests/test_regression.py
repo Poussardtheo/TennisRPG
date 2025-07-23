@@ -2,8 +2,8 @@
 Tests de régression pour TennisRPG v2
 """
 import pytest
-from TennisRPG.entities.player import Player, Gender
-from TennisRPG.managers.player_generator import PlayerGenerator
+from TennisRPG_v2.entities.player import Player, Gender
+from TennisRPG_v2.managers.player_generator import PlayerGenerator
 
 
 class TestRegression:
@@ -21,19 +21,18 @@ class TestRegression:
         # Vérifie les valeurs par défaut
         assert player.stats.coup_droit >= 20
         assert player.stats.service >= 20
-        assert player.stats.mental >= 20
-        assert player.stats.physique >= 20
+        assert player.stats.endurance >= 20
         
         # Vérifie que l'ELO est cohérent
         initial_elo = player.elo
         assert initial_elo > 0
         
-        player.update_elo()
+        player._recalculate_all_elo_ratings()
         assert player.elo == initial_elo  # Sans changement de stats
         
     def test_tournament_eligibility_regression(self):
         """Test régression éligibilité tournois"""
-        from TennisRPG.managers.tournament_manager import TournamentManager
+        from TennisRPG_v2.managers.tournament_manager import TournamentManager
         
         manager = TournamentManager()
         
@@ -46,7 +45,7 @@ class TestRegression:
         )
         player.stats.coup_droit = 60
         player.stats.service = 60
-        player.update_elo()
+        player._recalculate_all_elo_ratings()
         
         # Doit être éligible à au moins quelques tournois
         eligible_tournaments = manager.get_tournaments_for_player(1, player)
@@ -65,7 +64,7 @@ class TestRegression:
         # Modifie quelques stats
         player.stats.coup_droit = 85
         player.stats.service = 78
-        player.update_elo()
+        player._recalculate_all_elo_ratings()
         
         # Sauvegarde et charge
         player_data = player.to_dict()
@@ -91,7 +90,7 @@ class TestRegression:
         
     def test_tournament_database_integrity(self):
         """Test intégrité base de données tournois"""
-        from TennisRPG.data.tournaments_database import tournois
+        from TennisRPG_v2.data.tournaments_database import tournois
         
         # Vérifie que les semaines clés existent
         assert 1 in tournois  # Début d'année

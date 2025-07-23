@@ -5,12 +5,14 @@ import pytest
 import sys
 import os
 
+from TennisRPG_v2.managers.atp_points_manager import ATPPointsManager
+
 # Ajoute le chemin du projet
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from TennisRPG.entities.player import Player, Gender
-from TennisRPG.managers.tournament_manager import TournamentManager
-from TennisRPG.managers.player_generator import PlayerGenerator
+from TennisRPG_v2.entities.player import Player, Gender
+from TennisRPG_v2.managers.tournament_manager import TournamentManager
+from TennisRPG_v2.managers.player_generator import PlayerGenerator
 
 
 class TestPlayerCreation:
@@ -136,7 +138,7 @@ class TestTournamentSystem:
         )
         strong_player.stats.coup_droit = 90
         strong_player.stats.service = 88
-        strong_player.update_elo()
+        strong_player._recalculate_all_elo_ratings()
         
         # Crée un joueur faible
         weak_player = Player(
@@ -147,7 +149,7 @@ class TestTournamentSystem:
         )
         weak_player.stats.coup_droit = 30
         weak_player.stats.service = 25
-        weak_player.update_elo()
+        weak_player._recalculate_all_elo_ratings()
         
         # Test éligibilité semaine 1
         strong_eligible = manager.get_tournaments_for_player(1, strong_player)
@@ -162,7 +164,7 @@ class TestGameFlow:
     
     def test_game_session_creation(self):
         """Test création session de jeu"""
-        from core.game_session import GameSession
+        from ..core.game_session import GameSession
         
         session = GameSession()
         assert session is not None
@@ -172,7 +174,7 @@ class TestGameFlow:
         
     def test_save_manager_creation(self):
         """Test création gestionnaire sauvegarde"""
-        from core.save_manager import SaveManager
+        from ..core.save_manager import SaveManager
         
         save_manager = SaveManager()
         assert save_manager is not None
@@ -185,7 +187,7 @@ class TestIntegration:
     @pytest.mark.slow
     def test_tournament_simulation_basic(self):
         """Test simulation tournoi basique"""
-        from data.tournaments_database import tournois
+        from ..data.tournaments_database import tournois
         
         # Prend un tournoi ATP 250
         week_21_tournaments = tournois.get(21, [])
@@ -201,34 +203,35 @@ class TestIntegration:
             
         # Génère des joueurs de test
         generator = PlayerGenerator()
-        players = []
-        for _ in range(8):  # Petit tournoi
-            player = generator.generate_player(Gender.MALE)
-            players.append(player)
-            
+        players = {generator.generate_player(Gender.MALE).full_name: generator.generate_player(Gender.MALE) for _ in
+                   range(8)}
+
         # Nettoie le tournoi
         geneva_open.participants.clear()
         geneva_open.match_results.clear()
         geneva_open.eliminated_players.clear()
         
         # Ajoute les participants
-        for player in players:
+        for player in players.values():
             geneva_open.add_participant(player)
-            
+
+        # Génère le gestionnaire de points ATP
+        atp_points_manager = ATPPointsManager(players)
+
         # Simule le tournoi
-        result = geneva_open.play_tournament(verbose=False)
+        result = geneva_open.play_tournament(verbose=False, atp_points_manager=atp_points_manager, week=21)
         
         assert result is not None
-        assert result.winner in players
+        assert result.winner in players.values()
         assert result.tournament_name == geneva_open.name
         
     def test_activity_system_basic(self):
         """Test système d'activités basique"""
-        from managers.weekly_activity_manager import (
+        from ..managers.weekly_activity_manager import (
             WeeklyActivityManager, TrainingActivity, RestActivity
         )
-        from managers.tournament_manager import TournamentManager
-        from managers.ranking_manager import RankingManager
+        from ..managers.tournament_manager import TournamentManager
+        from ..managers.ranking_manager import RankingManager
         
         # Crée les managers
         tournament_manager = TournamentManager()

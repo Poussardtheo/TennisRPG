@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"/c/Users/pouss/anaconda3/python.exe\" -m py_compile TennisRPG_v2/entities/tournament.py)"
+    ],
+    "defaultMode": "allowEdits",
+    "deny": []
+  }
+}

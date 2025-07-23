@@ -29,6 +29,7 @@ class MatchResult:
 	loser: 'Player'
 	sets_won: int
 	sets_lost: int
+	# Rajouter plus tard le score détaillé (nombre de jeu par sets) si nécessaire
 
 
 @dataclass

@@ -3,11 +3,14 @@ Script de test pour profiling CPU des tournois
 """
 import time
 import sys
+
+from TennisRPG_v2.managers.atp_points_manager import ATPPointsManager
+
 sys.path.append('..')
 
-from TennisRPG.entities.player import Player, Gender
-from TennisRPG.managers.tournament_manager import TournamentManager
-from TennisRPG.managers.player_generator import PlayerGenerator
+from TennisRPG_v2.entities.player import Player, Gender
+from TennisRPG_v2.managers.tournament_manager import TournamentManager
+from TennisRPG_v2.managers.player_generator import PlayerGenerator
 
 
 def test_elimination_tournament():
@@ -16,13 +19,14 @@ def test_elimination_tournament():
     
     # Utilise le gestionnaire de tournois pour prendre un ATP 250 existant
     tournament_manager = TournamentManager()
-    
+
+    week = 21
     # Prend le Geneva Open de la semaine 21
-    tournament = tournament_manager.get_tournament_by_name("Gonet Geneva Open", week=21)
+    tournament = tournament_manager.get_tournament_by_name("Gonet Geneva Open", week=week)
     
     # Générer des joueurs de test
     generator = PlayerGenerator()
-    players = []
+    players = {}
     
     # Créer un joueur principal
     main_player = Player(
@@ -36,25 +40,28 @@ def test_elimination_tournament():
     main_player.stats.coup_droit = 85
     main_player.stats.revers = 80
     main_player.stats.service = 82
-    main_player.stats.volee = 75
-    main_player.update_elo()
-    players.append(main_player)
+    main_player.stats.vollee = 75
+    main_player._recalculate_all_elo_ratings()
+    players[main_player.full_name] = main_player
     
     # Générer 7 autres joueurs
-    for i in range(7):
+    for i in range(32):
         player = generator.generate_player(Gender.MALE)
-        players.append(player)
+        players[player.full_name] = player
     
     # Ajouter les participants
-    for player in players:
+    for player in players.values():
         tournament.add_participant(player)
-    
+
     print(f"\nParticipants:")
-    for i, player in enumerate(players, 1):
+    for i, player in enumerate(tournament.participants, 1):
         print(f"{i}. {player.full_name} (ELO: {player.elo})")
-    
+
+    # génère le gestionnaire de points ATP
+    atp_points_manager = ATPPointsManager(players)
+
     # Jouer le tournoi
-    result = tournament.play_tournament()
+    result = tournament.play_tournament(atp_points_manager=atp_points_manager, week=week)
     
     print(f"\n=== RÉSULTAT FINAL ===")
     print(f"🏆 Vainqueur: {result.winner.full_name}")
@@ -76,7 +83,7 @@ def test_atp_finals():
     
     # Générer 8 joueurs de haut niveau
     generator = PlayerGenerator()
-    players = []
+    players = {}
     
     # Créer un joueur principal
     main_player = Player(
@@ -90,13 +97,13 @@ def test_atp_finals():
     main_player.stats.coup_droit = 90
     main_player.stats.revers = 88
     main_player.stats.service = 85
-    main_player.stats.volee = 80
+    main_player.stats.vollee = 80
     main_player.stats.puissance = 87
     main_player.stats.vitesse = 82
     main_player.stats.endurance = 90
     main_player.stats.reflexes = 88
-    main_player.update_elo()
-    players.append(main_player)
+    main_player._recalculate_all_elo_ratings()
+    players[main_player.full_name] = main_player
     
     # Générer 7 autres joueurs de haut niveau
     for i in range(7):
@@ -105,20 +112,27 @@ def test_atp_finals():
         player.stats.coup_droit = min(95, player.stats.coup_droit + 15)
         player.stats.revers = min(95, player.stats.revers + 15)
         player.stats.service = min(95, player.stats.service + 15)
-        player.stats.volee = min(95, player.stats.volee + 10)
-        player.update_elo()
-        players.append(player)
+        player.stats.vollee = min(95, player.stats.vollee + 10)
+        player.stats.puissance = min(95, player.stats.puissance + 15)
+        player.stats.vitesse = min(95, player.stats.vitesse + 15)
+        player.stats.endurance = min(95, player.stats.endurance + 10)
+        player.stats.reflexes = min(95, player.stats.reflexes + 10)
+        player._recalculate_all_elo_ratings()
+        players[player.full_name] = player
     
     # Ajouter les participants
-    for player in players:
+    for player in players.values():
         tournament.add_participant(player)
-    
+
     print(f"\nParticipants (Top 8 mondial):")
-    for i, player in enumerate(players, 1):
+    for i, player in enumerate(tournament.participants, 1):
         print(f"{i}. {player.full_name} (ELO: {player.elo})")
-    
+
+    # génère le gestionnaire de points ATP
+    atp_points_manager = ATPPointsManager(players)
+
     # Jouer le tournoi
-    result = tournament.play_tournament()
+    result = tournament.play_tournament(atp_points_manager=atp_points_manager, week=46)
     
     print(f"\n=== RÉSULTAT FINAL ===")
     print(f"🏆 Champion ATP Finals: {result.winner.full_name}")

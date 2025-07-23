@@ -3,9 +3,9 @@ Tests de charge et stress pour TennisRPG v2
 """
 import concurrent.futures
 import time
-from TennisRPG.entities.player import Player, Gender
-from TennisRPG.managers.player_generator import PlayerGenerator
-from TennisRPG.managers.tournament_manager import TournamentManager
+from TennisRPG_v2.entities.player import Player, Gender
+from TennisRPG_v2.managers.player_generator import PlayerGenerator
+from TennisRPG_v2.managers.tournament_manager import TournamentManager
 
 
 def stress_test_tournament_system():

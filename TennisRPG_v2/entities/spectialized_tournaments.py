@@ -8,6 +8,7 @@ from collections import defaultdict
 from .tournament import Tournament, TournamentResult, TournamentStatus
 from ..data.tournaments_data import TournamentCategory, SPECIAL_TOURNAMENT_CONFIG
 from ..utils.constants import TOURNAMENT_CONSTANTS
+from ..utils.helpers import get_round_display_name
 
 
 class EliminationTournament(Tournament):
@@ -24,7 +25,7 @@ class EliminationTournament(Tournament):
 		main_player = None
 		main_player_atp_points = 0
 		main_player_initial_xp = 0
-		
+
 		for player in self.participants:
 			if hasattr(player, 'is_main_player') and player.is_main_player:
 				main_player = player
@@ -34,14 +35,14 @@ class EliminationTournament(Tournament):
 		# Détermine si on affiche les détails (automatiquement si joueur principal présent)
 		if verbose is None:
 			verbose = self.has_main_player
-		
+
 		# Affichage du début du tournoi seulement si verbose
 		if verbose:
-			print(f"\n{'='*60}")
+			print(f"\n{'=' * 60}")
 			print(f"🎾 {self.name}")
 			print(f"📍 {self.location} • 🏟️  {self.surface} • 🏆 {self.category.value}")
 			print(f"👥 {len(self.participants)} participants")
-			print(f"{'='*60}")
+			print(f"{'=' * 60}")
 
 		# Initialise les rounds
 		current_round = list(self.participants)
@@ -60,7 +61,7 @@ class EliminationTournament(Tournament):
 
 			# Affichage du round seulement si verbose
 			if verbose:
-				round_display = self._get_round_display_name(round_name)
+				round_display = get_round_display_name(round_name)
 				print(f"\n📊 {round_display} ({len(current_round)} joueurs)")
 				print("-" * 40)
 
@@ -81,7 +82,8 @@ class EliminationTournament(Tournament):
 
 					# Affiche le résultat seulement si verbose
 					if verbose:
-						print(f"   ✅ {match_result.winner.full_name} gagne {match_result.sets_won}-{match_result.sets_lost}")
+						print(
+							f"   ✅ {match_result.winner.full_name} gagne {match_result.sets_won}-{match_result.sets_lost}")
 
 					# Le vainqueur passe au tour suivant
 					next_round.append(match_result.winner)
@@ -91,13 +93,13 @@ class EliminationTournament(Tournament):
 
 					# Affiche l'élimination du joueur principal (toujours affiché)
 					if hasattr(match_result.loser, 'is_main_player') and match_result.loser.is_main_player:
-						phase_name = self._get_elimination_message(round_name)
+						phase_name = get_round_display_name(round_name)
 						print(f"\n❌ {main_player.full_name} éliminé(e) {phase_name}!")
 
 					# Attribue points ATP et XP
 					atp_points = self.assign_atp_points(match_result.loser, round_name, atp_points_manager, week)
 					xp_points = self.assign_xp_points(match_result.loser, round_name)
-					
+
 					# Suit les points ATP du joueur principal
 					if main_player and match_result.loser == main_player:
 						main_player_atp_points += atp_points
@@ -116,7 +118,7 @@ class EliminationTournament(Tournament):
 		if verbose or (hasattr(winner, 'is_main_player') and winner.is_main_player):
 			print(f"\n🏆 VAINQUEUR: {winner.full_name}")
 			if verbose:
-				print(f"{'='*60}")
+				print(f"{'=' * 60}")
 
 		# Attribue les points au vainqueur
 		atp_points_winner = self.assign_atp_points(winner, "winner", atp_points_manager, week)
@@ -130,10 +132,10 @@ class EliminationTournament(Tournament):
 			if winner == main_player:
 				# Le joueur principal a gagné
 				main_player_atp_points += atp_points_winner
-			
+
 			# Calcule les XP réellement gagnés
 			main_player_xp_gained = main_player.career.xp_points - main_player_initial_xp
-			
+
 			print(f"\n📊 RÉCAPITULATIF DU TOURNOI:")
 			print(f"   💰 Points ATP gagnés: {main_player_atp_points}")
 			print(f"   ⭐ Points XP gagnés: {main_player_xp_gained}")
@@ -207,19 +209,6 @@ class EliminationTournament(Tournament):
 
 		return rounds
 
-	def _get_round_display_name(self, round_name: str) -> str:
-		"""Convertit le nom interne du round en nom d'affichage"""
-		display_names = {
-			"finalist": "FINALE",
-			"semifinalist": "DEMI-FINALES",
-			"quarterfinalist": "QUARTS DE FINALE",
-			"round_16": "8ème DE FINALE",
-			"round_32": "16ème DE FINALE",
-			"round_64": "32ème DE FINALE",
-			"round_128": "64ème DE FINALE"
-		}
-		return display_names.get(round_name, f"TOUR {round_name.upper()}")
-
 	def _get_elimination_message(self, round_name: str) -> str:
 		"""Retourne le message d'élimination approprié"""
 		messages = {
@@ -227,9 +216,9 @@ class EliminationTournament(Tournament):
 			"semifinalist": "en demi-finale",
 			"quarterfinalist": "en quart de finale",
 			"round_16": "en 8ème de finale",
-			"round_32": "au 1er tour",
-			"round_64": "au 1er tour",
-			"round_128": "au 1er tour"
+			"round_32": "en 16ème de finale",
+			"round_64": "en 32ème de finale",
+			"round_128": "en 64ème de finale"
 		}
 		return messages.get(round_name, f"au {round_name}")
 
@@ -260,7 +249,6 @@ class EliminationTournament(Tournament):
 		)
 
 
-
 class ATPFinals(Tournament):
 	"""Tournoi ATP Finals avec format spécial (poules + élimination)"""
 
@@ -288,7 +276,7 @@ class ATPFinals(Tournament):
 		main_player = None
 		main_player_atp_points = 0
 		main_player_initial_xp = 0
-		
+
 		for player in self.participants:
 			if hasattr(player, 'is_main_player') and player.is_main_player:
 				main_player = player
@@ -301,30 +289,30 @@ class ATPFinals(Tournament):
 
 		# Affichage du début du tournoi seulement si verbose
 		if verbose:
-			print(f"\n{'='*60}")
+			print(f"\n{'=' * 60}")
 			print(f"🏆 ATP FINALS - {self.name}")
 			print(f"📍 {self.location} • 🏟️  {self.surface}")
 			print(f"🌟 Les 8 meilleurs joueurs de l'année")
-			print(f"{'='*60}")
+			print(f"{'=' * 60}")
 
 		# Phase de poules
 		if verbose:
 			print(f"\n📊 PHASE DE POULES")
 			print("-" * 30)
-		qualified_players = self._play_group_stage(verbose)
+		qualified_players = self._play_group_stage(verbose, atp_points_manager, week)
 
 		# Phase finale (demi-finales + finale)
 		if verbose:
 			print(f"\n📊 PHASE FINALE")
 			print("-" * 30)
-		winner = self._play_knockout_stage(qualified_players, verbose)
+		winner = self._play_knockout_stage(qualified_players, verbose, atp_points_manager, week)
 
 		# Affichage du vainqueur seulement si verbose ou si joueur principal gagne
 		if verbose or (hasattr(winner, 'is_main_player') and winner.is_main_player):
 			print(f"\n🏆 CHAMPION ATP FINALS: {winner.full_name}")
 			if verbose:
 				print(f"🎉 Félicitations pour cette victoire exceptionnelle!")
-				print(f"{'='*60}")
+				print(f"{'=' * 60}")
 
 		# Attribue les points au vainqueur
 		atp_points_winner = self.assign_atp_points(winner, "winner", atp_points_manager, week)
@@ -338,10 +326,10 @@ class ATPFinals(Tournament):
 			if winner == main_player:
 				# Le joueur principal a gagné
 				main_player_atp_points += atp_points_winner
-			
+
 			# Calcule les XP réellement gagnés
 			main_player_xp_gained = main_player.career.xp_points - main_player_initial_xp
-			
+
 			print(f"\n📊 RÉCAPITULATIF DU TOURNOI:")
 			print(f"   💰 Points ATP gagnés: {main_player_atp_points}")
 			print(f"   ⭐ Points XP gagnés: {main_player_xp_gained}")
@@ -350,7 +338,8 @@ class ATPFinals(Tournament):
 
 		return self._create_tournament_result(winner)
 
-	def _play_group_stage(self, verbose: bool = True) -> List['Player']:
+	def _play_group_stage(self, verbose: bool = True, atp_points_manager=None,
+					week=None) -> List['Player']:
 		"""Joue la phase de poules"""
 		# Divise en 2 groupes de 4 joueurs
 		group1 = self.participants[:4]
@@ -362,8 +351,8 @@ class ATPFinals(Tournament):
 			print()
 
 		# Joue chaque groupe
-		qualified1 = self._play_group(group1, "A", verbose)
-		qualified2 = self._play_group(group2, "B", verbose)
+		qualified1 = self._play_group(group1, "A", verbose, atp_points_manager=atp_points_manager, week=week)
+		qualified2 = self._play_group(group2, "B", verbose, atp_points_manager=atp_points_manager, week=week)
 
 		if verbose:
 			print(f"\n✅ Qualifiés du Groupe A: {', '.join([p.full_name for p in qualified1])}")
@@ -371,12 +360,13 @@ class ATPFinals(Tournament):
 
 		return qualified1 + qualified2
 
-	def _play_group(self, players: List['Player'], group_name: str, verbose: bool = True) -> List['Player']:
+	def _play_group(self, players: List['Player'], group_name: str, verbose: bool = True, atp_points_manager=None,
+					week=None) -> List['Player']:
 		"""Joue un groupe de 4 joueurs"""
 		if verbose:
 			print(f"\n📊 GROUPE {group_name}")
 			print("-" * 20)
-		
+
 		# Chaque joueur joue contre les 3 autres
 		results = defaultdict(lambda: {"wins": 0, "losses": 0, "sets_won": 0, "sets_lost": 0})
 
@@ -384,12 +374,13 @@ class ATPFinals(Tournament):
 			for j in range(i + 1, len(players)):
 				if verbose:
 					print(f"⚔️  {players[i].full_name} vs {players[j].full_name}")
-				
+
 				match_result = self.simulate_match(players[i], players[j])
 				self.match_results.append(match_result)
 
 				if verbose:
-					print(f"   ✅ {match_result.winner.full_name} gagne {match_result.sets_won}-{match_result.sets_lost}")
+					print(
+						f"   ✅ {match_result.winner.full_name} gagne {match_result.sets_won}-{match_result.sets_lost}")
 
 				# Met à jour les statistiques
 				results[match_result.winner]["wins"] += 1
@@ -411,10 +402,11 @@ class ATPFinals(Tournament):
 				results[p]["wins"],
 				results[p]["sets_won"] / max(1, results[p]["sets_lost"])
 			), reverse=True)
-			
+
 			for i, player in enumerate(temp_sorted, 1):
 				status = "✅ Qualifié" if i <= 2 else "❌ Éliminé"
-				print(f"{i}. {player.full_name} - {results[player]['wins']}V-{results[player]['losses']}D ({results[player]['sets_won']}-{results[player]['sets_lost']}) {status}")
+				print(
+					f"{i}. {player.full_name} - {results[player]['wins']}V-{results[player]['losses']}D ({results[player]['sets_won']}-{results[player]['sets_lost']}) {status}")
 
 		# Classe les joueurs par nombre de victoires, puis par ratio de sets
 		sorted_players = sorted(players, key=lambda p: (
@@ -431,19 +423,19 @@ class ATPFinals(Tournament):
 
 		return qualified
 
-	def _play_knockout_stage(self, qualified_players: List['Player'], verbose: bool = True) -> 'Player':
+	def _play_knockout_stage(self, qualified_players: List['Player'], verbose: bool = True, atp_points_manager=None, week=None) -> 'Player':
 		"""Joue la phase finale (demi-finales + finale)"""
 		if verbose:
 			print(f"\n🥉 DEMI-FINALES")
 			print("-" * 15)
-		
+
 		# Demi-finales
 		if verbose:
 			print(f"⚔️  {qualified_players[0].full_name} vs {qualified_players[3].full_name}")
 		semi1 = self.simulate_match(qualified_players[0], qualified_players[3])
 		if verbose:
 			print(f"   ✅ {semi1.winner.full_name} gagne {semi1.sets_won}-{semi1.sets_lost}")
-		
+
 		if verbose:
 			print(f"⚔️  {qualified_players[1].full_name} vs {qualified_players[2].full_name}")
 		semi2 = self.simulate_match(qualified_players[1], qualified_players[2])
@@ -465,14 +457,14 @@ class ATPFinals(Tournament):
 		if verbose:
 			print(f"\n🥇 FINALE")
 			print("-" * 10)
-		
+
 		# Finale
 		if verbose:
 			print(f"🎾 {semi1.winner.full_name} vs {semi2.winner.full_name}")
 		final_match = self.simulate_match(semi1.winner, semi2.winner)
 		if verbose:
 			print(f"   🏆 {final_match.winner.full_name} gagne {final_match.sets_won}-{final_match.sets_lost}")
-		
+
 		self.match_results.append(final_match)
 
 		# Enregistre le finaliste
@@ -509,6 +501,7 @@ class ATPFinals(Tournament):
 
 class GrandSlam(EliminationTournament):
 	"""Tournoi Grand Chelem"""
+
 	def __init__(self, name, location, num_players, surface):
 		super().__init__(
 			name=name,
@@ -522,6 +515,7 @@ class GrandSlam(EliminationTournament):
 
 class Masters1000(EliminationTournament):
 	"""Tournoi Masters 1000"""
+
 	def __init__(self, name, location, num_players, surface, num_rounds=6):
 		super().__init__(
 			name=name,
@@ -536,6 +530,7 @@ class Masters1000(EliminationTournament):
 
 class ATP500(EliminationTournament):
 	"""Tournoi ATP 500"""
+
 	def __init__(self, name, location, num_players, surface, num_rounds=5):
 		super().__init__(
 			name=name,
@@ -550,6 +545,7 @@ class ATP500(EliminationTournament):
 
 class ATP250(EliminationTournament):
 	"""Tournoi ATP 250"""
+
 	def __init__(self, name, location, num_players, surface, num_rounds=5):
 		super().__init__(
 			name=name,
@@ -564,6 +560,7 @@ class ATP250(EliminationTournament):
 
 class CHALLENGERS175(EliminationTournament):
 	"""Tournoi Challenger 175"""
+
 	def __init__(self, name, location, surface):
 		super().__init__(
 			name=name,
@@ -577,6 +574,7 @@ class CHALLENGERS175(EliminationTournament):
 
 class CHALLENGERS125(EliminationTournament):
 	"""Tournoi Challenger 125"""
+
 	def __init__(self, name, location, surface):
 		super().__init__(
 			name=name,
@@ -590,6 +588,7 @@ class CHALLENGERS125(EliminationTournament):
 
 class CHALLENGERS100(EliminationTournament):
 	"""Tournoi Challenger 100"""
+
 	def __init__(self, name, location, surface):
 		super().__init__(
 			name=name,
@@ -603,6 +602,7 @@ class CHALLENGERS100(EliminationTournament):
 
 class CHALLENGERS75(EliminationTournament):
 	"""Tournoi Challenger 75"""
+
 	def __init__(self, name, location, surface):
 		super().__init__(
 			name=name,
@@ -616,6 +616,7 @@ class CHALLENGERS75(EliminationTournament):
 
 class CHALLENGERS50(EliminationTournament):
 	"""Tournoi Challenger 50"""
+
 	def __init__(self, name, location, surface):
 		super().__init__(
 			name=name,
@@ -629,6 +630,7 @@ class CHALLENGERS50(EliminationTournament):
 
 class ITFM25(EliminationTournament):
 	"""Tournoi ITF M25"""
+
 	def __init__(self, location, surface, edition=None):
 		name = f"M25 {location} {edition}" if edition else f"M25 {location}"
 		super().__init__(
@@ -643,6 +645,7 @@ class ITFM25(EliminationTournament):
 
 class ITFM15(EliminationTournament):
 	"""Tournoi ITF M15"""
+
 	def __init__(self, location, surface, edition=None):
 		name = f"M15 {location} {edition}" if edition else f"M15 {location}"
 		super().__init__(
