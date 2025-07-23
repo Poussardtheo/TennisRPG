@@ -18,13 +18,14 @@ class PlayerGenerator:
 	def __init__(self):
 		self.generated_names = set()  # Pour éviter les doublons
 
-	def generate_player(self, gender: Gender, level_range: tuple = (1, 25)) -> Player:
+	def generate_player(self, gender: Gender, level_range: tuple = (1, 25), age_range: tuple = None) -> Player:
 		"""
 		Génère un joueur aléatoire
 
 		Args:
 			gender: Genre du joueur
 			level_range: Plage de niveaux possible
+			age_range: Plage d'âges possible (défaut: jeunes joueurs)
 
 		Returns:
 			Joueur généré
@@ -53,6 +54,13 @@ class PlayerGenerator:
 
 		# Génération du niveau
 		level = random.randint(*level_range)
+		
+		# Génération de l'âge
+		if age_range is None:
+			# On génère des joueurs de tout âge si préliminaire et jeune joueur sinon
+			age = random.randint(RETIREMENT_CONSTANTS["YOUNG_PLAYER_MIN_AGE"], RETIREMENT_CONSTANTS["MAX_CAREER_AGE"])
+		else:
+			age = random.randint(*age_range)
 
 		return Player(
 			gender=gender,
@@ -61,7 +69,7 @@ class PlayerGenerator:
 			country=country,
 			level=level,
 			is_main_player=False,
-			age=random.randint(RETIREMENT_CONSTANTS["YOUNG_PLAYER_MIN_AGE"], RETIREMENT_CONSTANTS["YOUNG_PLAYER_MAX_AGE"])
+			age=age
 		)
 
 	def _get_random_locale(self, country: str) -> str:
@@ -90,7 +98,7 @@ class PlayerGenerator:
 
 		return first_name, last_name
 
-	def generate_player_pool(self, count: int, gender: Gender, level_range: tuple = (1, 25)) -> Dict[str, Player]:
+	def generate_player_pool(self, count: int, gender: Gender, level_range: tuple = (1, 25), age_range: tuple = None) -> Dict[str, Player]:
 		"""
 		Génère un pool de joueurs
 
@@ -98,6 +106,7 @@ class PlayerGenerator:
 			count: Nombre de joueurs à générer
 			gender: Genre des joueurs
 			level_range: Plage de niveaux
+			age_range: Plage d'âges possible (défaut: jeunes joueurs)
 
 		Returns:
 			Dictionnaire {nom_complet: Player}
@@ -105,10 +114,25 @@ class PlayerGenerator:
 		players = {}
 
 		for _ in range(count):
-			player = self.generate_player(gender, level_range)
+			player = self.generate_player(gender, level_range, age_range)
 			players[player.full_name] = player
 
 		return players
+
+	def generate_simulation_player_pool(self, count: int, gender: Gender, level_range: tuple = (1, 25)) -> Dict[str, Player]:
+		"""
+		Génère un pool de joueurs de tous âges pour la simulation préliminaire
+		
+		Args:
+			count: Nombre de joueurs à générer
+			gender: Genre des joueurs
+			level_range: Plage de niveaux
+			
+		Returns:
+			Dictionnaire {nom_complet: Player} avec joueurs de 16 à 45 ans
+		"""
+		age_range = (RETIREMENT_CONSTANTS["YOUNG_PLAYER_MIN_AGE"], RETIREMENT_CONSTANTS["MAX_CAREER_AGE"])
+		return self.generate_player_pool(count, gender, level_range, age_range)
 
 
 # Fonction de compatibilité avec l'ancien code

@@ -3,6 +3,10 @@
 ## Version 0.2 - Core Game Improvements
 *Objectif : Améliorer les mécaniques de base du jeu*
 
+### Système de talents
+- [ ] Ajouter des joueurs qui sont des pépites dans la rotation du pool*
+- [ ] Ajouter un système de niveau de talent (pépites, futures stars, prometteurs, etc.)
+
 ### Système de blessures et fatigue
 - [ ] Ajouter un système de blessure adossé au système de fatigue
   - [ ] Les blessures influencent le choix des tournois

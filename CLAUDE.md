@@ -77,3 +77,7 @@ Tests are organized by functionality:
 
 ### Package Structure
 The game is set up as an installable Python package with entry point `play = TennisRPG.main:main` defined in `setup.py`.
+
+## Development Memories
+
+- écris tes tests dans le dossier de test du package TennisRPG_v2

@@ -23,6 +23,7 @@ class GameState:
 		self.save_date: str = ""
 		self.game_version: str = "2.0"
 		self.playtime_hours: float = 0.0
+		self.retirement_log: List[Dict] = []  # Historique des retraites
 
 	def to_dict(self) -> Dict[str, Any]:
 		"""Convertit l'état en dictionnaire pour JSON"""
@@ -34,7 +35,8 @@ class GameState:
 			"is_preliminary_complete": self.is_preliminary_complete,
 			"save_date": self.save_date,
 			"game_version": self.game_version,
-			"playtime_hours": self.playtime_hours
+			"playtime_hours": self.playtime_hours,
+			"retirement_log": self.retirement_log
 		}
 
 	@classmethod
@@ -59,6 +61,7 @@ class GameState:
 		state.save_date = data.get("save_date", "")
 		state.game_version = data.get("game_version", "2.0")
 		state.playtime_hours = data.get("playtime_hours", 0.0)
+		state.retirement_log = data.get("retirement_log", [])
 
 		return state
 
@@ -201,7 +204,6 @@ class SaveManager:
 		# Trie par date de sauvegarde (plus récent en premier)
 		saves.sort(key=lambda x: x["save_date"], reverse=True)
 		return saves
-
 
 	def display_saves_menu(self) -> None:
 		"""Affiche le menu des sauvegardes"""

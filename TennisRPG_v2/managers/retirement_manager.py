@@ -17,7 +17,7 @@ class RetirementManager:
         self.retirement_log: List[Dict] = []  # Historique des retraites
         
     def process_end_of_season_retirements(self, all_players: Dict[str, Player], 
-                                        ranking_manager=None, year: int = None) -> Tuple[List[Player], List[Player]]:
+                                        ranking_manager=None, year: int = None, main_player_gender: Gender = None) -> Tuple[List[Player], List[Player]]:
         """
         Traite les retraites en fin de saison et génère les remplaçants
         
@@ -25,6 +25,7 @@ class RetirementManager:
             all_players: Dictionnaire de tous les joueurs
             ranking_manager: Gestionnaire de classements (optionnel, pour obtenir les classements ATP)
             year: Année actuelle (pour les logs)
+            main_player_gender: Genre du joueur principal (tous nouveaux joueurs auront ce genre)
             
         Returns:
             Tuple (liste des retraités, liste des nouveaux joueurs)
@@ -41,10 +42,13 @@ class RetirementManager:
         female_players = {name: player for name, player in all_players.items() 
                          if player.gender == Gender.FEMALE and not player.is_main_player}
         
-        # Traite chaque genre séparément
+        # Détermine le genre pour les nouveaux joueurs (celui du joueur principal si spécifié)
+        replacement_gender = main_player_gender or Gender.MALE
+        
+        # Traite chaque genre séparément pour les retraites, mais utilise le genre principal pour les remplacements
         for gender_pool, gender in [(male_players, Gender.MALE), (female_players, Gender.FEMALE)]:
             gender_retired, gender_new = self._process_gender_retirements(
-                gender_pool, gender, ranking_manager, year
+                gender_pool, gender, ranking_manager, year, replacement_gender
             )
             retired_players.extend(gender_retired)
             new_players.extend(gender_new)
@@ -58,7 +62,7 @@ class RetirementManager:
         return retired_players, new_players
     
     def _process_gender_retirements(self, gender_pool: Dict[str, Player], gender: Gender, 
-                                  ranking_manager=None, year: int = None) -> Tuple[List[Player], List[Player]]:
+                                  ranking_manager=None, year: int = None, replacement_gender: Gender = None) -> Tuple[List[Player], List[Player]]:
         """Traite les retraites pour un genre spécifique"""
         retired_players = []
         new_players = []
@@ -79,8 +83,9 @@ class RetirementManager:
         # Génère de nouveaux joueurs pour remplacer les retraités
         if retired_players:
             new_count = len(retired_players)
+            final_gender = replacement_gender or gender
             print(f"   👴 {new_count} joueur{'s' if new_count > 1 else ''} {gender.value} prennent leur retraite")
-            print(f"   🌱 Génération de {new_count} nouveau{'x' if new_count > 1 else ''} joueur{'s' if new_count > 1 else ''} {gender.value}")
+            print(f"   🌱 Génération de {new_count} nouveau{'x' if new_count > 1 else ''} joueur{'s' if new_count > 1 else ''} {final_gender.value}")
             
             for _ in range(new_count):
                 # Génère un jeune joueur avec un âge approprié
@@ -88,7 +93,7 @@ class RetirementManager:
                     RETIREMENT_CONSTANTS["YOUNG_PLAYER_MIN_AGE"],
                     RETIREMENT_CONSTANTS["YOUNG_PLAYER_MAX_AGE"]
                 )
-                new_player = self.player_generator.generate_player(gender, level_range=(1, 5))
+                new_player = self.player_generator.generate_player(final_gender, level_range=(1, 5))
                 new_player.career.age = young_age
                 new_players.append(new_player)
         
@@ -150,29 +155,42 @@ class RetirementManager:
         print("=" * 50)
     
     def _display_detailed_retirements(self, retired_players: List[Player], ranking_manager=None) -> None:
-        """Affiche les retraites en détail avec classements"""
-        print(f"\n👋 JOUEURS RETRAITÉS ({len(retired_players)}):")
+        """Affiche les retraites en détail avec classements (uniquement top 100)"""
+        
+        # Filtre pour ne garder que les top 100
+        top_100_retirees = []
+        if ranking_manager:
+            for player in retired_players:
+                ranking = ranking_manager.get_player_rank(player)
+                if ranking and ranking <= 100:
+                    top_100_retirees.append(player)
+        
+        if not top_100_retirees:
+            print(f"\n👋 RETRAITES NOTABLES: Aucun membre du top 100 n'a pris sa retraite")
+            return
+            
+        print(f"\n👋 RETRAITES NOTABLES - TOP 100 ({len(top_100_retirees)}/{len(retired_players)}):")
         print("─" * 45)
         
-        # Sépare par genre
-        male_retirees = [p for p in retired_players if p.gender == Gender.MALE]
-        female_retirees = [p for p in retired_players if p.gender == Gender.FEMALE]
+        # Sépare par genre et trie par classement
+        male_retirees = [p for p in top_100_retirees if p.gender == Gender.MALE]
+        female_retirees = [p for p in top_100_retirees if p.gender == Gender.FEMALE]
         
         # Affiche les hommes
         if male_retirees:
             print("🚹 HOMMES:")
-            male_retirees.sort(key=lambda p: (p.career.atp_points or 0), reverse=True)
+            male_retirees.sort(key=lambda p: ranking_manager.get_player_rank(p) or 999)
             for player in male_retirees:
-                ranking = "N/C" if not ranking_manager else ranking_manager.get_player_rank(player) or "N/C"
+                ranking = ranking_manager.get_player_rank(player)
                 atp_points = player.career.atp_points or 0
                 print(f"   #{ranking:<4} {player.full_name:<25} ({player.country}) - {player.career.age} ans - {atp_points} pts")
         
         # Affiche les femmes
         if female_retirees:
             print("\n🚺 FEMMES:")
-            female_retirees.sort(key=lambda p: (p.career.atp_points or 0), reverse=True)
+            female_retirees.sort(key=lambda p: ranking_manager.get_player_rank(p) or 999)
             for player in female_retirees:
-                ranking = "N/C" if not ranking_manager else ranking_manager.get_player_rank(player) or "N/C"
+                ranking = ranking_manager.get_player_rank(player)
                 atp_points = player.career.atp_points or 0
                 print(f"   #{ranking:<4} {player.full_name:<25} ({player.country}) - {player.career.age} ans - {atp_points} pts")
         
@@ -191,25 +209,20 @@ class RetirementManager:
                 print(f"   • Retraités du Top 100: {len(top_retirees)}")
     
     def _display_new_talents(self, new_players: List[Player]) -> None:
-        """Affiche les nouveaux talents en détail"""
+        """Affiche les nouveaux talents en détail (échantillon limité)"""
         print(f"\n🌟 NOUVEAUX TALENTS ({len(new_players)}):")
         print("─" * 45)
         
-        # Sépare par genre
-        new_males = [p for p in new_players if p.gender == Gender.MALE]
-        new_females = [p for p in new_players if p.gender == Gender.FEMALE]
-        
-        if new_males:
-            print("🚹 HOMMES:")
-            sample_males = random.sample(new_males, min(8, len(new_males)))
-            for player in sample_males:
+        if new_players:
+            # Affiche seulement un échantillon de 5 nouveaux joueurs max
+            sample_size = min(5, len(new_players))
+            sample_players = random.sample(new_players, sample_size)
+            
+            for player in sample_players:
                 print(f"   🆕 {player.full_name:<25} ({player.country}) - {player.career.age} ans")
-        
-        if new_females:
-            print("\n🚺 FEMMES:")
-            sample_females = random.sample(new_females, min(8, len(new_females)))
-            for player in sample_females:
-                print(f"   🆕 {player.full_name:<25} ({player.country}) - {player.career.age} ans")
+            
+            if len(new_players) > 5:
+                print(f"   ... et {len(new_players) - 5} autres nouveaux joueurs")
         
         # Statistiques des nouveaux joueurs
         if new_players:

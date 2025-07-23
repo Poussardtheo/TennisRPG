@@ -1,6 +1,13 @@
 """
 Constantes utilisées dans le jeu
 """
+GAME_CONSTANTS = {
+    "GAME_NAME": "Tennis RPG v2",
+    "GAME_VERSION": "2.0.0",
+    "GAME_DESCRIPTION": "Un RPG de tennis où vous gérez la carrière d'un joueur, de sa formation à sa retraite.",
+    "GAME_AUTHOR": "TeaSPoon Studio",
+    "NPC_POOL_SIZE": 1000,  # Taille du pool de joueurs générés
+}
 
 # Archétypes de joueurs
 ARCHETYPES = {
@@ -161,7 +168,8 @@ BASE_TRAINING_XP = {"min": 6, "max": 10}  # Réduit par rapport à l'ancien syst
 # Constantes pour la gestion du temps
 TIME_CONSTANTS = {
     "WEEKS_PER_YEAR": 52,
-    "FATIGUE_NATURAL_RECOVERY": 3
+    "FATIGUE_NATURAL_RECOVERY": 3,
+    "GAME_START_YEAR": 2024      # Année de début du jeu
 }
 
 # Facteurs de progression par âge
@@ -177,9 +185,9 @@ AGE_PROGRESSION_FACTORS = {
 # Constantes pour le système de retraite
 RETIREMENT_CONSTANTS = {
     "MIN_RETIREMENT_AGE": 30,      # Âge minimum pour prendre sa retraite
-    "MAX_CAREER_AGE": 45,          # Âge maximum (retraite forcée)
+    "MAX_CAREER_AGE": 42,          # Âge maximum (retraite forcée)
     "BASE_RETIREMENT_PROBABILITY": 0.02,  # Probabilité de base à 30 ans (2%)
-    "AGE_RETIREMENT_MULTIPLIER": 0.5,     # Multiplicateur par année après 30 ans
+    "AGE_RETIREMENT_MULTIPLIER": 0.5,     # Multiplicateur par année après 30 ans # Todo: à ajuster
     "EARLY_RETIREMENT_BONUS": 0.1,        # Bonus pour blessures/mauvaise forme
     "YOUNG_PLAYER_MIN_AGE": 16,           # Âge minimum des nouveaux joueurs
     "YOUNG_PLAYER_MAX_AGE": 20,           # Âge maximum des nouveaux joueurs

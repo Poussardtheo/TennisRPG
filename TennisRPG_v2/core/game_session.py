@@ -14,7 +14,7 @@ from ..managers.ranking_manager import RankingManager
 from ..managers.weekly_activity_manager import WeeklyActivityManager
 from ..managers.atp_points_manager import ATPPointsManager
 from ..managers.retirement_manager import RetirementManager
-from ..utils.constants import TIME_CONSTANTS, RETIREMENT_CONSTANTS
+from ..utils.constants import TIME_CONSTANTS, RETIREMENT_CONSTANTS, GAME_CONSTANTS
 from .save_manager import SaveManager, GameState
 
 
@@ -25,7 +25,7 @@ class GameSession:
         self.main_player: Optional[Player] = None
         self.all_players: Dict[str, Player] = {}
         self.current_week: int = 1
-        self.current_year: int = 2024
+        self.current_year: int = TIME_CONSTANTS["GAME_START_YEAR"]
         
         # Managers
         self.tournament_manager = TournamentManager()
@@ -98,15 +98,16 @@ class GameSession:
         
     def _generate_npc_pool(self) -> None:
         """Génère le pool de PNJ en arrière-plan"""
+        pool_size = GAME_CONSTANTS["NPC_POOL_SIZE"]
         print("\n🤖 GÉNÉRATION DU CIRCUIT MONDIAL")
         print("-" * 35)
-        print("⏳ Création de 1000 joueurs professionnels...")
+        print(f"⏳ Création de {pool_size} joueurs professionnels...")
         
         start_time = time.time()
         
         def generate_players():
             """Génère les joueurs en thread séparé"""
-            for i in range(1000):
+            for i in range(pool_size):
                 # Alterne entre hommes et femmes selon le genre du joueur principal
                 gender = self.main_player.gender
                 player = self.player_generator.generate_player(gender)
@@ -114,7 +115,7 @@ class GameSession:
                 
                 # Progress indication
                 if (i + 1) % 200 == 0:
-                    print(f"   📊 {i + 1}/1000 joueurs générés...")
+                    print(f"   📊 {i + 1}/{pool_size} joueurs générés...")
         
         # Génération en thread pour montrer progression
         generate_thread = threading.Thread(target=generate_players)
@@ -128,7 +129,7 @@ class GameSession:
         """Simule 10 ans préliminaires pour établir un historique réaliste"""
         print("\n⚡ SIMULATION PRÉLIMINAIRE")
         print("-" * 25)
-        print("📅 Simulation de 10 années pour créer un historique réaliste...")
+        print("📅 Simulation de 2 années pour créer un historique réaliste...")
         print("💡 Cela permet d'avoir des classements et des rivalités naturelles")
         
         # Initialise le ranking manager
@@ -145,41 +146,27 @@ class GameSession:
         start_time = time.time()
         
         # Simule 1 année préliminaire (réduit pour performance)
+        preliminary_start_year = TIME_CONSTANTS["GAME_START_YEAR"] - 1
         for year in range(1):
-            print(f"   📈 Année {2014 + year}...")
+            current_sim_year = preliminary_start_year + year
+            print(f"   📈 Année {current_sim_year}...")
             
-            for week in range(1, 53):  # 52 semaines par an
+            for week in range(1, TIME_CONSTANTS["WEEKS_PER_YEAR"] + 1):  # 52 semaines par an
                 self._simulate_week_preliminarily(week)
                 
                 # Progress tous les 6 mois
                 if week % 26 == 0:
                     print(f"      ⌛ Semestre {week//26} terminé")
             
-            # Vieillit les joueurs en fin d'année et traite quelques retraites préliminaires
-            self.retirement_manager.force_aging_simulation(self.all_players, 1)
+            # Traite les retraites en fin d'année avec le système complet
+            retired_players, new_players = self.retirement_manager.process_end_of_season_retirements(
+                self.all_players, self.ranking_manager, current_sim_year, self.main_player.gender
+            )
             
-            # Applique quelques retraites préliminaires pour créer de la rotation
-            if year == 0:  # Seulement lors de la dernière année de simulation
-                # Force quelques retraites pour les plus vieux joueurs
-                very_old_players = [p for p in self.all_players.values() 
-                                  if hasattr(p.career, 'age') and p.career.age >= 35]
-                if very_old_players:
-                    # Retire 10% des joueurs les plus âgés
-                    num_to_retire = max(1, len(very_old_players) // 10)
-                    players_to_retire = random.sample(very_old_players, num_to_retire)
-                    
-                    for player in players_to_retire:
-                        if player.full_name in self.all_players:
-                            del self.all_players[player.full_name]
-
-                    gender = players_to_retire[0].gender    # Gènère des remplacements du même genre
-
-                    # Génère des remplacements
-                    for _ in range(num_to_retire):
-                        new_player = self.player_generator.generate_player(gender, level_range=(1, 10))
-                        mini, maxi = RETIREMENT_CONSTANTS["YOUNG_PLAYER_MIN_AGE"], RETIREMENT_CONSTANTS["YOUNG_PLAYER_MAX_AGE"]
-                        new_player.career.age = random.randint(mini, maxi)
-                        self.all_players[new_player.full_name] = new_player
+            # Met à jour les classements si de nouveaux joueurs ont été ajoutés
+            if new_players:
+                for new_player in new_players:
+                    self.ranking_manager.add_player(new_player)
         
         simulation_time = time.time() - start_time
         print(f"✅ Simulation préliminaire terminée en {simulation_time:.1f} secondes")
@@ -216,7 +203,7 @@ class GameSession:
         
         # Réinitialise le temps
         self.current_week = 1
-        self.current_year = 2024
+        self.current_year = TIME_CONSTANTS["GAME_START_YEAR"]
         
         gender_term = "tennisman" if self.main_player.gender == Gender.MALE else "tenniswoman"
         print(f"\n🌟 Bienvenue dans votre carrière de {gender_term},")
@@ -471,6 +458,7 @@ class GameSession:
         game_state.current_week = self.current_week
         game_state.current_year = self.current_year
         game_state.is_preliminary_complete = self.is_preliminary_complete
+        game_state.retirement_log = self.retirement_manager.retirement_log if self.retirement_manager else []
         
         # Calcule le temps de jeu
         if self.session_start_time:
@@ -539,6 +527,8 @@ class GameSession:
             self.activity_manager = WeeklyActivityManager(
                 self.tournament_manager, self.ranking_manager
             )
+            # Restaure le retirement_log
+            self.retirement_manager.retirement_log = game_state.retirement_log
         
         # Remet à jour le temps de début de session
         self.session_start_time = time.time()
@@ -610,7 +600,7 @@ class GameSession:
         
         # Traite les retraites et remplacements
         retired_players, new_players = self.retirement_manager.process_end_of_season_retirements(
-            self.all_players, self.ranking_manager, self.current_year - 1
+            self.all_players, self.ranking_manager, self.current_year - 1, self.main_player.gender
         )
         
         # Met à jour les classements si de nouveaux joueurs ont été ajoutés
@@ -714,7 +704,7 @@ class GameSession:
         print("─" * 35)
         
         # Récupère les stats des dernières années
-        years_to_check = range(max(2024, self.current_year - 5), self.current_year)
+        years_to_check = range(max(TIME_CONSTANTS["GAME_START_YEAR"], self.current_year - 5), self.current_year)
         
         print("Année  | Retraites | Âge moyen")
         print("────── | ───────── | ─────────")
@@ -752,7 +742,18 @@ class GameSession:
         print("=" * 45)
         
         # Affiche les retraites de l'année actuelle et précédente
-        years_to_check = [self.current_year - 1, self.current_year - 2] if self.current_year > 2024 else [2024]
+        # Inclut toujours l'année de simulation préliminaire et les années récentes
+        years_to_check = []
+        if self.current_year > TIME_CONSTANTS["GAME_START_YEAR"]:
+            years_to_check = [self.current_year - 1, self.current_year - 2]
+        
+        # Toujours inclure l'année de simulation préliminaire
+        preliminary_year = TIME_CONSTANTS["GAME_START_YEAR"] - 1
+        if preliminary_year not in years_to_check:
+            years_to_check.append(preliminary_year)
+        
+        # Trier par ordre décroissant (plus récent en premier)
+        years_to_check.sort(reverse=True)
         
         total_recent_retirements = 0
         for year in years_to_check:

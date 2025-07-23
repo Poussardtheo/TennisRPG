@@ -3,6 +3,8 @@ Fonctions utilitaires pour le jeu
 """
 import random
 from typing import Dict
+
+import numpy as np
 from scipy.stats import truncnorm
 
 from .constants import STATS_WEIGHTS, AGE_PROGRESSION_FACTORS, RETIREMENT_CONSTANTS
@@ -204,22 +206,17 @@ def calculate_retirement_probability(age: int, atp_ranking: int = None) -> float
 	if age >= RETIREMENT_CONSTANTS["MAX_CAREER_AGE"]:
 		return 1.0
 	
-	# Calcul de la probabilité de base selon l'âge
-	years_past_min = age - RETIREMENT_CONSTANTS["MIN_RETIREMENT_AGE"]
-	base_probability = RETIREMENT_CONSTANTS["BASE_RETIREMENT_PROBABILITY"]
-	age_multiplier = RETIREMENT_CONSTANTS["AGE_RETIREMENT_MULTIPLIER"]
-	
-	# Probabilité exponentielle croissante avec l'âge
-	probability = base_probability * (1 + age_multiplier) ** years_past_min
+	# Probabilité sigmoidale croissante avec l'âge
+	probability = 1 / (1 + np.exp(-0.75 * (age-34.33)))
 	
 	# Ajustement selon le classement ATP (les joueurs mieux classés restent plus longtemps)
 	if atp_ranking is not None:
 		if atp_ranking <= 50:  # Top 50: réduction significative de la probabilité
 			probability *= 0.3
 		elif atp_ranking <= 100:  # Top 100: réduction modérée
-			probability *= 0.5
-		elif atp_ranking <= 200:  # Top 200: légère réduction
-			probability *= 0.7
+			probability *= 0.6
+		elif atp_ranking <= 200:  # Top 200: très légère réduction
+			probability *= 0.9
 		elif atp_ranking > 500:  # Joueurs mal classés: augmentation
 			probability *= 1.5
 	
