@@ -5,6 +5,7 @@ import time
 import sys
 
 from TennisRPG_v2.managers.atp_points_manager import ATPPointsManager
+from TennisRPG_v2.managers.ranking_manager import RankingManager
 
 sys.path.append('..')
 
@@ -23,6 +24,14 @@ def test_elimination_tournament():
     week = 21
     # Prend le Geneva Open de la semaine 21
     tournament = tournament_manager.get_tournament_by_name("Gonet Geneva Open", week=week)
+    
+    if tournament is None:
+        print("Geneva Open non trouvé, utilise le premier tournoi disponible de la semaine 21")
+        tournaments = tournament_manager.get_tournaments_for_week(week)
+        if tournaments:
+            tournament = tournaments[0]
+        else:
+            raise ValueError(f"Aucun tournoi trouvé pour la semaine {week}")
     
     # Générer des joueurs de test
     generator = PlayerGenerator()
@@ -44,9 +53,27 @@ def test_elimination_tournament():
     main_player._recalculate_all_elo_ratings()
     players[main_player.full_name] = main_player
     
-    # Générer 7 autres joueurs
-    for i in range(32):
+    # Générer 31 autres joueurs (32 - 1 main_player = 31)
+    generated_players = {}
+    for i in range(31):
         player = generator.generate_player(Gender.MALE)
+        generated_players[player.full_name] = player
+    
+    # S'assurer que tous les noms sont uniques avant d'ajouter au dictionnaire
+    for player in generated_players.values():
+        base_name = player.full_name
+        counter = 1
+        unique_name = base_name
+        
+        # Si le nom existe déjà, ajouter un suffixe numérique
+        while unique_name in players:
+            unique_name = f"{base_name} {counter}"
+            counter += 1
+        
+        # Mettre à jour le nom du joueur si nécessaire
+        if unique_name != base_name:
+            player.last_name = f"{player.last_name} {counter-1}"
+        
         players[player.full_name] = player
     
     # Ajouter les participants
@@ -57,8 +84,12 @@ def test_elimination_tournament():
     for i, player in enumerate(tournament.participants, 1):
         print(f"{i}. {player.full_name} (ELO: {player.elo})")
 
-    # génère le gestionnaire de points ATP
-    atp_points_manager = ATPPointsManager(players)
+    # Crée d'abord le ranking manager
+    players_list = list(players.values())
+    ranking_manager = RankingManager(players_list)
+    
+    # génère le gestionnaire de points ATP avec tous les joueurs
+    atp_points_manager = ATPPointsManager(players, ranking_manager)
 
     # Jouer le tournoi
     result = tournament.play_tournament(atp_points_manager=atp_points_manager, week=week)
@@ -80,6 +111,14 @@ def test_atp_finals():
     
     # Prend l'ATP Finals de la semaine 46
     tournament = tournament_manager.get_tournament_by_name("Nitto ATP Finals", week=46)
+    
+    if tournament is None:
+        print("ATP Finals non trouvé, utilise le premier tournoi disponible de la semaine 46")
+        tournaments = tournament_manager.get_tournaments_for_week(46)
+        if tournaments:
+            tournament = tournaments[0]
+        else:
+            raise ValueError("Aucun tournoi trouvé pour la semaine 46")
     
     # Générer 8 joueurs de haut niveau
     generator = PlayerGenerator()
@@ -106,6 +145,7 @@ def test_atp_finals():
     players[main_player.full_name] = main_player
     
     # Générer 7 autres joueurs de haut niveau
+    generated_players = []
     for i in range(7):
         player = generator.generate_player(Gender.MALE)
         # Boost leurs stats pour simuler les 8 meilleurs mondiaux
@@ -118,6 +158,23 @@ def test_atp_finals():
         player.stats.endurance = min(95, player.stats.endurance + 10)
         player.stats.reflexes = min(95, player.stats.reflexes + 10)
         player._recalculate_all_elo_ratings()
+        generated_players.append(player)
+    
+    # S'assurer que tous les noms sont uniques avant d'ajouter au dictionnaire
+    for player in generated_players:
+        base_name = player.full_name
+        counter = 1
+        unique_name = base_name
+        
+        # Si le nom existe déjà, ajouter un suffixe numérique
+        while unique_name in players:
+            unique_name = f"{base_name} {counter}"
+            counter += 1
+        
+        # Mettre à jour le nom du joueur si nécessaire
+        if unique_name != base_name:
+            player.last_name = f"{player.last_name} {counter-1}"
+        
         players[player.full_name] = player
     
     # Ajouter les participants
@@ -128,8 +185,12 @@ def test_atp_finals():
     for i, player in enumerate(tournament.participants, 1):
         print(f"{i}. {player.full_name} (ELO: {player.elo})")
 
-    # génère le gestionnaire de points ATP
-    atp_points_manager = ATPPointsManager(players)
+    # Crée d'abord le ranking manager
+    players_list = list(players.values())
+    ranking_manager = RankingManager(players_list)
+    
+    # génère le gestionnaire de points ATP avec tous les joueurs
+    atp_points_manager = ATPPointsManager(players, ranking_manager)
 
     # Jouer le tournoi
     result = tournament.play_tournament(atp_points_manager=atp_points_manager, week=46)

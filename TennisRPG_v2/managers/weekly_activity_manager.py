@@ -192,12 +192,13 @@ class WeeklyActivityManager:
         if isinstance(activity, TournamentActivity):
             return self._execute_tournament_activity(player, activity, week, all_players, atp_points_manager)
         else:
+
             # Exécute l'activité de base
             result = activity.execute(player)
-            
+
             # Simule les autres tournois de la semaine (sans le joueur principal)
             self._simulate_other_tournaments(player, week, all_players, atp_points_manager)
-            
+
             return result
     
     def _execute_tournament_activity(self, player: Player, tournament_activity: TournamentActivity,
@@ -213,13 +214,33 @@ class WeeklyActivityManager:
             tournament, available_players, self.ranking_manager
         )
 
-        # Remplace le PNJ le plus faible par le joueur principal
-        if len(participants) >= tournament.num_players:
-            # Le tournoi est plein, retire le joueur le plus faible (dernier de la liste triée)
-            participants = participants[:tournament.num_players - 1]
-        
-        # Ajoute le joueur principal
-        participants.append(player)
+        # Vérifie si le joueur principal est déjà dans les participants
+        if player in participants:
+            # Le joueur est déjà qualifié automatiquement, pas besoin de l'ajouter
+            pass
+        else:
+            # Si le tournoi n'est pas plein, ajoute simplement le joueur
+            if len(participants) < tournament.num_players:
+                participants.append(player)
+            else:
+                # Le tournoi est plein, remplace le joueur avec le classement le plus proche
+                main_player_rank = self.ranking_manager.get_player_rank(player) or 999999
+                
+                # Trouve le joueur le plus proche en classement pour un échange équitable
+                closest_player = None
+                closest_diff = float('inf')
+                
+                for participant in participants:
+                    participant_rank = self.ranking_manager.get_player_rank(participant) or 999999
+                    rank_diff = abs(main_player_rank - participant_rank)
+                    if rank_diff < closest_diff:
+                        closest_diff = rank_diff
+                        closest_player = participant
+                
+                # Remplace le joueur le plus proche par le joueur principal
+                if closest_player:
+                    participants.remove(closest_player)
+                    participants.append(player)
         
         # Nettoie le tournoi et ajoute les participants
         tournament.participants.clear()
@@ -282,14 +303,15 @@ class WeeklyActivityManager:
     def _simulate_other_tournaments(self, player: Player, week: int, all_players: Dict[str, Player], atp_points_manager=None) -> None:
         """Simule les autres tournois de la semaine (sans le joueur principal)"""
         tournaments = self.tournament_manager.get_tournaments_for_week(week)
+
         available_players = {name: p for name, p in all_players.items() 
                            if p != player and p.gender == player.gender}
-        
+
         self._simulate_tournaments_list(tournaments, available_players, atp_points_manager=atp_points_manager, week=week)
-        
+
         # Met à jour les classements
         self.ranking_manager.update_weekly_rankings()
-    
+
     def _simulate_tournaments_list(self, tournaments: List[Tournament], 
                                  available_players: Dict[str, Player], 
                                  exclude_players: List[Player] = None, atp_points_manager=None, week: int = None) -> None:
@@ -304,12 +326,13 @@ class WeeklyActivityManager:
         # Trie par ordre d'importance décroissant (plus prestigieux d'abord)
         sorted_tournaments = sorted(tournaments, 
                                   key=lambda t: t.tournament_importance, reverse=True)
-        
+
         for tournament in sorted_tournaments:
+
             participants = self.tournament_manager.select_players_for_tournament(
                 tournament, available_pool, self.ranking_manager
             )
-            
+
             if len(participants) >= 4:  # Minimum pour un tournoi
                 # Nettoie le tournoi
                 tournament.participants.clear()
@@ -319,10 +342,10 @@ class WeeklyActivityManager:
                 # Ajoute les participants
                 for participant in participants:
                     tournament.add_participant(participant)
-                
+
                 # Joue le tournoi en mode silencieux
                 tournament.play_tournament(verbose=False, atp_points_manager=atp_points_manager, week=week)
-                
+
                 # Retire les participants du pool disponible
                 for participant in participants:
                     if participant.full_name in available_pool:

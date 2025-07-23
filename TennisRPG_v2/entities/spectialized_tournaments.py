@@ -8,7 +8,7 @@ from collections import defaultdict
 from .tournament import Tournament, TournamentResult, TournamentStatus
 from ..data.tournaments_data import TournamentCategory, SPECIAL_TOURNAMENT_CONFIG
 from ..utils.constants import TOURNAMENT_CONSTANTS
-from ..utils.helpers import get_round_display_name
+from ..utils.helpers import get_round_display_name, get_gender_agreement
 
 
 class EliminationTournament(Tournament):
@@ -24,12 +24,12 @@ class EliminationTournament(Tournament):
 		# Trouve le joueur principal et initialise le tracking
 		main_player = None
 		main_player_atp_points = 0
-		main_player_initial_xp = 0
+		main_player_initial_xp_total = 0
 
 		for player in self.participants:
 			if hasattr(player, 'is_main_player') and player.is_main_player:
 				main_player = player
-				main_player_initial_xp = player.career.xp_points
+				main_player_initial_xp_total = player.career.xp_total
 				break
 
 		# Détermine si on affiche les détails (automatiquement si joueur principal présent)
@@ -44,25 +44,57 @@ class EliminationTournament(Tournament):
 			print(f"👥 {len(self.participants)} participants")
 			print(f"{'=' * 60}")
 
-		# Initialise les rounds
-		current_round = list(self.participants)
-		random.shuffle(current_round)  # Mélange les joueurs
-
-		# Applique les têtes de série si nécessaire
-		if len(current_round) >= 8:
-			current_round = self._apply_seeding(current_round)
-
-		round_names = self._get_round_names(len(current_round))
+		# Gestion des byes selon les règles ATP
+		bye_config = self._get_atp_bye_config(len(self.participants))
+		num_byes = bye_config['num_byes']
+		bracket_size = bye_config['bracket_size']
+		
+		if num_byes > 0:
+			# Il y a des byes - certaines têtes de série passent au 2ème tour
+			num_seeds = min(len(self.participants) // 4, 8)
+			seeded_players = self.get_seeded_players(num_seeds)
+			bye_recipients = seeded_players[:min(num_byes, len(seeded_players))]
+			
+			# Le premier tour ne contient que les joueurs sans bye
+			current_round = [p for p in self.participants if p not in bye_recipients]
+			
+			# Applique le seeding pour le premier tour
+			if len(current_round) >= 8:
+				current_round = self._apply_seeding(current_round)
+			else:
+				random.shuffle(current_round)
+			
+			# Stocke les joueurs avec bye pour le 2ème tour
+			self.bye_recipients = bye_recipients
+		else:
+			# Pas de byes - traitement standard
+			current_round = list(self.participants)
+			if len(current_round) >= 8:
+				current_round = self._apply_seeding(current_round)
+			else:
+				random.shuffle(current_round)
+			self.bye_recipients = []
+		
+		round_names = self._get_round_names(bracket_size)
 
 		# Joue tous les rounds
 		for round_idx, round_name in enumerate(round_names):
 			if len(current_round) <= 1:
 				break
+			
+			# Ajoute les joueurs avec bye au début du 2ème tour
+			if round_idx == 0 and hasattr(self, 'bye_recipients') and self.bye_recipients:
+				# Après le premier tour, ajouter les joueurs avec bye
+				pass  # Ils seront ajoutés dans next_round après les matches
 
 			# Affichage du round seulement si verbose
 			if verbose:
 				round_display = get_round_display_name(round_name)
-				print(f"\n📊 {round_display} ({len(current_round)} joueurs)")
+				total_players = len(current_round) + (len(getattr(self, 'bye_recipients', [])) if round_idx == 0 else 0)
+				print(f"\n📊 {round_display} ({total_players} joueurs)")
+				if round_idx == 0 and hasattr(self, 'bye_recipients') and self.bye_recipients:
+					print(f"   • {len(current_round)} joueurs jouent le 1er tour")
+					print(f"   • {len(self.bye_recipients)} têtes de série ont un bye")
 				print("-" * 40)
 
 			next_round = []
@@ -73,42 +105,70 @@ class EliminationTournament(Tournament):
 					player1 = current_round[i]
 					player2 = current_round[i + 1]
 
-					# Affiche le match seulement si verbose
-					if verbose:
-						print(f"⚔️  {player1.full_name} vs {player2.full_name}")
+					# Gestion des byes
+					if player1 is None and player2 is None:
+						continue  # Deux byes, rien à faire
+					elif player1 is None:
+						# Bye pour player2
+						gender_suffix = get_gender_agreement(player2.gender.value)
+						if verbose:
+							print(f"👍 {player2.full_name} qualifié{gender_suffix} d'office (bye)")
+						next_round.append(player2)
+					elif player2 is None:
+						# Bye pour player1
+						gender_suffix = get_gender_agreement(player1.gender.value)
+						if verbose:
+							print(f"👍 {player1.full_name} qualifié{gender_suffix} d'office (bye)")
+						next_round.append(player1)
+					else:
+						# Match normal entre deux joueurs
+						if verbose:
+							print(f"⚔️  {player1.full_name} vs {player2.full_name}")
 
-					match_result = self.simulate_match(player1, player2)
-					self.match_results.append(match_result)
+						match_result = self.simulate_match(player1, player2)
+						self.match_results.append(match_result)
 
-					# Affiche le résultat seulement si verbose
-					if verbose:
-						print(
-							f"   ✅ {match_result.winner.full_name} gagne {match_result.sets_won}-{match_result.sets_lost}")
+						# Affiche le résultat seulement si verbose
+						if verbose:
+							print(
+								f"   ✅ {match_result.winner.full_name} gagne {match_result.sets_won}-{match_result.sets_lost}")
 
-					# Le vainqueur passe au tour suivant
-					next_round.append(match_result.winner)
+						# Le vainqueur passe au tour suivant
+						next_round.append(match_result.winner)
 
-					# Enregistre l'élimination
-					self.eliminated_players[match_result.loser] = round_name
+						# Enregistre l'élimination
+						self.eliminated_players[match_result.loser] = round_name
 
-					# Affiche l'élimination du joueur principal (toujours affiché)
-					if hasattr(match_result.loser, 'is_main_player') and match_result.loser.is_main_player:
-						phase_name = get_round_display_name(round_name)
-						print(f"\n❌ {main_player.full_name} éliminé(e) {phase_name}!")
+						# Affiche l'élimination du joueur principal (toujours affiché)
+						if hasattr(match_result.loser, 'is_main_player') and match_result.loser.is_main_player:
+							phase_name = get_round_display_name(round_name)
+							print(f"\n❌ {main_player.full_name} éliminé(e) {phase_name}!")
 
-					# Attribue points ATP et XP
-					atp_points = self.assign_atp_points(match_result.loser, round_name, atp_points_manager, week)
-					xp_points = self.assign_xp_points(match_result.loser, round_name)
+						# Attribue points ATP et XP
+						atp_points = self.assign_atp_points(match_result.loser, round_name, atp_points_manager, week)
+						xp_points = self.calculate_xp_points(round_name)
+						if xp_points > 0:
+							match_result.loser.gain_experience(xp_points)
 
-					# Suit les points ATP du joueur principal
-					if main_player and match_result.loser == main_player:
-						main_player_atp_points += atp_points
+						# Suit les points ATP du joueur principal
+						if main_player and match_result.loser == main_player:
+							main_player_atp_points += atp_points
 				else:
-					# Joueur qualifié d'office
-					if verbose:
-						print(f"👍 {current_round[i].full_name} qualifié(e) d'office")
-					next_round.append(current_round[i])
+					# Joueur qualifié d'office (nombre impair de joueurs)
+					player = current_round[i]
+					if player is not None:
+						if verbose:
+							print(f"👍 {player.full_name} qualifié(e) d'office")
+						next_round.append(player)
 
+			# Ajoute les joueurs avec bye après le premier tour
+			if round_idx == 0 and hasattr(self, 'bye_recipients') and self.bye_recipients:
+				next_round.extend(self.bye_recipients)
+				if verbose:
+					print(f"\n🎯 {len(self.bye_recipients)} têtes de série rejoignent le tournoi au 2ème tour:")
+					for bye_player in self.bye_recipients:
+						print(f"   👍 {bye_player.full_name} qualifié(e) d'office (bye)")
+			
 			current_round = next_round
 
 		# Le dernier joueur est le vainqueur
@@ -122,10 +182,12 @@ class EliminationTournament(Tournament):
 
 		# Attribue les points au vainqueur
 		atp_points_winner = self.assign_atp_points(winner, "winner", atp_points_manager, week)
-		xp_points_winner = self.assign_xp_points(winner, "winner")
-
-		# Bonus d'expérience pour avoir terminé le tournoi
-		winner.gain_experience(TOURNAMENT_CONSTANTS["TOURNAMENT_COMPLETION_BONUS"])
+		
+		# Combine XP du vainqueur + bonus de completion du tournoi
+		xp_points_winner = self.calculate_xp_points("winner")
+		total_xp = xp_points_winner + TOURNAMENT_CONSTANTS["TOURNAMENT_COMPLETION_BONUS"]
+		if total_xp > 0:
+			winner.gain_experience(total_xp)
 
 		# Récapitulatif pour le joueur principal
 		if main_player:
@@ -134,7 +196,7 @@ class EliminationTournament(Tournament):
 				main_player_atp_points += atp_points_winner
 
 			# Calcule les XP réellement gagnés
-			main_player_xp_gained = main_player.career.xp_points - main_player_initial_xp
+			main_player_xp_gained = main_player.career.xp_total - main_player_initial_xp_total
 
 			print(f"\n📊 RÉCAPITULATIF DU TOURNOI:")
 			print(f"   💰 Points ATP gagnés: {main_player_atp_points}")
@@ -144,43 +206,112 @@ class EliminationTournament(Tournament):
 
 		return self._create_tournament_result(winner)
 
-	def _apply_seeding(self, players: List['Player']) -> List['Player']:
-		"""Applique un système de têtes de série"""
-		num_seeds = min(len(players) // 4, 8)  # Maximum 8 têtes de série
-		seeded_players = self.get_seeded_players(num_seeds)
+	def _get_atp_bye_config(self, num_players: int) -> Dict[str, int]:
+		"""
+		Retourne la configuration des byes selon les règles ATP
+		
+		Args:
+			num_players: Nombre de joueurs dans le tournoi
+			
+		Returns:
+			Dict avec 'num_byes' et 'bracket_size'
+		"""
+		atp_configs = {
+			28: {'num_byes': 4, 'bracket_size': 32},   # 4 premières têtes de série ont bye
+			32: {'num_byes': 0, 'bracket_size': 32},   # Aucune exemption
+			48: {'num_byes': 16, 'bracket_size': 64},  # 16 têtes de série ont bye
+			56: {'num_byes': 8, 'bracket_size': 64},   # 8 premières têtes de série ont bye
+			64: {'num_byes': 0, 'bracket_size': 64},   # Aucune exemption
+			96: {'num_byes': 32, 'bracket_size': 128}, # 32 têtes de série ont bye
+			128: {'num_byes': 0, 'bracket_size': 128}  # Aucune exemption
+		}
+		
+		# Calcule la bracket size nécessaire basée sur le nombre de joueurs
+		import math
+		bracket_size = 2 ** math.ceil(math.log2(num_players))
+		return atp_configs.get(num_players, {'num_byes': 0, 'bracket_size': bracket_size})
 
+	def _apply_seeding(self, players: List['Player']) -> List['Player']:
+		"""
+		Applique un système de têtes de série avec gestion des byes
+		
+		NOTE IMPORTANTE: Cette méthode retourne le bracket du PREMIER TOUR seulement.
+		Les joueurs avec bye ne sont pas dans ce bracket - ils entrent au 2ème tour.
+		"""
+		num_players = len(players)
+		
+		# Utilise la configuration ATP pour déterminer les byes
+		bye_config = self._get_atp_bye_config(num_players)
+		num_byes = bye_config['num_byes']
+		bracket_size = bye_config['bracket_size']
+		
+		if num_byes == 0:
+			# Pas de byes, tous les joueurs jouent le premier tour
+			return self._apply_standard_seeding_no_byes(players)
+		
+		# Obtient les têtes de série
+		num_seeds = min(num_players // 4, 8)
+		seeded_players = self.get_seeded_players(num_seeds)
+		
+		# Les premières têtes de série qui bénéficient d'un bye
+		bye_recipients = seeded_players[:num_byes] if num_byes <= len(seeded_players) else seeded_players
+		
+		# Joueurs qui JOUENT le premier tour (tous sauf ceux avec bye)
+		first_round_players = [p for p in players if p not in bye_recipients]
+		
+		# Le nombre de matches du premier tour
+		num_first_round_matches = len(first_round_players) // 2
+		first_round_bracket_size = len(first_round_players)
+		
+		# Applique un seeding simple pour les joueurs du premier tour
+		remaining_seeded = [p for p in seeded_players if p not in bye_recipients]
+		non_seeded = [p for p in first_round_players if p not in seeded_players]
+		random.shuffle(non_seeded)
+		
+		# Mélange et construit le bracket du premier tour
+		all_first_round = remaining_seeded + non_seeded
+		random.shuffle(all_first_round)  # Mélange simple pour le moment
+		
+		# Retourne le bracket du premier tour seulement
+		# Le système gérera les byes dans la logique de match
+		return all_first_round
+	
+	def _apply_standard_seeding_no_byes(self, players: List['Player']) -> List['Player']:
+		"""Applique l'algorithme de seeding standard quand il n'y a pas de byes"""
+		num_seeds = min(len(players) // 4, 8)
+		seeded_players = self.get_seeded_players(num_seeds)
+		
 		# Sépare têtes de série et autres joueurs
 		unseeded = [p for p in players if p not in seeded_players]
 		random.shuffle(unseeded)
-
-		# Répartit les têtes de série
-		seeded_positions = []
-		if len(seeded_players) >= 1:
-			seeded_positions.append(0)  # Tête de série n°1
-		if len(seeded_players) >= 2:
-			seeded_positions.append(len(players) - 1)  # Tête de série n°2
-		if len(seeded_players) >= 4:
-			seeded_positions.extend([len(players) // 2 - 1, len(players) // 2])
-
-		# Remplit les autres positions
-		for i in range(len(seeded_players) - len(seeded_positions)):
-			seeded_positions.append(i * 2 + 1)
-
-		# Construit le tableau final
+		
+		# Place les têtes de série aux bonnes positions
 		result = [None] * len(players)
-
-		# Place les têtes de série
-		for i, pos in enumerate(seeded_positions[:len(seeded_players)]):
-			result[pos] = seeded_players[i]
-
-		# Place les autres joueurs
+		
+		if len(seeded_players) >= 1:
+			result[0] = seeded_players[0]  # Tête de série #1
+		if len(seeded_players) >= 2:
+			result[-1] = seeded_players[1]  # Tête de série #2
+		if len(seeded_players) >= 4:
+			result[len(players) // 2 - 1] = seeded_players[2]  # Tête de série #3
+			result[len(players) // 2] = seeded_players[3]      # Tête de série #4
+		
+		# Place les autres têtes de série
+		for i, player in enumerate(seeded_players[4:], 4):
+			pos = i * 2 + 1
+			if pos < len(players) and result[pos] is None:
+				result[pos] = player
+		
+		# Place les joueurs non-têtes de série
 		unseeded_idx = 0
 		for i in range(len(players)):
 			if result[i] is None:
-				result[i] = unseeded[unseeded_idx]
-				unseeded_idx += 1
-
+				if unseeded_idx < len(unseeded):
+					result[i] = unseeded[unseeded_idx]
+					unseeded_idx += 1
+		
 		return result
+	
 
 	def _get_round_names(self, num_players: int) -> List[str]:
 		"""Génère les noms des rounds selon le nombre de joueurs"""
@@ -275,12 +406,12 @@ class ATPFinals(Tournament):
 		# Trouve le joueur principal et initialise le tracking
 		main_player = None
 		main_player_atp_points = 0
-		main_player_initial_xp = 0
+		main_player_initial_xp_total = 0
 
 		for player in self.participants:
 			if hasattr(player, 'is_main_player') and player.is_main_player:
 				main_player = player
-				main_player_initial_xp = player.career.xp_points
+				main_player_initial_xp_total = player.career.xp_total
 				break
 
 		# Détermine si on affiche les détails
@@ -316,10 +447,12 @@ class ATPFinals(Tournament):
 
 		# Attribue les points au vainqueur
 		atp_points_winner = self.assign_atp_points(winner, "winner", atp_points_manager, week)
-		self.assign_xp_points(winner, "winner")
-
-		# Bonus pour avoir terminé le tournoi
-		winner.gain_experience(TOURNAMENT_CONSTANTS["TOURNAMENT_COMPLETION_BONUS"])
+		
+		# Combine XP du vainqueur + bonus de completion du tournoi
+		xp_points_winner = self.calculate_xp_points("winner")
+		total_xp = xp_points_winner + TOURNAMENT_CONSTANTS["TOURNAMENT_COMPLETION_BONUS"]
+		if total_xp > 0:
+			winner.gain_experience(total_xp)
 
 		# Récapitulatif pour le joueur principal
 		if main_player:
@@ -328,7 +461,7 @@ class ATPFinals(Tournament):
 				main_player_atp_points += atp_points_winner
 
 			# Calcule les XP réellement gagnés
-			main_player_xp_gained = main_player.career.xp_points - main_player_initial_xp
+			main_player_xp_gained = main_player.career.xp_total - main_player_initial_xp_total
 
 			print(f"\n📊 RÉCAPITULATIF DU TOURNOI:")
 			print(f"   💰 Points ATP gagnés: {main_player_atp_points}")
@@ -393,7 +526,9 @@ class ATPFinals(Tournament):
 
 				# Points ATP pour chaque victoire en poule
 				self.assign_atp_points(match_result.winner, "round_robin_win", atp_points_manager, week)
-				self.assign_xp_points(match_result.winner, "round_robin_win")
+				xp_points = self.calculate_xp_points("round_robin_win")
+				if xp_points > 0:
+					match_result.winner.gain_experience(xp_points)
 
 		# Affiche le classement du groupe seulement si verbose
 		if verbose:
@@ -451,8 +586,10 @@ class ATPFinals(Tournament):
 		# Attribue les points
 		self.assign_atp_points(semi1.loser, "semifinalist", atp_points_manager, week)
 		self.assign_atp_points(semi2.loser, "semifinalist", atp_points_manager, week)
-		self.assign_xp_points(semi1.loser, "semifinalist")
-		self.assign_xp_points(semi2.loser, "semifinalist")
+		xp_points_semi = self.calculate_xp_points("semifinalist")
+		if xp_points_semi > 0:
+			semi1.loser.gain_experience(xp_points_semi)
+			semi2.loser.gain_experience(xp_points_semi)
 
 		if verbose:
 			print(f"\n🥇 FINALE")
@@ -472,7 +609,9 @@ class ATPFinals(Tournament):
 
 		# Attribue les points au finaliste
 		self.assign_atp_points(final_match.loser, "finalist", atp_points_manager, week)
-		self.assign_xp_points(final_match.loser, "finalist")
+		xp_points_final = self.calculate_xp_points("finalist")
+		if xp_points_final > 0:
+			final_match.loser.gain_experience(xp_points_final)
 
 		return final_match.winner
 
@@ -502,21 +641,22 @@ class ATPFinals(Tournament):
 class GrandSlam(EliminationTournament):
 	"""Tournoi Grand Chelem"""
 
-	def __init__(self, name, location, num_players, surface):
+	def __init__(self, name, location, surface):
 		super().__init__(
 			name=name,
 			location=location,
 			surface=surface,
 			category=TournamentCategory.GRAND_SLAM,
-			num_players=num_players,
+			num_players=128,
 			sets_to_win=3
 		)
+		self.num_rounds = 7
 
 
 class Masters1000(EliminationTournament):
 	"""Tournoi Masters 1000"""
 
-	def __init__(self, name, location, num_players, surface, num_rounds=6):
+	def __init__(self, name, location, num_players, surface):
 		super().__init__(
 			name=name,
 			location=location,
@@ -525,13 +665,13 @@ class Masters1000(EliminationTournament):
 			num_players=num_players,
 			sets_to_win=2
 		)
-		self.num_rounds = num_rounds
+		self.num_rounds = 6 if self.num_players <= 64 else 7
 
 
 class ATP500(EliminationTournament):
 	"""Tournoi ATP 500"""
 
-	def __init__(self, name, location, num_players, surface, num_rounds=5):
+	def __init__(self, name, location, num_players, surface):
 		super().__init__(
 			name=name,
 			location=location,
@@ -540,13 +680,13 @@ class ATP500(EliminationTournament):
 			num_players=num_players,
 			sets_to_win=2
 		)
-		self.num_rounds = num_rounds
+		self.num_rounds = 5 if self.num_players <= 32 else 6
 
 
 class ATP250(EliminationTournament):
 	"""Tournoi ATP 250"""
 
-	def __init__(self, name, location, num_players, surface, num_rounds=5):
+	def __init__(self, name, location, num_players, surface):
 		super().__init__(
 			name=name,
 			location=location,
@@ -555,7 +695,7 @@ class ATP250(EliminationTournament):
 			num_players=num_players,
 			sets_to_win=2
 		)
-		self.num_rounds = num_rounds
+		self.num_rounds = 5 if self.num_players <= 32 else 6
 
 
 class CHALLENGERS175(EliminationTournament):
@@ -570,6 +710,7 @@ class CHALLENGERS175(EliminationTournament):
 			num_players=32,
 			sets_to_win=2
 		)
+		self.num_rounds = 5 if self.num_players <= 32 else 6
 
 
 class CHALLENGERS125(EliminationTournament):
@@ -584,6 +725,7 @@ class CHALLENGERS125(EliminationTournament):
 			num_players=32,
 			sets_to_win=2
 		)
+		self.num_rounds = 5 if self.num_players <= 32 else 6
 
 
 class CHALLENGERS100(EliminationTournament):
@@ -598,6 +740,7 @@ class CHALLENGERS100(EliminationTournament):
 			num_players=32,
 			sets_to_win=2
 		)
+		self.num_rounds = 5 if self.num_players <= 32 else 6
 
 
 class CHALLENGERS75(EliminationTournament):
@@ -612,6 +755,8 @@ class CHALLENGERS75(EliminationTournament):
 			num_players=32,
 			sets_to_win=2
 		)
+		self.num_rounds = 5 if self.num_players <= 32 else 6
+
 
 
 class CHALLENGERS50(EliminationTournament):
@@ -626,6 +771,8 @@ class CHALLENGERS50(EliminationTournament):
 			num_players=32,
 			sets_to_win=2
 		)
+		self.num_rounds = 5 if self.num_players <= 32 else 6
+
 
 
 class ITFM25(EliminationTournament):

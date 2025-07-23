@@ -5,6 +5,7 @@ import pytest
 import sys
 import os
 
+from TennisRPG_v2.managers import RankingManager
 from TennisRPG_v2.managers.atp_points_manager import ATPPointsManager
 
 # Ajoute le chemin du projet
@@ -215,8 +216,12 @@ class TestIntegration:
         for player in players.values():
             geneva_open.add_participant(player)
 
+        # Crée d'abord le ranking manager
+        players_list = list(players.values())
+        ranking_manager = RankingManager(players_list)
+        
         # Génère le gestionnaire de points ATP
-        atp_points_manager = ATPPointsManager(players)
+        atp_points_manager = ATPPointsManager(players, ranking_manager)
 
         # Simule le tournoi
         result = geneva_open.play_tournament(verbose=False, atp_points_manager=atp_points_manager, week=21)

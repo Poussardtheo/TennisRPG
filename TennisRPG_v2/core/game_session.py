@@ -14,7 +14,7 @@ from ..managers.ranking_manager import RankingManager
 from ..managers.weekly_activity_manager import WeeklyActivityManager
 from ..managers.atp_points_manager import ATPPointsManager
 from ..managers.retirement_manager import RetirementManager
-from ..utils.constants import TIME_CONSTANTS, RETIREMENT_CONSTANTS, GAME_CONSTANTS
+from ..utils.constants import TIME_CONSTANTS, RETIREMENT_CONSTANTS, GAME_CONSTANTS, DIFFICULTY_TO_TALENT
 from .save_manager import SaveManager, GameState
 
 
@@ -79,22 +79,62 @@ class GameSession:
                 gender = Gender.MALE if gender_input == 'm' else Gender.FEMALE
                 break
             print("❌ Entrée invalide. Utilisez 'M' pour masculin ou 'F' pour féminin.")
-        
+
+        # Sélection de la difficulté
+        difficulty = self._select_difficulty()
+        talent_level = DIFFICULTY_TO_TALENT[difficulty]
+
         # Informations du joueur
         first_name = input("\n👤 Prénom de votre joueur/joueuse : ").strip()
         last_name = input("👤 Nom de famille : ").strip()
         country = input("🌍 Pays : ").strip()
-        
+
         # Création du joueur principal
         self.main_player = Player(
             gender=gender,
             first_name=first_name,
             last_name=last_name, 
             country=country,
-            is_main_player=True
+            is_main_player=True,
+            talent_level=talent_level
         )
         
         print(f"\n✅ Joueur créé: {self.main_player.full_name} ({country})")
+        print(f"🎯 Difficulté: {difficulty}")
+        print(f"⭐ Niveau de talent: {talent_level.value}")
+        
+    def _select_difficulty(self) -> str:
+        """Permet au joueur de sélectionner le niveau de difficulté"""
+        print("\n🎯 SÉLECTION DE LA DIFFICULTÉ")
+        print("-" * 30)
+        print("Choisissez votre niveau de difficulté :")
+        print("1. Novice - Génie précoce (+30% stats)")
+        print("2. Facile - Pépite (+20% stats)")
+        print("3. Normal - Talent brut (+10% stats)")
+        print("4. Difficile - Joueur prometteur (stats normales)")
+        print("5. Expert - Espoir fragile (-10% stats)")
+        
+        difficulty_mapping = {
+            "1": "Novice",
+            "2": "Facile", 
+            "3": "Normal",
+            "4": "Difficile",
+            "5": "Expert"
+        }
+        
+        while True:
+            choice = input("\nVotre choix (1-5) : ").strip()
+            if choice in difficulty_mapping:
+                selected_difficulty = difficulty_mapping[choice]
+                
+                # Affichage de confirmation
+                talent = DIFFICULTY_TO_TALENT[selected_difficulty]
+                print(f"\n✅ Difficulté sélectionnée : {selected_difficulty}")
+                print(f"⭐ Votre talent : {talent.value}")
+                
+                return selected_difficulty
+            else:
+                print("❌ Choix invalide. Veuillez entrer un nombre entre 1 et 5.")
         
     def _generate_npc_pool(self) -> None:
         """Génère le pool de PNJ en arrière-plan"""

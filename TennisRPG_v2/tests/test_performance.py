@@ -7,6 +7,7 @@ from TennisRPG_v2.entities.player import Player, Gender
 from TennisRPG_v2.managers.atp_points_manager import ATPPointsManager
 from TennisRPG_v2.managers.player_generator import PlayerGenerator
 from TennisRPG_v2.managers.tournament_manager import TournamentManager
+from TennisRPG_v2.managers.ranking_manager import RankingManager
 
 
 class TestPerformance:
@@ -62,8 +63,12 @@ class TestPerformance:
         for player in players.values():
             tournament.add_participant(player)
 
+        # Crée d'abord le ranking manager  
+        players_list = list(players.values())
+        ranking_manager = RankingManager(players_list)
+        
         # Génère le gestionnaire de points ATP
-        atp_points_manager = ATPPointsManager(players)
+        atp_points_manager = ATPPointsManager(players, ranking_manager)
 
         start_time = time.time()
         result = tournament.play_tournament(verbose=False, atp_points_manager=atp_points_manager, week=week)

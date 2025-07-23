@@ -1,28 +1,24 @@
 """
 Gestionnaire des points ATP avec système de points glissants.
 """
-import pandas as pd
 from typing import Dict, Optional
 
 
 class ATPPointsManager:
-	"""Gestionnaire des points ATP avec système glissant sur 52 semaines."""
+	"""Gestionnaire des points ATP - délègue au RankingManager pour éviter la duplication."""
 
-	def __init__(self, players: Dict[str, 'Player'], ranking_manager: 'RankingManager'=None):
+	def __init__(self, players: Dict[str, 'Player'], ranking_manager: 'RankingManager'):
 		"""
 		Initialise le gestionnaire avec les joueurs.
 
 		Args:
 			players: Dictionnaire des joueurs
-			ranking_manager: Gestionnaire des classements (optionnel)
+			ranking_manager: Gestionnaire des classements (requis)
 		"""
 		self.players = players
+		if ranking_manager is None:
+			raise ValueError("RankingManager is required")
 		self.ranking_manager = ranking_manager
-		self.current_atp_points = pd.DataFrame(
-			0,
-			index=[p.full_name for p in players.values()],
-			columns=range(1, 53), 	# 52 semaines par an
-		)
 
 	def add_player(self, player: 'Player'):
 		"""
@@ -31,10 +27,12 @@ class ATPPointsManager:
 		Args:
 			player: Le nouveau joueur à ajouter
 		"""
-		if player.full_name not in self.current_atp_points.index:
-			# Ajoute une nouvelle ligne pour le joueur avec des zéros
-			new_row = pd.Series(0, index=self.current_atp_points.columns, name=player.full_name)
-			self.current_atp_points = pd.concat([self.current_atp_points, new_row.to_frame().T])
+		# Délègue au ranking manager
+		self.ranking_manager.add_player(player)
+		
+		# S'assurer que le joueur est aussi dans le dictionnaire local
+		if player.full_name not in self.players:
+			self.players[player.full_name] = player
 
 	def add_tournament_points(self, player: 'Player', week: int, points: int):
 		"""
@@ -48,15 +46,16 @@ class ATPPointsManager:
 		if week < 1 or week > 52:
 			raise ValueError("La semaine doit être entre 1 et 52.")
 
-		self.current_atp_points.loc[player.full_name, week] += points
+		# S'assurer que le joueur existe
+		if player.full_name not in self.players:
+			self.add_player(player)
 
 		# Met à jour les points ATP totaux du joueur
 		player.career.atp_points += points
 		player.career.atp_race_points += points
 		
-		# Synchronise avec le ranking manager si disponible
-		if self.ranking_manager:
-			self.ranking_manager.add_atp_points(player.full_name, points, week)
+		# Délègue la gestion de l'historique au ranking manager
+		self.ranking_manager.add_atp_points(player.full_name, points, week)
 
 	def remove_weekly_points(self, player: 'Player', week: int):
 		"""
@@ -69,11 +68,12 @@ class ATPPointsManager:
 		if week < 1 or week > 52:
 			raise ValueError("La semaine doit être entre 1 et 52.")
 
-		points_to_remove = self.current_atp_points.loc[player.full_name, week]
+		# Délègue au ranking manager pour obtenir les points à retirer
+		points_to_remove = self.ranking_manager.get_points_to_defend(player.full_name, week)
 
 		if points_to_remove > 0:
 			player.career.atp_points -= points_to_remove
-			self.current_atp_points.loc[player.full_name, week] = 0
+			# Le ranking manager gère déjà la remise à zéro via advance_week()
 
 	def get_player_points(self, player: 'Player', week: Optional[int] = None) -> int:
 		"""
@@ -89,7 +89,13 @@ class ATPPointsManager:
 		if week is not None:
 			if week < 1 or week > 52:
 				raise ValueError("La semaine doit être entre 1 et 52.")
-			return self.current_atp_points.loc[player.full_name, week]
+			
+			# Délègue au ranking manager
+			week_col = f"week_{week}"
+			if (player.full_name in self.ranking_manager.atp_points_history.index and 
+				week_col in self.ranking_manager.atp_points_history.columns):
+				return int(self.ranking_manager.atp_points_history.loc[player.full_name, week_col])
+			return 0
 
 		return player.career.atp_points
 
@@ -97,8 +103,8 @@ class ATPPointsManager:
 		"""
 		Réinitialise les points ATP de la course pour tous les joueurs.
 		"""
-		for player in self.players.values():
-			player.career.atp_race_points = 0
+		# Délègue au ranking manager
+		self.ranking_manager.reset_atp_race()
 
 	def process_tournament_results(self, results: Dict['Player', int], week: int):
 		"""

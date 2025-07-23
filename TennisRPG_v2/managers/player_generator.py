@@ -9,7 +9,7 @@ from unidecode import unidecode
 
 from ..entities.player import Player, Gender
 from ..data.countries import COUNTRIES_LOCALES
-from ..utils.constants import RETIREMENT_CONSTANTS
+from ..utils.constants import RETIREMENT_CONSTANTS, TalentLevel
 
 
 class PlayerGenerator:
@@ -18,7 +18,7 @@ class PlayerGenerator:
 	def __init__(self):
 		self.generated_names = set()  # Pour éviter les doublons
 
-	def generate_player(self, gender: Gender, level_range: tuple = (1, 25), age_range: tuple = None) -> Player:
+	def generate_player(self, gender: Gender, level_range: tuple = (1, 25), age_range: tuple = None, talent_level: TalentLevel = None) -> Player:
 		"""
 		Génère un joueur aléatoire
 
@@ -26,6 +26,7 @@ class PlayerGenerator:
 			gender: Genre du joueur
 			level_range: Plage de niveaux possible
 			age_range: Plage d'âges possible (défaut: jeunes joueurs)
+			talent_level: Niveau de talent (défaut: aléatoire)
 
 		Returns:
 			Joueur généré
@@ -62,6 +63,10 @@ class PlayerGenerator:
 		else:
 			age = random.randint(*age_range)
 
+		# Génération du talent si non spécifié
+		if talent_level is None:
+			talent_level = self._generate_random_talent()
+
 		return Player(
 			gender=gender,
 			first_name=first_name,
@@ -69,7 +74,8 @@ class PlayerGenerator:
 			country=country,
 			level=level,
 			is_main_player=False,
-			age=age
+			age=age,
+			talent_level=talent_level
 		)
 
 	def _get_random_locale(self, country: str) -> str:
@@ -97,6 +103,19 @@ class PlayerGenerator:
 			last_name = unidecode(last_name)
 
 		return first_name, last_name
+
+	def _generate_random_talent(self) -> TalentLevel:
+		"""Génère un niveau de talent aléatoire avec distribution réaliste"""
+		# Distribution pondérée pour rendre les talents élevés plus rares
+		choices = [
+			TalentLevel.ESPOIR_FRAGILE,     # 30%
+			TalentLevel.JOUEUR_PROMETTEUR,  # 35%
+			TalentLevel.TALENT_BRUT,        # 25%
+			TalentLevel.PEPITE,             # 8%
+			TalentLevel.GENIE_PRECOCE       # 2%
+		]
+		weights = [30, 35, 25, 8, 2]
+		return random.choices(choices, weights=weights)[0]
 
 	def generate_player_pool(self, count: int, gender: Gender, level_range: tuple = (1, 25), age_range: tuple = None) -> Dict[str, Player]:
 		"""

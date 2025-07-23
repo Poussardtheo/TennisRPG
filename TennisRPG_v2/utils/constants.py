@@ -1,6 +1,17 @@
 """
 Constantes utilisées dans le jeu
 """
+from enum import Enum
+
+class TalentLevel(Enum):
+    """Niveaux de talent des joueurs"""
+    GENIE_PRECOCE = "Génie précoce"      # Niveau le plus élevé
+    PEPITE = "Pépite"                    # Très talentueux
+    TALENT_BRUT = "Talent brut"          # Talent naturel
+    JOUEUR_PROMETTEUR = "Joueur prometteur"  # Potentiel correct
+    ESPOIR_FRAGILE = "Espoir fragile"    # Niveau le plus bas
+
+
 GAME_CONSTANTS = {
     "GAME_NAME": "Tennis RPG v2",
     "GAME_VERSION": "2.0.0",
@@ -73,7 +84,7 @@ HEIGHT_IMPACTS = {
 FATIGUE_VALUES = {
     "Entrainement": (3, 7),
     "Exhibition": (5, 15),
-    "Repos": (3, 5)  # Valeur de récupération
+    "Repos": (7, 20)  # Valeur de récupération
 }
 
 # Coefficients de fatigue par catégorie de tournoi
@@ -191,5 +202,23 @@ RETIREMENT_CONSTANTS = {
     "EARLY_RETIREMENT_BONUS": 0.1,        # Bonus pour blessures/mauvaise forme
     "YOUNG_PLAYER_MIN_AGE": 16,           # Âge minimum des nouveaux joueurs
     "YOUNG_PLAYER_MAX_AGE": 20,           # Âge maximum des nouveaux joueurs
+}
+
+# Constantes pour le système de talents
+TALENT_STAT_MULTIPLIERS = {
+    TalentLevel.GENIE_PRECOCE: 1.30,     # +30% sur les stats de base
+    TalentLevel.PEPITE: 1.20,            # +20% sur les stats de base
+    TalentLevel.TALENT_BRUT: 1.10,       # +10% sur les stats de base
+    TalentLevel.JOUEUR_PROMETTEUR: 1.00, # Stats de base normales
+    TalentLevel.ESPOIR_FRAGILE: 0.90     # -10% sur les stats de base
+}
+
+# Mapping des niveaux de difficulté vers les talents
+DIFFICULTY_TO_TALENT = {
+    "Novice": TalentLevel.GENIE_PRECOCE,
+    "Facile": TalentLevel.PEPITE,
+    "Normal": TalentLevel.TALENT_BRUT,
+    "Difficile": TalentLevel.JOUEUR_PROMETTEUR,
+    "Expert": TalentLevel.ESPOIR_FRAGILE
 }
 

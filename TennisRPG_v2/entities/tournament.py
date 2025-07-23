@@ -265,6 +265,20 @@ class Tournament(ABC):
 			return 5  # Valeur par défaut
 		return int(math.ceil(math.log2(self.num_players)))
 
+	def calculate_xp_points(self, round_reached: str) -> int:
+		"""
+		Calcule les points XP selon le tour atteint sans les attribuer
+
+		Args:
+			round_reached: Tour atteint
+
+		Returns:
+			Points XP calculés
+		"""
+		# Détermine le nombre de tours pour les tournois avec configurations multiples
+		round_key = self._get_round_key_for_tournament(round_reached)
+		return self.xp_points_config.get(round_key, 0)
+
 	def assign_xp_points(self, player: 'Player', round_reached: str) -> int:
 		"""
 		Attribue les points XP selon le tour atteint
@@ -276,7 +290,7 @@ class Tournament(ABC):
 		Returns:
 			Points XP attribués
 		"""
-		xp = self.xp_points_config.get(round_reached, 0)
+		xp = self.calculate_xp_points(round_reached)
 
 		if xp > 0:
 			player.gain_experience(xp)

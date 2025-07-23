@@ -106,7 +106,7 @@ def calculate_fatigue_level(activity: str, sets_played: int = 0, tournament_cate
 	elif activity == "Tournament":
 		# Fatigue de base proportionnelle aux sets joués
 		base_fatigue = sets_played * 2
-		
+
 		# Application du coefficient spécifique au tournoi
 		if tournament_category and tournament_category in TOURNAMENT_FATIGUE_MULTIPLIERS:
 			multiplier = TOURNAMENT_FATIGUE_MULTIPLIERS[tournament_category]
@@ -118,27 +118,121 @@ def calculate_fatigue_level(activity: str, sets_played: int = 0, tournament_cate
 		return 0
 
 
-def get_participation_rate(tournament: 'Tournament') -> float:
+def get_participation_rate(tournament: 'Tournament', player=None, ranking_manager=None) -> float:
 	"""
-	Retourne le taux de participation pour un type de tournoi
+	Retourne le taux de participation pour un type de tournoi basé sur le classement du joueur
 
 	Args:
 		tournament: tournoi à prendre en compte
+		player: joueur concerné (optionnel pour compatibilité)
+		ranking_manager: gestionnaire de classement (optionnel)
 
 	Returns:
-		Taux de participation
+		Taux de participation ajusté selon le classement
 	"""
-	if tournament.category in ["Grand Slam", "ATP Finals"]:
-		participation_rate = 2 	# Huge participation rate for major tournaments
-	elif tournament.category == "Masters 1000":
-		participation_rate = 0.9
-	elif tournament.category == "ATP 500":
-		participation_rate = 0.8
-	elif tournament.category == "ATP 250":
-		participation_rate = 0.75
+	from ..data.tournaments_data import TournamentCategory
+
+	if player is None or ranking_manager is None:
+		return 1
+
+	player_rank = _get_player_rank_or_default(player, ranking_manager)
+	
+	return _calculate_participation_by_category(tournament.category, player_rank)
+
+def _get_player_rank_or_default(player, ranking_manager) -> int:
+	"""Obtient le classement du joueur ou retourne 999 si non classé"""
+	player_rank = ranking_manager.get_player_rank(player)
+	return player_rank if player_rank is not None else 999
+
+
+def _calculate_participation_by_category(category, player_rank: int) -> float:
+	"""Calcule le taux de participation selon la catégorie et le classement"""
+	from ..data.tournaments_data import TournamentCategory
+	
+	participation_rules = {
+		TournamentCategory.GRAND_SLAM: lambda rank: 2.0,
+		TournamentCategory.ATP_FINALS: lambda rank: 2.0,
+		TournamentCategory.MASTERS_1000: _masters_1000_rate,
+		TournamentCategory.ATP_500: _atp_500_rate,
+		TournamentCategory.ATP_250: _atp_250_rate,
+		TournamentCategory.CHALLENGER_175: _challenger_high_rate,
+		TournamentCategory.CHALLENGER_125: _challenger_high_rate,
+		TournamentCategory.CHALLENGER_100: _challenger_100_rate,
+		TournamentCategory.CHALLENGER_75: _challenger_low_rate,
+		TournamentCategory.CHALLENGER_50: _challenger_low_rate,
+		TournamentCategory.ITF_M25: _itf_rate,
+		TournamentCategory.ITF_M15: _itf_rate,
+	}
+	
+	rule_func = participation_rules.get(category)
+	return rule_func(player_rank) if rule_func else 1.0
+
+
+def _masters_1000_rate(player_rank: int) -> float:
+	"""Taux de participation Masters 1000"""
+	if player_rank <= 20:
+		return 0.90
+	elif player_rank <= 50:
+		return 0.85
 	else:
-		participation_rate = 0.7
-	return participation_rate
+		return 1.0
+
+
+def _atp_500_rate(player_rank: int) -> float:
+	"""Taux de participation ATP 500"""
+	if player_rank <= 10:
+		return 0.60
+	elif player_rank <= 50:
+		return 0.80
+	else:
+		return 1.0
+
+
+def _atp_250_rate(player_rank: int) -> float:
+	"""Taux de participation ATP 250"""
+	if player_rank <= 20:
+		return 0.30
+	elif player_rank <= 100:
+		return 0.70
+	else:
+		return 1.0
+
+
+def _challenger_high_rate(player_rank: int) -> float:
+	"""Taux de participation Challenger 175/125"""
+	if player_rank <= 50:
+		return 0.05
+	elif player_rank <= 150:
+		return 0.40
+	elif player_rank <= 300:
+		return 0.70
+	else:
+		return 1.0
+
+
+def _challenger_100_rate(player_rank: int) -> float:
+	"""Taux de participation Challenger 100"""
+	if player_rank <= 100:
+		return 0.02
+	elif player_rank <= 300:
+		return 0.80
+	else:
+		return 1.0
+
+
+def _challenger_low_rate(player_rank: int) -> float:
+	"""Taux de participation Challenger 75/50"""
+	if player_rank <= 200:
+		return 0.01
+	elif player_rank <= 500:
+		return 0.85
+	else:
+		return 1.0
+
+
+def _itf_rate(player_rank: int) -> float:
+	"""Taux de participation ITF"""
+	return 0.001 if player_rank <= 300 else 1.0
 
 
 def get_age_progression_factor(age: int) -> float:
@@ -178,12 +272,12 @@ def calculate_tournament_xp(tournament_category: str, round_reached: str, base_x
 		XP calculée
 	"""
 	from .constants import TOURNAMENT_XP_REWARDS, ROUND_XP_MULTIPLIERS
-	
+
 	if base_xp is None:
 		base_xp = TOURNAMENT_XP_REWARDS.get(tournament_category, 20)  # Défaut si catégorie inconnue
-	
+
 	multiplier = ROUND_XP_MULTIPLIERS.get(round_reached, 0.1)  # Défaut = premier tour
-	
+
 	return int(base_xp * multiplier)
 
 
@@ -201,14 +295,14 @@ def calculate_retirement_probability(age: int, atp_ranking: int = None) -> float
 	# Âge minimum pour prendre sa retraite
 	if age < RETIREMENT_CONSTANTS["MIN_RETIREMENT_AGE"]:
 		return 0.0
-	
+
 	# Retraite forcée à l'âge maximum
 	if age >= RETIREMENT_CONSTANTS["MAX_CAREER_AGE"]:
 		return 1.0
-	
+
 	# Probabilité sigmoidale croissante avec l'âge
-	probability = 1 / (1 + np.exp(-0.75 * (age-34.33)))
-	
+	probability = 1 / (1 + np.exp(-0.75 * (age - 34.33)))
+
 	# Ajustement selon le classement ATP (les joueurs mieux classés restent plus longtemps)
 	if atp_ranking is not None:
 		if atp_ranking <= 50:  # Top 50: réduction significative de la probabilité
@@ -219,7 +313,7 @@ def calculate_retirement_probability(age: int, atp_ranking: int = None) -> float
 			probability *= 0.9
 		elif atp_ranking > 500:  # Joueurs mal classés: augmentation
 			probability *= 1.5
-	
+
 	# Assure que la probabilité reste dans les limites [0, 1]
 	return min(1.0, max(0.0, probability))
 
@@ -237,9 +331,10 @@ def should_player_retire(player: 'Player', atp_ranking: int = None) -> bool:
 	"""
 	if not hasattr(player, 'career') or not hasattr(player.career, 'age'):
 		return False
-		
+
 	probability = calculate_retirement_probability(player.career.age, atp_ranking)
 	return random.random() < probability
+
 
 def get_round_display_name(round_name: str) -> str:
 	"""Convertit le nom interne du round en nom d'affichage"""

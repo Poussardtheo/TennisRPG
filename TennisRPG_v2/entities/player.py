@@ -8,7 +8,8 @@ from dataclasses import dataclass
 from enum import Enum
 
 from ..utils.constants import (
-	ARCHETYPES, PLAYER_CONSTANTS, STATS_WEIGHTS, HEIGHT_IMPACTS
+	ARCHETYPES, PLAYER_CONSTANTS, STATS_WEIGHTS, HEIGHT_IMPACTS,
+	TalentLevel, TALENT_STAT_MULTIPLIERS
 )
 from ..utils.helpers import (
 	generate_height, calculate_weighted_elo, calculate_experience_required, get_random_hand,
@@ -74,6 +75,7 @@ class PlayerCareer:
 	atp_points: int = 0
 	atp_race_points: int = 0
 	age: int = 20  # Âge du joueur (nouveau champ)
+	xp_total: int = 0  # XP total accumulé dans la carrière (pour tracking)
 	# ELO stocké pour chaque surface pour éviter les recalculs
 	elo_ratings: Optional[Dict[str, int]] = None
 
@@ -103,7 +105,8 @@ class Player:
 	def __init__(self, gender: Gender, first_name: str, last_name: str,
 				 country: str, height: Optional[int] = None,
 				 level: int = 1, archetype: Optional[str] = None,
-				 is_main_player: bool = False, age: Optional[int] = None):
+				 is_main_player: bool = False, age: Optional[int] = None,
+				 talent_level: Optional[TalentLevel] = None):
 
 		# Validation des paramètres
 		self._validate_init_params(gender, first_name, last_name, country, height, level)
@@ -115,6 +118,7 @@ class Player:
 		self.height = height
 		self.archetype = archetype or random.choice(list(ARCHETYPES.keys()))
 		self.is_main_player = is_main_player
+		self.talent_level = talent_level or TalentLevel.JOUEUR_PROMETTEUR
 
 		# Génération de l'âge si non spécifié
 		if age is None:
@@ -136,6 +140,7 @@ class Player:
 			self.physical.height = height
 
 		# Initialisation des statistiques
+		self._apply_talent_modifiers()
 		self._apply_height_modifiers()
 
 		if self.career.level == 1:
@@ -163,6 +168,12 @@ class Player:
 	def elo(self) -> int:
 		"""Retourne l'ELO général stocké du joueur"""
 		return self.get_elo()
+	
+	@elo.setter
+	def elo(self, value: int):
+		"""Définit l'ELO général du joueur"""
+		self._initialize_elo_ratings()
+		self.career.elo_ratings["General"] = value
 
 	def get_elo(self, surface: Optional[str] = None) -> int:
 		"""Retourne l'ELO pour une surface donnée ou général"""
@@ -215,6 +226,19 @@ class Player:
 		for surface in SURFACE_IMPACTS.keys():
 			self._calculate_and_store_elo(surface)
 
+	def _apply_talent_modifiers(self):
+		"""Applique les modificateurs de talent aux statistiques de base"""
+		talent_multiplier = TALENT_STAT_MULTIPLIERS[self.talent_level]
+		
+		# Appliquer le multiplicateur à toutes les stats de base
+		stats_dict = self.stats.to_dict()
+		for stat_name, base_value in stats_dict.items():
+			modified_value = round(base_value * talent_multiplier)
+			# S'assurer que la valeur reste dans les limites (min 10, max 70 pour les stats de base)
+			stats_dict[stat_name] = max(10, min(70, modified_value))
+		
+		self.stats.update_from_dict(stats_dict)
+
 	def _apply_height_modifiers(self):
 		"""Modifie les statistiques du joueur en fonction de la taille"""
 		mean_height = 182 if self.gender == Gender.MALE else 170
@@ -243,6 +267,7 @@ class Player:
 		adjusted_xp = round(xp * total_factor)
 
 		self.career.xp_points += adjusted_xp
+		self.career.xp_total += adjusted_xp  # Track les XP totaux
 
 		if self.is_main_player:
 			print(f"\n{self.full_name} a gagné {adjusted_xp} pts d'xp.")
@@ -413,6 +438,7 @@ class Player:
 		lines.append(f"│ Nationalité  : {self.country:<27} │")
 		lines.append(f"│ Main    : {self.physical.dominant_hand:<32} │")
 		lines.append(f"│ Revers  : {self.physical.backhand_style:<32} │")
+		lines.append(f"│ Talent  : {self.talent_level.value:<32} │")
 
 		# Situation
 		lines.append("├" + "─" * (width - 2) + "┤")
@@ -479,6 +505,7 @@ class Player:
 			"country": self.country,
 			"archetype": self.archetype,
 			"is_main_player": self.is_main_player,
+			"talent_level": self.talent_level.value,
 			"stats": asdict(self.stats),
 			"career": career_dict,
 			"physical": asdict(self.physical)
@@ -491,13 +518,24 @@ class Player:
 		# Récupère l'âge depuis les données sauvegardées ou utilise une valeur par défaut
 		saved_age = data.get("career", {}).get("age", 20)
 
+		# Support pour le talent level (rétrocompatibilité)
+		talent_level_str = data.get("talent_level", "Joueur prometteur")
+		talent_level = None
+		for talent in TalentLevel:
+			if talent.value == talent_level_str:
+				talent_level = talent
+				break
+		if talent_level is None:
+			talent_level = TalentLevel.JOUEUR_PROMETTEUR
+
 		player = cls(
 			gender=Gender(data["gender"]),
 			first_name=data["first_name"],
 			last_name=data["last_name"],
 			country=data["country"],
 			is_main_player=data.get("is_main_player", False),
-			age=saved_age
+			age=saved_age,
+			talent_level=talent_level
 		)
 
 		# Restaure les attributs principaux
@@ -523,6 +561,8 @@ class Player:
 		player.career.atp_race_points = career_data["atp_race_points"]
 		# Support pour l'âge (rétrocompatibilité)
 		player.career.age = career_data.get("age", 20)
+		# Support pour xp_total (rétrocompatibilité)
+		player.career.xp_total = career_data.get("xp_total", career_data["xp_points"])
 		# Support pour les ELO ratings (rétrocompatibilité)
 		player.career.elo_ratings = career_data.get("elo_ratings", {})
 
