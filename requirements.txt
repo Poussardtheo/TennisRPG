@@ -1,3 +1,13 @@
-Faker>=25.8.0 # To create the npc's POOL
-transliterate>=1.10.2 # To translate the name from russian alphabet
-unidecode~=1.3.8 # To decode the greek, chinese and japanese names
+Faker~=30.8.1
+transliterate~=1.10.2
+unidecode~=1.3.8
+pandas~=2.2.3
+numpy~=2.0.2
+setuptools~=72.1.0
+pytest~=8.4.1
+pytest-cov
+pytest-mock
+pytest-xdist
+scipy~=1.15.3
+memory-profiler~=0.61.0
+matplotlib~=3.10.0

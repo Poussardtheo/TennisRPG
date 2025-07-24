@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"C:\\Users\\pouss\\anaconda3\\python.exe\":*)"
+    ],
+    "defaultMode": "allowEdits",
+    "deny": []
+  }
+}

@@ -1,0 +1,217 @@
+name: 🎾 TennisRPG CI/CD Pipeline
+
+on:
+  push:
+    branches: [ master, develop, 'feature/*', 'hotfix/*' ]
+  pull_request:
+    branches: [ master, develop ]
+
+env:
+  PYTHON_VERSION: '3.9'
+
+jobs:
+  # ============================================
+  # Job 1: Tests et Quality Checks
+  # ============================================
+  test:
+    name: 🧪 Tests & Code Quality
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest pytest-cov pytest-mock
+        pip install flake8 black isort mypy
+        pip install -r requirements.txt
+        
+    - name: 🔍 Code formatting check (Black)
+      run: |
+        black --check --diff TennisRPG_v2/
+        
+    - name: 📐 Import sorting check (isort)
+      run: |
+        isort --check-only --diff TennisRPG_v2/
+        
+    - name: 🔬 Linting (flake8)
+      run: |
+        flake8 TennisRPG_v2/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 TennisRPG_v2/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
+    - name: 🏷️ Type checking (mypy)
+      run: |
+        mypy TennisRPG_v2/ --ignore-missing-imports || true
+        
+    - name: 🧪 Run tests
+      run: |
+        pytest TennisRPG_v2/tests/ -v --cov=TennisRPG_v2 --cov-report=xml --cov-report=term-missing
+        
+    - name: 📊 Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+  # ============================================
+  # Job 2: Integration Tests
+  # ============================================
+  integration:
+    name: 🔧 Integration Tests
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: 🎮 Test tournament system
+      run: |
+        python -m TennisRPG_v2.test_tournament
+        
+    - name: 🎯 Test game session creation
+      run: |
+        timeout 30 python -c "
+        import sys
+        sys.path.append('TennisRPG_v2')
+        from TennisRPG_v2.core.game_session import GameSession
+        game = GameSession()
+        print('✅ GameSession created successfully')
+        "
+
+  # ============================================
+  # Job 3: Security Scan
+  # ============================================
+  security:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: 🔍 Install security tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety
+        
+    - name: 🛡️ Run Bandit security linter
+      run: |
+        bandit -r TennisRPG_v2/ -f json -o bandit-report.json || true
+        
+    - name: 🔐 Check for vulnerabilities
+      run: |
+        safety check --json || true
+
+  # ============================================
+  # Job 4: Build & Package
+  # ============================================
+  build:
+    name: 📦 Build Package
+    runs-on: ubuntu-latest
+    needs: [test, integration]
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/develop'
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: 📦 Install build tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install build wheel
+        pip install -r requirements.txt
+        
+    - name: 🏗️ Build package
+      run: |
+        python -m build
+        
+    - name: 📤 Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: tennisrpg-package
+        path: dist/
+
+  # ============================================
+  # Job 5: Deploy (sur develop/master seulement)
+  # ============================================
+  deploy-dev:
+    name: 🚀 Deploy to Development
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/develop'
+    environment: development
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🎯 Deploy to dev environment
+      run: |
+        echo "🚀 Deploying to development environment..."
+        # Ici tu peux ajouter les commandes de déploiement
+        echo "✅ Development deployment completed"
+
+  deploy-prod:
+    name: 🌟 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/master'
+    environment: production
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🌟 Deploy to production
+      run: |
+        echo "🌟 Deploying to production environment..."
+        # Ici tu peux ajouter les commandes de déploiement
+        echo "✅ Production deployment completed"
+
+  # ============================================
+  # Job 6: Notify Success
+  # ============================================
+  notify:
+    name: 📢 Notification
+    runs-on: ubuntu-latest
+    needs: [test, integration, security]
+    if: always()
+    
+    steps:
+    - name: 📢 Notify results
+      run: |
+        if [ "${{ needs.test.result }}" = "success" ] && [ "${{ needs.integration.result }}" = "success" ]; then
+          echo "✅ All tests passed! Ready for deployment."
+        else
+          echo "❌ Some tests failed. Check the logs."
+          exit 1
+        fi
