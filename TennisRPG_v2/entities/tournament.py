@@ -121,7 +121,15 @@ class Tournament(ABC):
 		Returns:
 			True si éligible
 		"""
-		# Priorité au classement ATP si disponible (plus réaliste)
+		from ..data.tournaments_data import TournamentCategory
+		
+		# Cas spécial pour l'ATP Finals : utilise le classement race
+		if self.category == TournamentCategory.ATP_FINALS and ranking_manager:
+			race_rank = ranking_manager.atp_race_ranking.get_player_rank(player)
+			if race_rank:  # Si le joueur a un classement race
+				return race_rank <= self.eligibility_threshold
+		
+		# Pour tous les autres tournois : priorité au classement ATP si disponible (plus réaliste)
 		if ranking_manager:
 			atp_rank = ranking_manager.atp_ranking.get_player_rank(player)
 			if atp_rank:  # Si le joueur a un classement ATP
@@ -173,34 +181,52 @@ class Tournament(ABC):
 		if len(self.participants) >= self.num_players:
 			return False
 
-		if not self.is_player_eligible(player, ranking_manager):
-			return False
-
-		if player in self.participants:
+		# Vérification robuste des doublons basée sur les attributs uniques
+		player_already_in = any(
+			p.first_name == player.first_name and 
+			p.last_name == player.last_name and 
+			p.country == player.country 
+			for p in self.participants
+		)
+		
+		if player_already_in:
 			return False
 
 		self.participants.append(player)
 		return True
 
-	def get_seeded_players(self, num_seeds: int) -> List['Player']:
+	def get_seeded_players(self, num_seeds: int, ranking_manager=None) -> List['Player']:
 		"""
-		Obtient les joueurs têtes de série
+		Obtient les joueurs têtes de série basé sur le classement ATP
 
 		Args:
 			num_seeds: Nombre de têtes de série
+			ranking_manager: Gestionnaire de classement pour obtenir les rangs ATP
 
 		Returns:
-			Liste des têtes de série triée par force
+			Liste des têtes de série triée par classement ATP
 		"""
 		if not self.participants:
 			return []
 
-		# Trie par ELO décroissant
-		sorted_players = sorted(
-			self.participants,
-			key=lambda p: p.elo,
-			reverse=True
-		)
+		# Si on a un ranking_manager, trie par classement ATP
+		if ranking_manager:
+			def get_sort_key(player):
+				atp_rank = ranking_manager.atp_ranking.get_player_rank(player)
+				# Si pas de rang ATP, utilise un rang très élevé (mauvais)
+				return atp_rank if atp_rank else 9999
+			
+			sorted_players = sorted(
+				self.participants,
+				key=get_sort_key
+			)
+		else:
+			# Fallback sur ELO si pas de ranking_manager
+			sorted_players = sorted(
+				self.participants,
+				key=lambda p: p.elo,
+				reverse=True
+			)
 
 		return sorted_players[:min(num_seeds, len(sorted_players))]
 

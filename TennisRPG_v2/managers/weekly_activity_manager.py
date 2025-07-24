@@ -5,6 +5,7 @@ import random
 from typing import Dict, List, Optional
 from abc import ABC, abstractmethod
 
+from ..data.tournaments_data import TournamentCategory
 from ..entities.player import Player
 from ..entities.tournament import Tournament
 from ..managers.tournament_manager import TournamentManager
@@ -215,7 +216,15 @@ class WeeklyActivityManager:
         )
 
         # Vérifie si le joueur principal est déjà dans les participants
-        if player in participants:
+        # Utilise une comparaison robuste basée sur les attributs uniques
+        player_already_in = any(
+            p.first_name == player.first_name and 
+            p.last_name == player.last_name and 
+            p.country == player.country 
+            for p in participants
+        )
+        
+        if player_already_in:
             # Le joueur est déjà qualifié automatiquement, pas besoin de l'ajouter
             pass
         else:
@@ -223,6 +232,7 @@ class WeeklyActivityManager:
             if len(participants) < tournament.num_players:
                 participants.append(player)
             else:
+                # Todo: améliorer la logique de remplacement
                 # Le tournoi est plein, remplace le joueur avec le classement le plus proche
                 main_player_rank = self.ranking_manager.get_player_rank(player) or 999999
                 
@@ -338,10 +348,11 @@ class WeeklyActivityManager:
                 tournament.participants.clear()
                 tournament.match_results.clear()
                 tournament.eliminated_players.clear()
-                
+
                 # Ajoute les participants
                 for participant in participants:
                     tournament.add_participant(participant)
+
 
                 # Joue le tournoi en mode silencieux
                 tournament.play_tournament(verbose=False, atp_points_manager=atp_points_manager, week=week)
@@ -350,3 +361,25 @@ class WeeklyActivityManager:
                 for participant in participants:
                     if participant.full_name in available_pool:
                         del available_pool[participant.full_name]
+        
+        # Gère les joueurs qui ne participent à aucun tournoi
+        self._handle_non_participating_players(available_pool)
+    
+    def _handle_non_participating_players(self, non_participating_players: Dict[str, Player]) -> None:
+        """
+        Gère les joueurs qui ne participent à aucun tournoi cette semaine
+        50% de chance de se reposer, 50% de chance de s'entraîner
+        
+        Args:
+            non_participating_players: Dictionnaire des joueurs qui ne participent pas
+        """
+        for player in non_participating_players.values():
+            # 50% de chance de se reposer, 50% de chance de s'entraîner
+            if random.random() < 0.5:
+                # Repos
+                rest_activity = RestActivity()
+                rest_activity.execute(player)
+            else:
+                # Entraînement
+                training_activity = TrainingActivity()
+                training_activity.execute(player)

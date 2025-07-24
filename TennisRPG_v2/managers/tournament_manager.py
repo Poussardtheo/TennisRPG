@@ -66,6 +66,12 @@ class TournamentManager:
         Returns:
             Liste des participants sélectionnés
         """
+        from ..data.tournaments_data import TournamentCategory
+        
+        # Cas spécial pour l'ATP Finals - logique garantie
+        if tournament.category == TournamentCategory.ATP_FINALS:
+            return self._select_atp_finals_participants(tournament, all_players, ranking_manager)
+        
         # Trouve tous les joueurs éligibles (sans probabilité d'abord)
         all_eligible = []
         for player in all_players.values():
@@ -102,6 +108,50 @@ class TournamentManager:
             selected.extend(remaining_players[:remaining_needed])
         
         return selected
+    
+    def _select_atp_finals_participants(self, tournament: Tournament, 
+                                      all_players: Dict[str, 'Player'], 
+                                      ranking_manager=None) -> List['Player']:
+        """
+        Sélection spéciale pour l'ATP Finals - garantit exactement 8 participants
+        basés sur le classement race ATP
+        
+        Args:
+            tournament: Le tournoi ATP Finals
+            all_players: Dictionnaire de tous les joueurs
+            ranking_manager: Gestionnaire de classement
+            
+        Returns:
+            Liste des 8 participants pour l'ATP Finals
+        """
+        if not ranking_manager:
+            # Fallback sur ELO si pas de ranking manager
+            eligible = [p for p in all_players.values() 
+                       if not p.is_main_player and tournament.is_player_eligible(p, ranking_manager)]
+            eligible.sort(key=lambda p: p.elo, reverse=True)
+            return eligible[:8]
+
+        # Trie par classement race (meilleur rang = plus petit nombre)
+        from ..entities.ranking import RankingType
+        all_eligible = [p for p in all_players.values()
+                        if not p.is_main_player]
+        all_eligible.sort(key=lambda p: ranking_manager.get_player_rank(p, RankingType.ATP_RACE) or 999999)
+
+        # Prend les 8 meilleurs, mais vérifie qu'ils peuvent participer
+        selected = []
+        for player in all_eligible:
+            # Pour l'ATP Finals, seule la fatigue extrême peut empêcher la participation
+            fatigue_level = 0
+            if hasattr(player, 'physical') and hasattr(player.physical, 'fatigue'):
+                fatigue_level = player.physical.fatigue
+            # Participation quasi-garantie sauf si fatigue critique (> 95%)
+            if fatigue_level <= 95:
+                selected.append(player)
+            # Arrête dès qu'on a 8 joueurs
+            if len(selected) >= 8:
+                return selected[:8]
+
+        return selected  # Garantit exactement 8 joueurs
     
     def _should_player_participate(self, player, base_rate: float, tournament) -> bool:
         """

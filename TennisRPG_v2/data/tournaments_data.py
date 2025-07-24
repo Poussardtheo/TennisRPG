@@ -178,7 +178,7 @@ XP_POINTS_CONFIG = {
 # Si pas de classement ATP, conversion automatique vers seuil ELO équivalent
 ELIGIBILITY_THRESHOLDS = {
     TournamentCategory.GRAND_SLAM: 150,        # Directement qualifiés + invitations
-    TournamentCategory.ATP_FINALS: 12,          # Top 8 seulement
+    TournamentCategory.ATP_FINALS: 8,           # Top 8 seulement
     TournamentCategory.MASTERS_1000: 150,      # Top 100 + qualifiés + invitations
     TournamentCategory.ATP_500: 200,           # Plus ouvert que Masters
     TournamentCategory.ATP_250: 250,           # Accessible aux Top 200

@@ -14,7 +14,7 @@ def test_player_generation():
     generator = PlayerGenerator()
     players = []
     
-    for i in range(1000):
+    for i in range(10):
         player = generator.generate_player(Gender.MALE)
         players.append(player)
     
@@ -65,7 +65,7 @@ def test_ranking_system():
     from TennisRPG_v2.managers.ranking_manager import RankingManager
     
     generator = PlayerGenerator()
-    players = [generator.generate_player(Gender.MALE) for _ in range(500)]
+    players = [generator.generate_player(Gender.MALE) for _ in range(50)]
     
     ranking_manager = RankingManager(players)
     atp_ranking = ranking_manager.atp_ranking

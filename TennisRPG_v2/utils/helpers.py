@@ -348,3 +348,28 @@ def get_round_display_name(round_name: str) -> str:
 		"round_128": "64ème DE FINALE"
 	}
 	return display_names.get(round_name, f"TOUR {round_name.upper()}")
+
+
+def seed(n: int) -> list:
+	"""
+	Retourne une liste de n dans l'ordre standard de seeding d'un tournoi
+	
+	Note: n n'a pas besoin d'être une puissance de 2 - les 'byes' sont retournés comme 0
+	
+	Args:
+		n: Nombre de joueurs dans le tournoi
+		
+	Returns:
+		Liste des positions de seeding avec 0 pour les byes
+	"""
+	import math
+	
+	ol = [1]
+	
+	for i in range(math.ceil(math.log(n) / math.log(2))):
+		l = 2 * len(ol) + 1
+		ol = [e if e <= n else 0 for s in [[el, l - el] for el in ol] for e in s]
+	
+	ol = [e if e <= n else 0 for e in ol]
+	
+	return ol
