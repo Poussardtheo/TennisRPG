@@ -46,7 +46,13 @@ class TournamentManager:
         eligible_tournaments = []
         
         for tournament in available_tournaments:
-            if tournament.is_player_eligible(player, ranking_manager):
+            # Seul le joueur principal est soumis aux restrictions d'éligibilité
+            # Les PNJ peuvent participer à tous les tournois
+            if hasattr(player, 'is_main_player') and player.is_main_player:
+                if tournament.is_player_eligible(player, ranking_manager):
+                    eligible_tournaments.append(tournament)
+            else:
+                # PNJ : tous les tournois sont disponibles
                 eligible_tournaments.append(tournament)
         
         return eligible_tournaments
@@ -77,8 +83,9 @@ class TournamentManager:
         for player in all_players.values():
             if player.is_main_player:
                 continue    # Ignore les joueurs principaux pour cette sélection
-            if tournament.is_player_eligible(player, ranking_manager):
-                all_eligible.append(player)
+            # Les PNJ ne sont pas soumis aux restrictions d'éligibilité
+            # Seul le joueur principal doit respecter les seuils de classement
+            all_eligible.append(player)
         
         # Trie par force décroissante (meilleurs en premier, plus faibles en dernier)
         if ranking_manager:
@@ -126,8 +133,9 @@ class TournamentManager:
         """
         if not ranking_manager:
             # Fallback sur ELO si pas de ranking manager
+            # Les PNJ ne sont pas soumis aux restrictions d'éligibilité pour l'ATP Finals
             eligible = [p for p in all_players.values() 
-                       if not p.is_main_player and tournament.is_player_eligible(p, ranking_manager)]
+                       if not p.is_main_player]
             eligible.sort(key=lambda p: p.elo, reverse=True)
             return eligible[:8]
 

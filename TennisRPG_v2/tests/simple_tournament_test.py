@@ -47,7 +47,7 @@ try:
         
         # Add some basic AI players
         generator = PlayerGenerator()
-        for i in range(7):  # Small tournament for testing
+        for i in range(tournament.num_players):
             ai_player = generator.generate_player(Gender.MALE)
             tournament.add_participant(ai_player)
         

@@ -195,7 +195,7 @@ class TestIntegration:
         # Génère des joueurs de test
         generator = PlayerGenerator()
         players = {generator.generate_player(Gender.MALE).full_name: generator.generate_player(Gender.MALE) for _ in
-                   range(8)}
+                   range(geneva_open.num_players)}
 
         # Nettoie le tournoi
         geneva_open.participants.clear()

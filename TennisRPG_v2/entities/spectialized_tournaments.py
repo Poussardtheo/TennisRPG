@@ -16,13 +16,14 @@ class EliminationTournament(Tournament):
 
 	def play_tournament(self, verbose: bool = None, atp_points_manager=None, week: int = None, ranking_manager=None) -> TournamentResult:
 		"""Joue un tournoi à élimination directe"""
-		assert len(self.participants) == self.num_players, "Le tournoi contient le bon nombre de joueurs"
+		assert len(self.participants) == self.num_players, (f"Le tournoi contient le mauvais nombre de joueurs"
+															f"\nAttendu: {self.num_players}, trouvé: {len(self.participants)}")
 
 		self.status = TournamentStatus.IN_PROGRESS
 
 		# Trouve le joueur principal et initialise le tracking
 		main_player = None
-		main_player_atp_points = 0
+		self._main_player_atp_points = 0
 		main_player_initial_xp_total = 0
 
 		for player in self.participants:
@@ -131,7 +132,7 @@ class EliminationTournament(Tournament):
 					
 					# Suit les points ATP du joueur principal
 					if main_player and loser == main_player:
-						main_player_atp_points += atp_points
+						self._main_player_atp_points += atp_points
 					
 					next_bracket.append(winner)
 					
@@ -179,13 +180,13 @@ class EliminationTournament(Tournament):
 		if main_player:
 			if winner == main_player:
 				# Le joueur principal a gagné
-				main_player_atp_points += atp_points_winner
+				self._main_player_atp_points += atp_points_winner
 
 			# Calcule les XP réellement gagnés
 			main_player_xp_gained = main_player.career.xp_total - main_player_initial_xp_total
 
 			print(f"\n📊 RÉCAPITULATIF DU TOURNOI:")
-			print(f"   💰 Points ATP gagnés: {main_player_atp_points}")
+			print(f"   💰 Points ATP gagnés: {self._main_player_atp_points}")
 			print(f"   ⭐ Points XP gagnés: {main_player_xp_gained}")
 
 		self.status = TournamentStatus.COMPLETED
@@ -286,8 +287,8 @@ class ATPFinals(Tournament):
 
 		# Trouve le joueur principal et initialise le tracking
 		main_player = None
-		main_player_atp_points = 0
 		main_player_initial_xp_total = 0
+		self._main_player_atp_points = 0  # Track les points ATP du joueur principal
 
 		for player in self.participants:
 			if hasattr(player, 'is_main_player') and player.is_main_player:
@@ -339,13 +340,13 @@ class ATPFinals(Tournament):
 		if main_player:
 			if winner == main_player:
 				# Le joueur principal a gagné
-				main_player_atp_points += atp_points_winner
+				self._main_player_atp_points += atp_points_winner
 
 			# Calcule les XP réellement gagnés
 			main_player_xp_gained = main_player.career.xp_total - main_player_initial_xp_total
 
 			print(f"\n📊 RÉCAPITULATIF DU TOURNOI:")
-			print(f"   💰 Points ATP gagnés: {main_player_atp_points}")
+			print(f"   💰 Points ATP gagnés: {self._main_player_atp_points}")
 			print(f"   ⭐ Points XP gagnés: {main_player_xp_gained}")
 
 		self.status = TournamentStatus.COMPLETED
@@ -406,7 +407,11 @@ class ATPFinals(Tournament):
 				results[match_result.loser]["sets_lost"] += match_result.sets_won
 
 				# Points ATP pour chaque victoire en poule
-				self.assign_atp_points(match_result.winner, "round_robin_win", atp_points_manager, week)
+				atp_points_gained = self.assign_atp_points(match_result.winner, "round_robin_win", atp_points_manager, week)
+				# Track les points ATP du joueur principal
+				if hasattr(match_result.winner, 'is_main_player') and match_result.winner.is_main_player:
+					if hasattr(self, '_main_player_atp_points'):
+						self._main_player_atp_points += atp_points_gained
 				xp_points = self.calculate_xp_points("round_robin_win")
 				if xp_points > 0:
 					match_result.winner.gain_experience(xp_points)
@@ -465,8 +470,15 @@ class ATPFinals(Tournament):
 		self.eliminated_players[semi2.loser] = "semifinalist"
 
 		# Attribue les points
-		self.assign_atp_points(semi1.loser, "semifinalist", atp_points_manager, week)
-		self.assign_atp_points(semi2.loser, "semifinalist", atp_points_manager, week)
+		atp_points_semi1 = self.assign_atp_points(semi1.loser, "semifinalist", atp_points_manager, week)
+		atp_points_semi2 = self.assign_atp_points(semi2.loser, "semifinalist", atp_points_manager, week)
+		# Track les points ATP du joueur principal
+		if hasattr(semi1.loser, 'is_main_player') and semi1.loser.is_main_player:
+			if hasattr(self, '_main_player_atp_points'):
+				self._main_player_atp_points += atp_points_semi1
+		if hasattr(semi2.loser, 'is_main_player') and semi2.loser.is_main_player:
+			if hasattr(self, '_main_player_atp_points'):
+				self._main_player_atp_points += atp_points_semi2
 		xp_points_semi = self.calculate_xp_points("semifinalist")
 		if xp_points_semi > 0:
 			semi1.loser.gain_experience(xp_points_semi)
@@ -489,7 +501,11 @@ class ATPFinals(Tournament):
 		self.eliminated_players[final_match.loser] = "finalist"
 
 		# Attribue les points au finaliste
-		self.assign_atp_points(final_match.loser, "finalist", atp_points_manager, week)
+		atp_points_finalist = self.assign_atp_points(final_match.loser, "finalist", atp_points_manager, week)
+		# Track les points ATP du joueur principal
+		if hasattr(final_match.loser, 'is_main_player') and final_match.loser.is_main_player:
+			if hasattr(self, '_main_player_atp_points'):
+				self._main_player_atp_points += atp_points_finalist
 		xp_points_final = self.calculate_xp_points("finalist")
 		if xp_points_final > 0:
 			final_match.loser.gain_experience(xp_points_final)

@@ -104,7 +104,7 @@ class GameSessionController:
             current_sim_year = preliminary_start_year + year
             self.ui.display_preliminary_simulation_year(current_sim_year)
             
-            for week in range(1, TIME_CONSTANTS["WEEKS_PER_YEAR"] + 1):  # 52 semaines par an
+            for week in range(1, TIME_CONSTANTS["WEEKS_PER_YEAR"]*10 + 1):  # 52 semaines par an, 10 ans de simulation
                 self._simulate_week_preliminarily(week)
                 
                 # Progress tous les 6 mois
@@ -215,7 +215,8 @@ class GameSessionController:
         self.ui.display_atp_points_to_defend(
             self.state.main_player, 
             self.state.ranking_manager, 
-            points_to_defend
+            points_to_defend,
+            self.state.current_week
         )
         
     def _display_player_id_card(self) -> None:
@@ -331,7 +332,7 @@ class GameSessionController:
         
         # Affiche le résultat
         self.ui.display_activity_result(result)
-        
+
         # Avance à la semaine suivante
         self._advance_week()
         

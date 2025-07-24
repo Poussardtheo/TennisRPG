@@ -56,6 +56,9 @@ class ATPPointsManager:
 		
 		# Délègue la gestion de l'historique au ranking manager
 		self.ranking_manager.add_atp_points(player.full_name, points, week)
+		
+		# Marque les classements comme nécessitant une mise à jour
+		self.ranking_manager.mark_rankings_for_update()
 
 	def remove_weekly_points(self, player: 'Player', week: int):
 		"""
@@ -74,6 +77,9 @@ class ATPPointsManager:
 		if points_to_remove > 0:
 			player.career.atp_points -= points_to_remove
 			# Le ranking manager gère déjà la remise à zéro via advance_week()
+			
+			# Marque les classements comme nécessitant une mise à jour
+			self.ranking_manager.mark_rankings_for_update()
 
 	def get_player_points(self, player: 'Player', week: Optional[int] = None) -> int:
 		"""

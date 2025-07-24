@@ -52,7 +52,7 @@ class TestPerformance:
         # Génère des joueurs
         generator = PlayerGenerator()
         players = {generator.generate_player(Gender.MALE).full_name: generator.generate_player(Gender.MALE)
-                   for _ in range(32)}
+                   for _ in range(tournament.num_players)}
         
         # Nettoie le tournoi
         tournament.participants.clear()

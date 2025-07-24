@@ -76,6 +76,19 @@ class GameSessionState:
         """Avance d'une semaine, retourne True si nouvelle année"""
         self.current_week += 1
         
+        # Retire les points ATP expirés avant de passer à la semaine suivante
+        if self.ranking_manager:
+            # Synchronise avec la semaine qu'on vient d'avancer
+            self.ranking_manager.current_week = self.current_week
+            # Retire les points qui expirent cette semaine
+            for player_name, player in self.ranking_manager.players.items():
+                points_to_lose = self.ranking_manager.get_points_to_defend(player_name, self.current_week)
+                player.career.atp_points = max(0,player.career.atp_points - points_to_lose)
+            # Remet à zéro la colonne de la nouvelle semaine
+            week_col = f"week_{self.current_week}"
+            if week_col in self.ranking_manager.atp_points_history.columns:
+                self.ranking_manager.atp_points_history[week_col] = 0
+        
         if self.current_week > TIME_CONSTANTS["WEEKS_PER_YEAR"]:
             self.current_week = 1
             self.current_year += 1

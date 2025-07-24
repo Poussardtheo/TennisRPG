@@ -37,7 +37,7 @@ def test_tournament_simulation():
     # Génère des joueurs
     generator = PlayerGenerator()
     players = {generator.generate_player(Gender.MALE).full_name: generator.generate_player(Gender.MALE)
-               for _ in range(64)}
+               for _ in range(tournament.num_players)}
     
     # Nettoie et configure le tournoi
     tournament.participants.clear()

@@ -37,6 +37,7 @@ class RankingManager:
         )
         
         self.current_week = 1
+        self._rankings_need_update = False  # Flag pour savoir si les classements doivent être mis à jour
         
     def _initialize_all_rankings(self) -> None:
         """Initialise tous les classements avec les données actuelles des joueurs"""
@@ -63,6 +64,13 @@ class RankingManager:
             reverse=True
         )
         self.elo_ranking.update_rankings(elo_players)
+        
+        # Marque les classements comme à jour
+        self._rankings_need_update = False
+        
+    def mark_rankings_for_update(self) -> None:
+        """Marque les classements comme nécessitant une mise à jour"""
+        self._rankings_need_update = True
         
     def _get_ranking_by_type(self, ranking_type: RankingType) -> Ranking:
         """Retourne l'objet ranking correspondant au type"""
@@ -109,6 +117,9 @@ class RankingManager:
         Returns:
             Position dans le classement ou None si non classé
         """
+        # Met à jour les classements seulement si nécessaire
+        if self._rankings_need_update:
+            self._initialize_all_rankings()
         if ranking_type == RankingType.ATP:
             return self.atp_ranking.get_player_rank(player)
         elif ranking_type == RankingType.ATP_RACE:
@@ -182,6 +193,9 @@ class RankingManager:
             points_to_lose = self.get_points_to_defend(player_name, self.current_week)
             player.career.atp_points = max(0, player.career.atp_points - points_to_lose)
         
+        # Marque les classements pour mise à jour après modification des points
+        self.mark_rankings_for_update()
+        
         # Avance la semaine
         self.current_week = (self.current_week % TIME_CONSTANTS["WEEKS_PER_YEAR"]) + 1
         
@@ -201,6 +215,9 @@ class RankingManager:
             count: Nombre de joueurs à afficher
             start_rank: Rang de départ pour l'affichage (1-based)
         """
+        # Met à jour les classements seulement si nécessaire
+        if self._rankings_need_update:
+            self._initialize_all_rankings()
         print(f"\n🏆 CLASSEMENT {ranking_type.value.upper()}")
         if start_rank > 1:
             print(f"📍 Affichage du rang {start_rank} à {start_rank + count - 1}")

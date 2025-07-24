@@ -2,13 +2,14 @@
 Game Session UI - Gestion de toute l'interface utilisateur
 Extrait de GameSession pour une meilleure séparation des responsabilités
 """
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 from ..entities.player import Player, Gender
 from ..entities.ranking import RankingType
 from ..utils.constants import DIFFICULTY_TO_TALENT
+from .interfaces import IGameUI
 
 
-class GameSessionUI:
+class GameSessionUI(IGameUI):
     """Gère toute l'interface utilisateur du jeu"""
     
     def display_welcome(self) -> None:
@@ -219,7 +220,7 @@ class GameSessionUI:
         return start_rank, count
         
     def display_atp_points_to_defend(self, main_player: Player, ranking_manager, 
-                                   points_to_defend: int) -> None:
+                                   points_to_defend: int, current_week: int = None) -> None:
         """Affiche les points ATP à défendre"""
         print("🏆 Points ATP à défendre cette semaine:")
         
@@ -239,8 +240,10 @@ class GameSessionUI:
         # Affiche les semaines suivantes avec des points à défendre
         print("\n📅 Points à défendre dans les prochaines semaines:")
         future_points = []
+        # Utilise la vraie semaine courante si fournie, sinon fallback vers ranking_manager
+        week_to_use = current_week if current_week is not None else ranking_manager.current_week
         for i in range(1, 5):  # 4 semaines suivantes
-            future_week = (ranking_manager.current_week + i - 1) % 52 + 1
+            future_week = (week_to_use + i - 1) % 52 + 1
             future_defend = ranking_manager.get_points_to_defend(
                 main_player.full_name, future_week
             )
