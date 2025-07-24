@@ -10,6 +10,7 @@ from ..entities.player import Player
 from ..entities.tournament import Tournament
 from ..managers.tournament_manager import TournamentManager
 from ..managers.ranking_manager import RankingManager
+from ..managers.injury_manager import InjuryManager
 from ..utils.constants import ACTIVITIES, TIME_CONSTANTS, BASE_TRAINING_XP
 from ..utils.helpers import get_round_display_name
 
@@ -31,7 +32,7 @@ class Activity(ABC):
     """Classe abstraite pour toutes les activités"""
     
     @abstractmethod
-    def execute(self, player: Player) -> ActivityResult:
+    def execute(self, player: Player, injury_manager: 'InjuryManager' = None) -> ActivityResult:
         """Exécute l'activité pour le joueur"""
         pass
     
@@ -44,7 +45,7 @@ class Activity(ABC):
 class TrainingActivity(Activity):
     """Activité d'entraînement"""
     
-    def execute(self, player: Player) -> ActivityResult:
+    def execute(self, player: Player, injury_manager: InjuryManager = None) -> ActivityResult:
         # Gain d'expérience (réduit pour équilibrer avec les nouvelles sources d'XP)
         xp_gained = random.randint(BASE_TRAINING_XP["min"], BASE_TRAINING_XP["max"])
         player.gain_experience(xp_gained)
@@ -52,6 +53,11 @@ class TrainingActivity(Activity):
         # Gestion de la fatigue - utilisation méthode centralisée
         fatigue_increase = player.manage_fatigue("Entrainement", display=True)
         fatigue_increase -= TIME_CONSTANTS["FATIGUE_NATURAL_RECOVERY"]  # Récupération naturelle de la fatigue
+
+        # Vérification des blessures pendant l'entraînement
+        injury = None
+        if injury_manager:
+            injury = injury_manager.process_activity_injury(player, "Entraînement")
 
         # Message personnalisé
         gender_suffix = "e" if player.gender.value == "f" else ""
@@ -69,16 +75,24 @@ class TrainingActivity(Activity):
 class RestActivity(Activity):
     """Activité de repos"""
     
-    def execute(self, player: Player) -> ActivityResult:
+    def execute(self, player: Player, injury_manager: InjuryManager = None) -> ActivityResult:
         # Récupération de fatigue - utilisation méthode centralisée
         player.rest()
         fatigue_recovery = 4  # Valeur approximative pour l'affichage
+        
+        # Guérison des blessures pendant le repos
+        if injury_manager:
+            healed_injuries = player.heal_injuries(weeks=1)
         
         # Message personnalisé
         gender_suffix = "e" if player.gender.value == "f" else ""
         current_fatigue = player.physical.fatigue if hasattr(player, 'physical') else 0
         message = f"{player.first_name} s'est reposé{gender_suffix} cette semaine.\n"
         message += f"Niveau de fatigue actuel: {current_fatigue}%"
+        
+        # Ajout info blessures si applicable
+        if player.is_injured():
+            message += f"\n{player.get_injury_status_display()}"
         
         result = ActivityResult("Repos", True, message)
         result.fatigue_change = -fatigue_recovery
@@ -94,7 +108,7 @@ class TournamentActivity(Activity):
     def __init__(self, tournament: Tournament):
         self.tournament = tournament
     
-    def execute(self, player: Player) -> ActivityResult:
+    def execute(self, player: Player, injury_manager: InjuryManager = None) -> ActivityResult:
         # La logique de tournoi sera gérée par le WeeklyActivityManager
         gender_suffix = "e" if player.gender.value == "f" else ""
         message = f"{player.first_name} a participé{gender_suffix} au tournoi: {self.tournament.name}"
@@ -108,9 +122,11 @@ class TournamentActivity(Activity):
 class WeeklyActivityManager:
     """Gestionnaire des activités hebdomadaires"""
     
-    def __init__(self, tournament_manager: TournamentManager, ranking_manager: RankingManager):
+    def __init__(self, tournament_manager: TournamentManager, ranking_manager: RankingManager,
+                 injury_manager: Optional[InjuryManager] = None):
         self.tournament_manager = tournament_manager
         self.ranking_manager = ranking_manager
+        self.injury_manager = injury_manager or InjuryManager()
         
         # Activités de base (toujours disponibles)
         self.base_activities = [
@@ -164,10 +180,30 @@ class WeeklyActivityManager:
             print("📅 Aucun tournoi cette semaine")
         
         print("\n" + "=" * 40)
+        
+        # Affiche l'état de santé si pas de blessure grave
+        if not player.is_injured():
+            print(f"💚 STATUT MÉDICAL: {player.get_injury_status_display()}")
+        else:
+            print(f"\n🏥 STATUT MÉDICAL:")
+            print(player.get_injury_status_display())
+            print("\n⚠️  Repos obligatoire en raison de blessure(s)!")
     
     def choose_activity(self, player: Player, week: int) -> Optional[Activity]:
         """Interface de choix d'activité"""
         activities = self.get_available_activities(player, week)
+        
+        # Si le joueur est blessé, on arrête l'affichage ici car seul le repos est disponible
+        if player.is_injured():
+            print("\n🎯 ACTIVITÉ OBLIGATOIRE:")
+            print("-" * 25)
+            print("1: 😴 Repos - Récupère de la fatigue et guérit les blessures")
+            # Trouve et retourne l'activité de repos
+            for activity in activities:
+                if isinstance(activity, RestActivity):
+                    return activity
+            # Si pas trouvée, crée une nouvelle activité de repos
+            return RestActivity()
         
         print("\n🎯 ACTIVITÉS DISPONIBLES:")
         print("-" * 25)
@@ -187,23 +223,26 @@ class WeeklyActivityManager:
                 print("❌ Choix invalide, veuillez réessayer")
     
     def execute_activity(self, player: Player, activity: Activity, week: int, 
-                        all_players: Dict[str, Player], atp_points_manager=None) -> ActivityResult:
+                        all_players: Dict[str, Player], atp_points_manager=None, injury_manager=None) -> ActivityResult:
         """Exécute une activité choisie"""
         
+        # Utilise l'injury_manager passé en paramètre ou celui par défaut
+        active_injury_manager = injury_manager or self.injury_manager
+        
         if isinstance(activity, TournamentActivity):
-            return self._execute_tournament_activity(player, activity, week, all_players, atp_points_manager)
+            return self._execute_tournament_activity(player, activity, week, all_players, atp_points_manager, active_injury_manager)
         else:
 
             # Exécute l'activité de base
-            result = activity.execute(player)
+            result = activity.execute(player, active_injury_manager)
 
             # Simule les autres tournois de la semaine (sans le joueur principal)
-            self._simulate_other_tournaments(player, week, all_players, atp_points_manager)
+            self._simulate_other_tournaments(player, week, all_players, atp_points_manager, active_injury_manager)
 
             return result
     
     def _execute_tournament_activity(self, player: Player, tournament_activity: TournamentActivity,
-                                   week: int, all_players: Dict[str, Player], atp_points_manager) -> ActivityResult:
+                                   week: int, all_players: Dict[str, Player], atp_points_manager, injury_manager=None) -> ActivityResult:
         """Exécute la participation à un tournoi"""
         tournament = tournament_activity.tournament
         
@@ -261,7 +300,7 @@ class WeeklyActivityManager:
             tournament.add_participant(participant)
         
         # Joue le tournoi (verbose car joueur principal présent)
-        tournament_result = tournament.play_tournament(verbose=True, atp_points_manager=atp_points_manager, week=week)
+        tournament_result = tournament.play_tournament(verbose=True, atp_points_manager=atp_points_manager, week=week, injury_manager=injury_manager)
         
         # Simule les autres tournois de la semaine
         other_tournaments = [t for t in self.tournament_manager.get_tournaments_for_week(week) 
@@ -310,21 +349,21 @@ class WeeklyActivityManager:
             else:
                 print("❌ Choix invalide, veuillez réessayer")
     
-    def _simulate_other_tournaments(self, player: Player, week: int, all_players: Dict[str, Player], atp_points_manager=None) -> None:
+    def _simulate_other_tournaments(self, player: Player, week: int, all_players: Dict[str, Player], atp_points_manager=None, injury_manager=None) -> None:
         """Simule les autres tournois de la semaine (sans le joueur principal)"""
         tournaments = self.tournament_manager.get_tournaments_for_week(week)
 
         available_players = {name: p for name, p in all_players.items() 
                            if p != player and p.gender == player.gender}
 
-        self._simulate_tournaments_list(tournaments, available_players, atp_points_manager=atp_points_manager, week=week)
+        self._simulate_tournaments_list(tournaments, available_players, atp_points_manager=atp_points_manager, week=week, injury_manager=injury_manager)
 
         # Met à jour les classements
         self.ranking_manager.update_weekly_rankings()
 
     def _simulate_tournaments_list(self, tournaments: List[Tournament], 
                                  available_players: Dict[str, Player], 
-                                 exclude_players: List[Player] = None, atp_points_manager=None, week: int = None) -> None:
+                                 exclude_players: List[Player] = None, atp_points_manager=None, week: int = None, injury_manager=None) -> None:
         """Simule une liste de tournois"""
         if exclude_players is None:
             exclude_players = []
@@ -355,7 +394,7 @@ class WeeklyActivityManager:
 
 
                 # Joue le tournoi en mode silencieux
-                tournament.play_tournament(verbose=False, atp_points_manager=atp_points_manager, week=week)
+                tournament.play_tournament(verbose=False, atp_points_manager=atp_points_manager, week=week, injury_manager=injury_manager or self.injury_manager)
 
                 # Retire les participants du pool disponible
                 for participant in participants:

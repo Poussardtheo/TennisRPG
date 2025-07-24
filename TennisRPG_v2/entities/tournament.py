@@ -323,13 +323,14 @@ class Tournament(ABC):
 
 		return xp
 
-	def simulate_match(self, player1: 'Player', player2: 'Player') -> MatchResult:
+	def simulate_match(self, player1: 'Player', player2: 'Player', injury_manager=None) -> MatchResult:
 		"""
 		Simule un match entre deux joueurs
 
 		Args:
 			player1: Premier joueur
 			player2: Deuxième joueur
+			injury_manager: Gestionnaire des blessures (optionnel)
 
 		Returns:
 			Résultat du match
@@ -367,6 +368,17 @@ class Tournament(ABC):
 		winner.manage_fatigue("Tournament", sets_played_total, self.category.value)
 		loser.manage_fatigue("Tournament", sets_played_total, self.category.value)
 
+		# Vérification des blessures après le match
+		if injury_manager:
+			winner_injury = injury_manager.process_activity_injury(winner, "Tournoi", sets_played_total, self.category.value)
+			loser_injury = injury_manager.process_activity_injury(loser, "Tournoi", sets_played_total, self.category.value)
+			
+			# Affichage des blessures si le joueur principal est concerné
+			if hasattr(winner, 'is_main_player') and winner.is_main_player and winner_injury:
+				print(f"\n🏥 {winner.full_name} s'est blessé pendant le match : {winner_injury.name}")
+			elif hasattr(loser, 'is_main_player') and loser.is_main_player and loser_injury:
+				print(f"\n🏥 {loser.full_name} s'est blessé pendant le match : {loser_injury.name}")
+
 		# Note: L'XP de tournoi est attribuée seulement à la fin selon le tour atteint
 		# Pas d'XP attribuée à chaque match pour éviter la double attribution
 
@@ -383,7 +395,7 @@ class Tournament(ABC):
 		return any(hasattr(p, 'is_main_player') and p.is_main_player for p in self.participants)
 
 	@abstractmethod
-	def play_tournament(self, verbose: bool = None, atp_points_manager=None, week: int = None) -> TournamentResult:
+	def play_tournament(self, verbose: bool = None, atp_points_manager=None, week: int = None, injury_manager=None) -> TournamentResult:
 		"""
 		Joue le tournoi (méthode abstraite)
 

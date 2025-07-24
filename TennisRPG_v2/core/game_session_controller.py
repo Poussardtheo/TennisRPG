@@ -125,7 +125,8 @@ class GameSessionController:
             week=week, 
             all_players=self.state.all_players,
             ranking_manager=self.state.ranking_manager,
-            atp_points_manager=self.state.atp_points_manager
+            atp_points_manager=self.state.atp_points_manager,
+            injury_manager=self.state.injury_manager
         )
         # Met à jour les classements
         self.state.update_weekly_rankings()
@@ -327,7 +328,7 @@ class GameSessionController:
         
         result = self.state.activity_manager.execute_activity(
             self.state.main_player, chosen_activity, self.state.current_week, 
-            self.state.all_players, self.state.atp_points_manager
+            self.state.all_players, self.state.atp_points_manager, self.state.injury_manager
         )
         
         # Affiche le résultat
@@ -361,7 +362,7 @@ class GameSessionController:
                         elimination_round = tournament.eliminated_players[self.state.main_player]
                         # Si éliminé dans les 3 premiers tours (round_128, round_64, round_32), 1 semaine
                         if elimination_round in ["round_128", "round_64", "round_32"]:
-                            return 13
+                            return 1
                     # Si le joueur a gagné ou a été éliminé tard, 2 semaines
                     elif tournament.participants and any(
                         hasattr(p, 'is_main_player') and p.is_main_player 
@@ -419,6 +420,16 @@ class GameSessionController:
         
         # Récupération naturelle de fatigue - utilisation méthode centralisée
         self.state.apply_natural_fatigue_recovery()
+        
+        # Traitement hebdomadaire des blessures pour tous les joueurs
+        if self.state.injury_manager:
+            all_players_list = list(self.state.all_players.values())
+            weekly_injuries = self.state.injury_manager.process_weekly_injuries(all_players_list)
+            
+            # Affichage des nouvelles blessures si le joueur principal est concerné
+            if self.state.main_player and self.state.main_player.is_injured():
+                current_injuries = [inj.name for inj in self.state.main_player.injuries]
+                print(f"\n🏥 Blessures actuelles : {', '.join(current_injuries)}")
         
     def _process_end_of_year_retirements(self) -> None:
         """Traite les retraites et la rotation des joueurs en fin d'année"""

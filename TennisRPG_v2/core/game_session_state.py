@@ -11,6 +11,7 @@ from ..managers.ranking_manager import RankingManager
 from ..managers.weekly_activity_manager import WeeklyActivityManager
 from ..managers.atp_points_manager import ATPPointsManager
 from ..managers.retirement_manager import RetirementManager
+from ..managers.injury_manager import InjuryManager
 from ..utils.constants import TIME_CONSTANTS
 from .save_manager import SaveManager, GameState
 
@@ -32,6 +33,7 @@ class GameSessionState:
         self.activity_manager: Optional[WeeklyActivityManager] = None
         self.atp_points_manager: Optional[ATPPointsManager] = None
         self.retirement_manager = RetirementManager(self.player_generator)
+        self.injury_manager = InjuryManager()
         self.save_manager = SaveManager()
         
         # État de session
@@ -117,7 +119,7 @@ class GameSessionState:
         """Initialise l'activity manager"""
         if self.ranking_manager:
             self.activity_manager = WeeklyActivityManager(
-                self.tournament_manager, self.ranking_manager
+                self.tournament_manager, self.ranking_manager, self.injury_manager
             )
             
     def add_main_player_to_managers(self) -> None:

@@ -5,3 +5,4 @@ from TennisRPG_v2.core.game_session_refactored import main
 
 if __name__ == "__main__":
     main()
+1

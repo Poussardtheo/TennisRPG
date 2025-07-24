@@ -89,10 +89,10 @@ FATIGUE_VALUES = {
 
 # Coefficients de fatigue par catégorie de tournoi
 TOURNAMENT_FATIGUE_MULTIPLIERS = {
-    "Grand Slam": 2.5,          # Bo5, plus exigeant physiquement
-    "ATP Finals": 2.2,          # Elite level, haute intensité
+    "Grand Slam": 2.2,          # Bo5, plus exigeant physiquement
+    "ATP Finals": 2,          # Elite level, haute intensité
     "Masters 1000": 1.8,        # Tournois de prestige, plus exigeants
-    "ATP 500": 1.3,             # Niveau intermédiaire
+    "ATP 500": 1.5,             # Niveau intermédiaire
     "ATP 250": 1.0,             # Coefficient de base
     "Challenger 175": 0.9,      # Moins exigeant que l'ATP
     "Challenger 125": 0.8,
@@ -220,5 +220,14 @@ DIFFICULTY_TO_TALENT = {
     "Normal": TalentLevel.TALENT_BRUT,
     "Difficile": TalentLevel.JOUEUR_PROMETTEUR,
     "Expert": TalentLevel.ESPOIR_FRAGILE
+}
+
+# Constantes pour le système de blessures
+INJURY_CONSTANTS = {
+    "HIGH_FATIGUE_THRESHOLD": 80,           # Seuil de fatigue élevée
+    "VERY_HIGH_FATIGUE_THRESHOLD": 90,      # Seuil de fatigue très élevée
+    "HIGH_FATIGUE_INJURY_MULTIPLIER": 2.0,  # Multiplicateur de risque pour fatigue >80%
+    "VERY_HIGH_FATIGUE_INJURY_MULTIPLIER": 3.5,  # Multiplicateur de risque pour fatigue >90%
+    "CRITICAL_FATIGUE_INJURY_PROBABILITY": 0.8,  # 25% de chance de blessure si fatigue >95%
 }
 

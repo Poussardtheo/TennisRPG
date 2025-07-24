@@ -14,7 +14,7 @@ from ..utils.helpers import get_round_display_name, get_gender_agreement, seed
 class EliminationTournament(Tournament):
 	"""Tournoi à élimination directe classique"""
 
-	def play_tournament(self, verbose: bool = None, atp_points_manager=None, week: int = None, ranking_manager=None) -> TournamentResult:
+	def play_tournament(self, verbose: bool = None, atp_points_manager=None, week: int = None, ranking_manager=None, injury_manager=None) -> TournamentResult:
 		"""Joue un tournoi à élimination directe"""
 		assert len(self.participants) == self.num_players, (f"Le tournoi contient le mauvais nombre de joueurs"
 															f"\nAttendu: {self.num_players}, trouvé: {len(self.participants)}")
@@ -106,7 +106,7 @@ class EliminationTournament(Tournament):
 					if verbose:
 						print(f"⚔️  {player1.full_name} vs {player2.full_name}")
 					
-					match_result = self.simulate_match(player1, player2)
+					match_result = self.simulate_match(player1, player2, injury_manager)
 					self.match_results.append(match_result)
 					
 					winner = match_result.winner
@@ -277,7 +277,7 @@ class ATPFinals(Tournament):
 
 		self.config = SPECIAL_TOURNAMENT_CONFIG["ATP_FINALS"]
 
-	def play_tournament(self, verbose: bool = None, atp_points_manager=None, week: int = None) -> TournamentResult:
+	def play_tournament(self, verbose: bool = None, atp_points_manager=None, week: int = None, injury_manager=None) -> TournamentResult:
 		"""Joue le tournoi ATP Finals"""
 		if len(self.participants) != 8:
 			print(f"⚠️ il n'y a actuellement que {len(self.participants)} joueurs.")
@@ -312,13 +312,13 @@ class ATPFinals(Tournament):
 		if verbose:
 			print(f"\n📊 PHASE DE POULES")
 			print("-" * 30)
-		qualified_players = self._play_group_stage(verbose, atp_points_manager, week)
+		qualified_players = self._play_group_stage(verbose, atp_points_manager, week, injury_manager)
 
 		# Phase finale (demi-finales + finale)
 		if verbose:
 			print(f"\n📊 PHASE FINALE")
 			print("-" * 30)
-		winner = self._play_knockout_stage(qualified_players, verbose, atp_points_manager, week)
+		winner = self._play_knockout_stage(qualified_players, verbose, atp_points_manager, week, injury_manager)
 
 		# Affichage du vainqueur seulement si verbose ou si joueur principal gagne
 		if verbose or (hasattr(winner, 'is_main_player') and winner.is_main_player):
@@ -354,7 +354,7 @@ class ATPFinals(Tournament):
 		return self._create_tournament_result(winner)
 
 	def _play_group_stage(self, verbose: bool = True, atp_points_manager=None,
-					week=None) -> List['Player']:
+					week=None, injury_manager=None) -> List['Player']:
 		"""Joue la phase de poules"""
 		# Divise en 2 groupes de 4 joueurs
 		group1 = self.participants[:4]
@@ -366,8 +366,8 @@ class ATPFinals(Tournament):
 			print()
 
 		# Joue chaque groupe
-		qualified1 = self._play_group(group1, "A", verbose, atp_points_manager=atp_points_manager, week=week)
-		qualified2 = self._play_group(group2, "B", verbose, atp_points_manager=atp_points_manager, week=week)
+		qualified1 = self._play_group(group1, "A", verbose, atp_points_manager=atp_points_manager, week=week, injury_manager=injury_manager)
+		qualified2 = self._play_group(group2, "B", verbose, atp_points_manager=atp_points_manager, week=week, injury_manager=injury_manager)
 
 		if verbose:
 			print(f"\n✅ Qualifiés du Groupe A: {', '.join([p.full_name for p in qualified1])}")
@@ -376,7 +376,7 @@ class ATPFinals(Tournament):
 		return qualified1 + qualified2
 
 	def _play_group(self, players: List['Player'], group_name: str, verbose: bool = True, atp_points_manager=None,
-					week=None) -> List['Player']:
+					week=None, injury_manager=None) -> List['Player']:
 		"""Joue un groupe de 4 joueurs"""
 		if verbose:
 			print(f"\n📊 GROUPE {group_name}")
@@ -390,7 +390,7 @@ class ATPFinals(Tournament):
 				if verbose:
 					print(f"⚔️  {players[i].full_name} vs {players[j].full_name}")
 
-				match_result = self.simulate_match(players[i], players[j])
+				match_result = self.simulate_match(players[i], players[j], injury_manager)
 				self.match_results.append(match_result)
 
 				if verbose:
@@ -444,7 +444,7 @@ class ATPFinals(Tournament):
 
 		return qualified
 
-	def _play_knockout_stage(self, qualified_players: List['Player'], verbose: bool = True, atp_points_manager=None, week=None) -> 'Player':
+	def _play_knockout_stage(self, qualified_players: List['Player'], verbose: bool = True, atp_points_manager=None, week=None, injury_manager=None) -> 'Player':
 		"""Joue la phase finale (demi-finales + finale)"""
 		if verbose:
 			print(f"\n🥉 DEMI-FINALES")
@@ -453,13 +453,13 @@ class ATPFinals(Tournament):
 		# Demi-finales
 		if verbose:
 			print(f"⚔️  {qualified_players[0].full_name} vs {qualified_players[3].full_name}")
-		semi1 = self.simulate_match(qualified_players[0], qualified_players[3])
+		semi1 = self.simulate_match(qualified_players[0], qualified_players[3], injury_manager)
 		if verbose:
 			print(f"   ✅ {semi1.winner.full_name} gagne {semi1.sets_won}-{semi1.sets_lost}")
 
 		if verbose:
 			print(f"⚔️  {qualified_players[1].full_name} vs {qualified_players[2].full_name}")
-		semi2 = self.simulate_match(qualified_players[1], qualified_players[2])
+		semi2 = self.simulate_match(qualified_players[1], qualified_players[2], injury_manager)
 		if verbose:
 			print(f"   ✅ {semi2.winner.full_name} gagne {semi2.sets_won}-{semi2.sets_lost}")
 
@@ -491,7 +491,7 @@ class ATPFinals(Tournament):
 		# Finale
 		if verbose:
 			print(f"🎾 {semi1.winner.full_name} vs {semi2.winner.full_name}")
-		final_match = self.simulate_match(semi1.winner, semi2.winner)
+		final_match = self.simulate_match(semi1.winner, semi2.winner, injury_manager)
 		if verbose:
 			print(f"   🏆 {final_match.winner.full_name} gagne {final_match.sets_won}-{final_match.sets_lost}")
 

@@ -3,8 +3,8 @@ Entité Player - Joueur de tennis.
 """
 import random
 
-from typing import Dict, Optional
-from dataclasses import dataclass
+from typing import Dict, Optional, List
+from dataclasses import dataclass, field
 from enum import Enum
 
 from ..utils.constants import (
@@ -18,6 +18,7 @@ from ..utils.helpers import (
 )
 
 from ..data.surface_data import SURFACE_IMPACTS
+from .injury import Injury, InjuryCalculator
 
 
 class Gender(Enum):
@@ -87,6 +88,7 @@ class PlayerPhysical:
 	dominant_hand: str = ""
 	backhand_style: str = ""
 	fatigue: int = 0
+	injuries: List[Injury] = field(default_factory=list)
 
 	def __post_init__(self):
 		if not self.dominant_hand:
@@ -97,6 +99,23 @@ class PlayerPhysical:
 	def recover_fatigue(self, amount: int):
 		"""Récupère une certaine quantité de fatigue"""
 		self.fatigue = max(0, self.fatigue - amount)
+	
+	def add_injury(self, injury: Injury):
+		"""Ajoute une blessure"""
+		self.injuries.append(injury)
+	
+	def remove_injury(self, injury: Injury):
+		"""Retire une blessure guérie"""
+		if injury in self.injuries:
+			self.injuries.remove(injury)
+	
+	def has_injuries(self) -> bool:
+		"""Vérifie si le joueur a des blessures actives"""
+		return len(self.injuries) > 0
+	
+	def get_active_injuries(self) -> List[Injury]:
+		"""Retourne les blessures actives (non guéries)"""
+		return [injury for injury in self.injuries if not injury.is_healed]
 
 
 class Player:
@@ -403,14 +422,114 @@ class Player:
 	def recover_fatigue(self, recovery_amount: int):
 		"""Récupère de la fatigue naturellement"""
 		self.physical.fatigue = max(0, self.physical.fatigue - recovery_amount)
+	
+	@property
+	def injuries(self) -> List[Injury]:
+		"""Retourne la liste des blessures actives du joueur"""
+		return self.physical.get_active_injuries()
+	
+	def is_injured(self) -> bool:
+		"""Vérifie si le joueur a des blessures actives"""
+		return len(self.physical.get_active_injuries()) > 0
+	
+	def add_injury(self, injury: Injury):
+		"""Ajoute une blessure au joueur"""
+		self.physical.add_injury(injury)
+		if self.is_main_player:
+			print(f"\n💔 {self.full_name} s'est blessé(e): {injury.name}")
+			print(f"   Durée estimée: {injury.weeks_remaining} semaines")
+	
+	def check_for_injury(self, activity: str = "Entraînement") -> Optional[Injury]:
+		"""
+		Vérifie si le joueur se blesse selon son niveau de fatigue
+		
+		Args:
+			activity: Type d'activité effectuée
+			
+		Returns:
+			Injury si blessure, None sinon
+		"""
+		# Ne peut pas se blesser si déjà blessé
+		if self.is_injured():
+			return None
+			
+		injury_risk = InjuryCalculator.calculate_injury_risk(self.physical.fatigue, activity)
+		
+		if random.random() < injury_risk:
+			injury = InjuryCalculator.generate_random_injury(self.physical.fatigue)
+			if injury:
+				self.add_injury(injury)
+				return injury
+		
+		return None
+	
+	def heal_injuries(self, weeks: int = 1):
+		"""
+		Avance la guérison des blessures et retire celles qui sont guéries
+		
+		Args:
+			weeks: Nombre de semaines de récupération
+		"""
+		healed_injuries = []
+		
+		for injury in self.physical.injuries[:]:  # Copie pour éviter les modifications pendant l'itération
+			injury.advance_recovery(weeks)
+			
+			if injury.is_healed:
+				healed_injuries.append(injury)
+				self.physical.remove_injury(injury)
+				
+				if self.is_main_player:
+					print(f"✅ {self.full_name} s'est remis(e) de: {injury.name}")
+		
+		return healed_injuries
+	
+	def get_injury_modified_stats(self) -> Dict[str, int]:
+		"""
+		Retourne les statistiques modifiées par les blessures
+		
+		Returns:
+			Dictionnaire des stats avec modificateurs appliqués
+		"""
+		base_stats = self.stats.to_dict()
+		
+		if not self.is_injured():
+			return base_stats
+		
+		modified_stats = base_stats.copy()
+		
+		# Applique les modificateurs de toutes les blessures actives
+		for injury in self.physical.get_active_injuries():
+			for stat_name in modified_stats:
+				modifier = injury.get_stat_modifier(stat_name)
+				modified_stats[stat_name] = int(modified_stats[stat_name] * modifier)
+		
+		return modified_stats
+	
+	def get_injury_status_display(self) -> str:
+		"""Retourne l'affichage du statut des blessures"""
+		active_injuries = self.physical.get_active_injuries()
+		
+		if not active_injuries:
+			return "🟢 Aucune blessure"
+		
+		status_lines = ["🔴 Blessures actives:"]
+		for injury in active_injuries:
+			status_lines.append(f"   • {injury.get_display_info()}")
+		
+		return "\n".join(status_lines)
 
 	def should_participate(self) -> bool:
 		"""
-		Détermine si le joueur devrait participer selon sa fatigue
+		Détermine si le joueur devrait participer selon sa fatigue et ses blessures
 
 		Returns:
 			True si le joueur devrait participer
 		"""
+		# Un joueur blessé ne peut pas participer
+		if self.is_injured():
+			return False
+			
 		return self.physical.fatigue < PLAYER_CONSTANTS["FATIGUE_PARTICIPATION_THRESHOLD"]
 
 	def get_display_card(self, ranking_position: int = None) -> str:
@@ -462,6 +581,12 @@ class Player:
 
 		lines.append(f"│ XP      : {xp_bar}{xp_empty} {xp_text:>8} │")
 		lines.append(f"│ Fatigue : {self.physical.fatigue:<32} │")
+		
+		# Statut des blessures
+		if self.is_injured():
+			lines.append(f"│ Blessures : {len(self.physical.get_active_injuries())} active(s){' ' * 15} │")
+		else:
+			lines.append(f"│ Blessures : Aucune{' ' * 24} │")
 
 		# Statistiques
 		lines.append("├" + "─" * (width - 2) + "┤")
@@ -498,6 +623,10 @@ class Player:
 		else:
 			career_dict["elo_ratings"] = self.career.elo_ratings
 
+		# Sérialiser les blessures
+		physical_dict = asdict(self.physical)
+		physical_dict["injuries"] = [injury.to_dict() for injury in self.physical.injuries]
+
 		return {
 			"gender": self.gender.value,
 			"first_name": self.first_name,
@@ -508,7 +637,7 @@ class Player:
 			"talent_level": self.talent_level.value,
 			"stats": asdict(self.stats),
 			"career": career_dict,
-			"physical": asdict(self.physical)
+			"physical": physical_dict
 		}
 
 	@classmethod
@@ -577,5 +706,15 @@ class Player:
 		player.physical.dominant_hand = physical_data["dominant_hand"]
 		player.physical.backhand_style = physical_data["backhand_style"]
 		player.physical.fatigue = physical_data["fatigue"]
+		
+		# Restaure les blessures
+		if "injuries" in physical_data:
+			from ..data.injuries_data import INJURIES_DATABASE
+			for injury_dict in physical_data["injuries"]:
+				injury_key = injury_dict["injury_key"]
+				if injury_key in INJURIES_DATABASE:
+					injury_data = INJURIES_DATABASE[injury_key]
+					injury = Injury.from_dict(injury_dict, injury_data)
+					player.physical.injuries.append(injury)
 
 		return player

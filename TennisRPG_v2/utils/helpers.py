@@ -105,7 +105,7 @@ def calculate_fatigue_level(activity: str, sets_played: int = 0, tournament_cate
 		return random.randint(min_fatigue, max_fatigue)
 	elif activity == "Tournament":
 		# Fatigue de base proportionnelle aux sets joués
-		base_fatigue = sets_played * 2
+		base_fatigue = sets_played * 1.25
 
 		# Application du coefficient spécifique au tournoi
 		if tournament_category and tournament_category in TOURNAMENT_FATIGUE_MULTIPLIERS:
