@@ -333,12 +333,80 @@ class GameSessionController:
         # Affiche le résultat
         self.ui.display_activity_result(result)
 
-        # Avance à la semaine suivante
-        self._advance_week()
+        # Avance à la semaine suivante (2 semaines pour les tournois 7 tours, 
+        # sauf si éliminé dans les 3 premiers tours)
+        weeks_to_advance = self._determine_weeks_to_advance(chosen_activity, result)
         
-    def _advance_week(self) -> None:
-        """Avance d'une semaine"""
-        is_new_year = self.state.advance_week()
+        # Affiche un message informatif pour les tournois multi-semaines
+        self._display_week_advance_message(chosen_activity, weeks_to_advance, result)
+        
+        self._advance_week(weeks_to_advance)
+        
+    def _determine_weeks_to_advance(self, activity, result=None) -> int:
+        """Détermine le nombre de semaines à avancer selon le type d'activité et le résultat"""
+        from ..managers.weekly_activity_manager import TournamentActivity, ActivityResult
+        
+        # Si c'est une activité de tournoi, vérifie s'il s'agit d'un tournoi à 7 tours
+        if isinstance(activity, TournamentActivity):
+            tournament = activity.tournament
+            # Calcule le nombre de tours basé sur le nombre de joueurs
+            num_rounds = tournament._calculate_tournament_rounds()
+            
+            # Les tournois à 7 tours durent normalement 2 semaines
+            if num_rounds == 7:
+                # Si on a le résultat et que le joueur principal a été éliminé rapidement
+                if result and isinstance(result, ActivityResult):
+                    # Récupère le tour d'élimination depuis les données du tournoi
+                    if self.state.main_player in tournament.eliminated_players:
+                        elimination_round = tournament.eliminated_players[self.state.main_player]
+                        # Si éliminé dans les 3 premiers tours (round_128, round_64, round_32), 1 semaine
+                        if elimination_round in ["round_128", "round_64", "round_32"]:
+                            return 13
+                    # Si le joueur a gagné ou a été éliminé tard, 2 semaines
+                    elif tournament.participants and any(
+                        hasattr(p, 'is_main_player') and p.is_main_player 
+                        for p in tournament.participants
+                    ):
+                        # Le joueur principal a participé, mais pas dans eliminated_players
+                        # Cela signifie qu'il a probablement gagné le tournoi
+                        return 2
+                
+                # Par défaut pour les tournois à 7 tours, 2 semaines
+                return 2
+        
+        # Par défaut, toutes les autres activités durent 1 semaine
+        return 1
+        
+    def _display_week_advance_message(self, activity, weeks_to_advance: int, result=None) -> None:
+        """Affiche un message informatif sur l'avancement des semaines"""
+        from ..managers.weekly_activity_manager import TournamentActivity
+        
+        if isinstance(activity, TournamentActivity) and weeks_to_advance > 1:
+            tournament = activity.tournament
+            num_rounds = tournament._calculate_tournament_rounds()
+            
+            if num_rounds == 7:
+                if (self.state.main_player in tournament.eliminated_players and 
+                    tournament.eliminated_players[self.state.main_player] in ["round_128", "round_64", "round_32"]):
+                    # Éliminé tôt - 1 semaine seulement (ne devrait pas arriver ici car weeks_to_advance > 1)
+                    pass
+                else:
+                    # Éliminé tard ou victoire - 2 semaines
+                    print(f"\n⏰ Le {tournament.name} s'étend sur 2 semaines. Avancement de 2 semaines...")
+        elif isinstance(activity, TournamentActivity) and weeks_to_advance == 1:
+            tournament = activity.tournament  
+            num_rounds = tournament._calculate_tournament_rounds()
+            
+            if num_rounds == 7 and self.state.main_player in tournament.eliminated_players:
+                elimination_round = tournament.eliminated_players[self.state.main_player]
+                if elimination_round in ["round_128", "round_64", "round_32"]:
+                    print(f"\n⏰ Éliminé précocement du {tournament.name}. Vous pouvez participer à un autre tournoi la semaine prochaine.")
+        
+    def _advance_week(self, weeks: int = 1) -> None:
+        """Avance d'une ou plusieurs semaines"""
+        is_new_year = False
+        for _ in range(weeks):
+            is_new_year = self.state.advance_week() or is_new_year
         
         if is_new_year:
             self.ui.display_new_year(self.state.current_year)

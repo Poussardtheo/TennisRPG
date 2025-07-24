@@ -155,9 +155,9 @@ class GameSession:
         """Sauvegarde le jeu - pour compatibilité"""
         self.controller._save_game()
         
-    def _advance_week(self) -> None:
-        """Avance d'une semaine - pour compatibilité"""
-        self.controller._advance_week()
+    def _advance_week(self, weeks: int = 1) -> None:
+        """Avance d'une ou plusieurs semaines - pour compatibilité"""
+        self.controller._advance_week(weeks)
         
     def _display_weekly_header(self) -> None:
         """Affiche l'en-tête hebdomadaire - pour compatibilité"""
