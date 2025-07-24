@@ -1,0 +1,51 @@
+{
+  "tournament_categories": {
+    "grand_slam": {
+      "draw_size": 128,
+      "rounds": 7,
+      "atp_points": [2000, 1200, 720, 360, 180, 90, 45],
+      "prize_money": [2500000, 1250000, 625000, 312500, 156250, 78125, 39063]
+    },
+    "masters_1000": {
+      "draw_size": 96,
+      "rounds": 6,
+      "atp_points": [1000, 600, 360, 180, 90, 45],
+      "prize_money": [1000000, 500000, 250000, 125000, 62500, 31250]
+    },
+    "atp_500": {
+      "draw_size": 48,
+      "rounds": 5,
+      "atp_points": [500, 300, 180, 90, 45],
+      "prize_money": [500000, 250000, 125000, 62500, 31250]
+    },
+    "atp_250": {
+      "draw_size": 32,
+      "rounds": 5,
+      "atp_points": [250, 150, 90, 45, 20],
+      "prize_money": [250000, 125000, 62500, 31250, 15625]
+    }
+  },
+  "surfaces": {
+    "hard": {
+      "speed_modifier": 1.0,
+      "serve_bonus": 1.05,
+      "baseline_bonus": 1.0
+    },
+    "clay": {
+      "speed_modifier": 0.85,
+      "serve_bonus": 0.95,
+      "baseline_bonus": 1.1
+    },
+    "grass": {
+      "speed_modifier": 1.15,
+      "serve_bonus": 1.15,
+      "baseline_bonus": 0.9
+    }
+  },
+  "scheduling": {
+    "season_weeks": 52,
+    "max_tournaments_per_year": 30,
+    "mandatory_tournaments": ["australian_open", "french_open", "wimbledon", "us_open"],
+    "rest_weeks_required": 4
+  }
+}
