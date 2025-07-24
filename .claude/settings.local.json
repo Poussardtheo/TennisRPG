@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(/c/Users/pouss/anaconda3/python.exe test_ranking_fix.py)"
+      "Bash(\"C:\\Users\\pouss\\anaconda3\\python.exe\":*)"
     ],
     "defaultMode": "allowEdits",
     "deny": []
