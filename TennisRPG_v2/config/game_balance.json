@@ -1,0 +1,50 @@
+{
+  "player_generation": {
+    "talent_distribution": {
+      "low": 0.6,
+      "medium": 0.3,
+      "high": 0.08,
+      "elite": 0.02
+    },
+    "age_range": {
+      "min": 18,
+      "max": 36,
+      "peak_start": 25,
+      "peak_end": 29
+    },
+    "stat_ranges": {
+      "forehand": {"min": 30, "max": 95},
+      "backhand": {"min": 30, "max": 95},
+      "serve": {"min": 30, "max": 95},
+      "volley": {"min": 25, "max": 90},
+      "speed": {"min": 35, "max": 90},
+      "stamina": {"min": 40, "max": 95}
+    }
+  },
+  "tournament_system": {
+    "entry_requirements": {
+      "grand_slam": {"ranking_limit": 128, "direct_entry": 104},
+      "masters_1000": {"ranking_limit": 96, "direct_entry": 56},
+      "atp_500": {"ranking_limit": 64, "direct_entry": 32},
+      "atp_250": {"ranking_limit": 48, "direct_entry": 28}
+    },
+    "fatigue_impact": {
+      "low": 0.95,
+      "medium": 0.90,
+      "high": 0.80,
+      "extreme": 0.65
+    }
+  },
+  "progression_system": {
+    "experience_rates": {
+      "training": 1.0,
+      "tournament_participation": 1.5,
+      "tournament_win": 3.0,
+      "grand_slam_win": 5.0
+    },
+    "age_decline": {
+      "start_age": 30,
+      "decline_rate": 0.02
+    }
+  }
+}
