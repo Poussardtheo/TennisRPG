@@ -168,7 +168,11 @@ class InjuryManager:
     
     def _check_player_injury_risk(self, player: Player) -> Optional[Injury]:
         """Vérifie le risque de blessure d'un joueur selon sa fatigue"""
-        return player.check_for_injury("Repos")  # Activité par défaut lors des vérifications hebdomadaires
+        # Les blessures hebdomadaires ne devraient pas arriver pour le joueur principal
+        # car elles sont gérées au niveau des activités
+        if hasattr(player, 'is_main_player') and player.is_main_player:
+            return None
+        return player.check_for_injury("Repos")  # Activité par défaut lors des vérifications hebdomadaires pour les NPCs
     
     def _get_tournament_injury_multiplier(self, tournament_category: str) -> float:
         """Retourne le multiplicateur de risque selon la catégorie de tournoi"""

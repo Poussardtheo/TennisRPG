@@ -77,8 +77,7 @@ class RestActivity(Activity):
     
     def execute(self, player: Player, injury_manager: InjuryManager = None) -> ActivityResult:
         # Récupération de fatigue - utilisation méthode centralisée
-        player.rest()
-        fatigue_recovery = 4  # Valeur approximative pour l'affichage
+        fatigue_recovery = player.rest()
         
         # Guérison des blessures pendant le repos
         if injury_manager:

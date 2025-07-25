@@ -86,7 +86,7 @@ def get_random_backhand() -> str:
 	return "Une main" if random.random() < 0.11 else "Deux mains"
 
 
-def calculate_fatigue_level(activity: str, sets_played: int = 0, tournament_category: str = None) -> int:
+def  calculate_fatigue_level(activity: str, sets_played: int = 0, tournament_category: str = None, difficulty: str = None) -> int:
 	"""
 	Calcule le niveau de fatigue selon l'activité
 
@@ -94,26 +94,28 @@ def calculate_fatigue_level(activity: str, sets_played: int = 0, tournament_cate
 		activity: Type d'activité
 		sets_played: Nombre de sets joués (pour les tournois)
 		tournament_category: Catégorie du tournoi (pour appliquer le bon coefficient)
+		difficulty: Niveau de difficulté du joueur (pour appliquer le multiplicateur)
 
 	Returns:
 		Niveau de fatigue ajouté
 	"""
-	from .constants import FATIGUE_VALUES, TOURNAMENT_FATIGUE_MULTIPLIERS
+	from .constants import FATIGUE_VALUES, TOURNAMENT_FATIGUE_MULTIPLIERS, DIFFICULTY_FATIGUE_MULTIPLIERS
 
 	if activity in FATIGUE_VALUES:
 		min_fatigue, max_fatigue = FATIGUE_VALUES[activity]
 		return random.randint(min_fatigue, max_fatigue)
 	elif activity == "Tournament":
-		# Fatigue de base proportionnelle aux sets joués
-		base_fatigue = sets_played * 1.25
+		# Fatigue de base proportionnelle aux sets joués avec multiplicateur de difficulté
+		difficulty_multiplier = DIFFICULTY_FATIGUE_MULTIPLIERS.get(difficulty, 1.75)  # Normal par défaut
+		base_fatigue = sets_played * difficulty_multiplier
 
 		# Application du coefficient spécifique au tournoi
 		if tournament_category and tournament_category in TOURNAMENT_FATIGUE_MULTIPLIERS:
 			multiplier = TOURNAMENT_FATIGUE_MULTIPLIERS[tournament_category]
-			return int(base_fatigue * multiplier)
+			return round(base_fatigue * multiplier)
 		else:
 			# Coefficient par défaut (ATP 250)
-			return base_fatigue
+			return round(base_fatigue)
 	else:
 		return 0
 

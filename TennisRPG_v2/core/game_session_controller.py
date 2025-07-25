@@ -54,7 +54,8 @@ class GameSessionController:
             last_name=player_data['last_name'], 
             country=player_data['country'],
             is_main_player=True,
-            talent_level=player_data['talent_level']
+            talent_level=player_data['talent_level'],
+            difficulty=player_data['difficulty']
         )
         
         self.state.set_main_player(main_player)
@@ -341,7 +342,7 @@ class GameSessionController:
         # Affiche un message informatif pour les tournois multi-semaines
         self._display_week_advance_message(chosen_activity, weeks_to_advance, result)
         
-        self._advance_week(weeks_to_advance)
+        self._advance_week(weeks_to_advance, chosen_activity)
         
     def _determine_weeks_to_advance(self, activity, result=None) -> int:
         """Détermine le nombre de semaines à avancer selon le type d'activité et le résultat"""
@@ -403,7 +404,7 @@ class GameSessionController:
                 if elimination_round in ["round_128", "round_64", "round_32"]:
                     print(f"\n⏰ Éliminé précocement du {tournament.name}. Vous pouvez participer à un autre tournoi la semaine prochaine.")
         
-    def _advance_week(self, weeks: int = 1) -> None:
+    def _advance_week(self, weeks: int = 1, last_activity=None) -> None:
         """Avance d'une ou plusieurs semaines"""
         is_new_year = False
         for _ in range(weeks):
@@ -418,8 +419,10 @@ class GameSessionController:
             # Traite les retraites et la rotation des joueurs en fin d'année
             self._process_end_of_year_retirements()
         
-        # Récupération naturelle de fatigue - utilisation méthode centralisée
-        self.state.apply_natural_fatigue_recovery()
+        # Récupération naturelle de fatigue - éviter le double comptage avec le repos
+        from ..managers.weekly_activity_manager import RestActivity
+        if not (last_activity and isinstance(last_activity, RestActivity)):
+            self.state.apply_natural_fatigue_recovery()
         
         # Traitement hebdomadaire des blessures pour tous les joueurs
         if self.state.injury_manager:

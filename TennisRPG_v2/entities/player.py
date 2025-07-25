@@ -125,7 +125,7 @@ class Player:
 				 country: str, height: Optional[int] = None,
 				 level: int = 1, archetype: Optional[str] = None,
 				 is_main_player: bool = False, age: Optional[int] = None,
-				 talent_level: Optional[TalentLevel] = None):
+				 talent_level: Optional[TalentLevel] = None, difficulty: Optional[str] = None):
 
 		# Validation des paramètres
 		self._validate_init_params(gender, first_name, last_name, country, height, level)
@@ -138,6 +138,7 @@ class Player:
 		self.archetype = archetype or random.choice(list(ARCHETYPES.keys()))
 		self.is_main_player = is_main_player
 		self.talent_level = talent_level or TalentLevel.JOUEUR_PROMETTEUR
+		self.difficulty = difficulty or "Normal"
 
 		# Génération de l'âge si non spécifié
 		if age is None:
@@ -408,7 +409,7 @@ class Player:
 	def manage_fatigue(self, activity: str, sets_played: int = 0, tournament_category: str = None,
 					   display: bool = False) -> Optional[int]:
 		"""Gère la fatigue du joueur selon l'activité"""
-		fatigue_added = calculate_fatigue_level(activity, sets_played, tournament_category)
+		fatigue_added = calculate_fatigue_level(activity, sets_played, tournament_category, self.difficulty)
 		self.physical.fatigue = min(PLAYER_CONSTANTS["MAX_FATIGUE"],
 									self.physical.fatigue + fatigue_added)
 
@@ -416,8 +417,14 @@ class Player:
 
 	def rest(self):
 		"""Le joueur se repose"""
-		rest_amount = calculate_fatigue_level("Repos")
-		self.physical.fatigue = max(0, self.physical.fatigue - rest_amount)
+		from ..utils.constants import TIME_CONSTANTS
+		
+		rest_amount = calculate_fatigue_level("Repos", difficulty=self.difficulty)
+		natural_recovery = TIME_CONSTANTS["FATIGUE_NATURAL_RECOVERY"]
+		total_recovery = rest_amount + natural_recovery
+		
+		self.physical.fatigue = max(0, self.physical.fatigue - total_recovery)
+		return total_recovery
 
 	def recover_fatigue(self, recovery_amount: int):
 		"""Récupère de la fatigue naturellement"""
@@ -635,6 +642,7 @@ class Player:
 			"archetype": self.archetype,
 			"is_main_player": self.is_main_player,
 			"talent_level": self.talent_level.value,
+			"difficulty": self.difficulty,
 			"stats": asdict(self.stats),
 			"career": career_dict,
 			"physical": physical_dict
@@ -664,7 +672,8 @@ class Player:
 			country=data["country"],
 			is_main_player=data.get("is_main_player", False),
 			age=saved_age,
-			talent_level=talent_level
+			talent_level=talent_level,
+			difficulty=data.get("difficulty", "Normal")
 		)
 
 		# Restaure les attributs principaux

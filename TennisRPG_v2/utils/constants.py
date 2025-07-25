@@ -87,22 +87,6 @@ FATIGUE_VALUES = {
     "Repos": (7, 20)  # Valeur de récupération
 }
 
-# Coefficients de fatigue par catégorie de tournoi
-TOURNAMENT_FATIGUE_MULTIPLIERS = {
-    "Grand Slam": 2.2,          # Bo5, plus exigeant physiquement
-    "ATP Finals": 2,          # Elite level, haute intensité
-    "Masters 1000": 1.8,        # Tournois de prestige, plus exigeants
-    "ATP 500": 1.5,             # Niveau intermédiaire
-    "ATP 250": 1.0,             # Coefficient de base
-    "Challenger 175": 0.9,      # Moins exigeant que l'ATP
-    "Challenger 125": 0.8,
-    "Challenger 100": 0.7,
-    "Challenger 75": 0.6,
-    "Challenger 50": 0.5,
-    "ITF M25": 0.4,             # Niveau amateur/développement
-    "ITF M15": 0.3
-}
-
 # Constantes pour les classements
 RANKING_CONSTANTS = {
     "DEFAULT_DISPLAY_COUNT": 100,
@@ -220,6 +204,31 @@ DIFFICULTY_TO_TALENT = {
     "Normal": TalentLevel.TALENT_BRUT,
     "Difficile": TalentLevel.JOUEUR_PROMETTEUR,
     "Expert": TalentLevel.ESPOIR_FRAGILE
+}
+
+# Multiplicateurs de fatigue par difficulté selon les sets joués
+DIFFICULTY_FATIGUE_MULTIPLIERS = {
+    "Novice": 1.5,
+    "Facile": 1.6,
+    "Normal": 1.75,
+    "Difficile": 2.0,
+    "Expert": 2.15
+}
+
+# Coefficients de fatigue par catégorie de tournoi
+TOURNAMENT_FATIGUE_MULTIPLIERS = {
+    "Grand Slam": 2.2,          # Bo5, plus exigeant physiquement
+    "ATP Finals": 2,          # Elite level, haute intensité
+    "Masters 1000": 1.8,        # Tournois de prestige, plus exigeants
+    "ATP 500": 1.5,             # Niveau intermédiaire
+    "ATP 250": 1.0,             # Coefficient de base
+    "Challenger 175": 0.9,      # Moins exigeant que l'ATP
+    "Challenger 125": 0.8,
+    "Challenger 100": 0.7,
+    "Challenger 75": 0.6,
+    "Challenger 50": 0.5,
+    "ITF M25": 0.4,             # Niveau amateur/développement
+    "ITF M15": 0.3
 }
 
 # Constantes pour le système de blessures
