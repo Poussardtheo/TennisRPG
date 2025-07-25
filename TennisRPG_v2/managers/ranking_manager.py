@@ -166,7 +166,7 @@ class RankingManager:
     def get_points_to_defend(self, player_name: str, week: Optional[int] = None) -> int:
         """
         Calcule les points que le joueur doit défendre cette semaine
-        (points gagnés il y a exactement 52 semaines)
+        (points gagnés en semaine équivalente il y a 52 semaines - stockés dans la même colonne)
         
         Args:
             player_name: Nom du joueur
@@ -178,31 +178,48 @@ class RankingManager:
         if week is None:
             week = self.current_week
             
-        # Points gagnés il y a 52 semaines (qui vont expirer)
-        defend_week = ((week - 1 + TIME_CONSTANTS["WEEKS_PER_YEAR"]) % TIME_CONSTANTS["WEEKS_PER_YEAR"]) + 1
-        defend_week_col = f"week_{defend_week}"
+        # Pour un système glissant sur 52 semaines, on retire les points
+        # de la même semaine stockés dans notre historique (qui datent de 52 semaines)
+        week_col = f"week_{week}"
         
-        if player_name in self.atp_points_history.index and defend_week_col in self.atp_points_history.columns:
-            return int(self.atp_points_history.loc[player_name, defend_week_col])
+        if player_name in self.atp_points_history.index and week_col in self.atp_points_history.columns:
+            return int(self.atp_points_history.loc[player_name, week_col])
         return 0
     
     def advance_week(self) -> None:
-        """Avance d'une semaine et met à jour les points ATP en conséquence"""
-        # Calcule les points qui expirent pour chaque joueur
-        for player_name, player in self.players.items():
-            points_to_lose = self.get_points_to_defend(player_name, self.current_week)
-            player.career.atp_points = max(0, player.career.atp_points - points_to_lose)
-        
-        # Marque les classements pour mise à jour après modification des points
-        self.mark_rankings_for_update()
-        
+        """
+        Avance d'une semaine seulement. 
+        Les points ATP ne sont PAS gérés ici - ils doivent être retirés 
+        au DÉBUT de chaque semaine, pas à la fin.
+        """
         # Avance la semaine
         self.current_week = (self.current_week % TIME_CONSTANTS["WEEKS_PER_YEAR"]) + 1
         
-        # Remet à zéro la colonne de la nouvelle semaine
+        # Marque les classements pour mise à jour
+        self.mark_rankings_for_update()
+    
+    def expire_weekly_points(self) -> None:
+        """
+        Retire les points qui expirent au début de cette semaine (système glissant sur 52 semaines).
+        
+        Cette méthode doit être appelée au DÉBUT de chaque semaine, avant les tournois.
+        Elle retire les points gagnés dans cette même semaine il y a 52 semaines.
+        """
         week_col = f"week_{self.current_week}"
+        
         if week_col in self.atp_points_history.columns:
+            for player_name, player in self.players.items():
+                if player_name in self.atp_points_history.index:
+                    # Points à retirer (datent de 52 semaines, stockés dans cette colonne)
+                    points_to_lose = int(self.atp_points_history.loc[player_name, week_col])
+                    if points_to_lose > 0:
+                        player.career.atp_points = max(0, player.career.atp_points - points_to_lose)
+            
+            # Remet à zéro la colonne pour accueillir les nouveaux points de cette semaine
             self.atp_points_history[week_col] = 0
+        
+        # Marque les classements pour mise à jour après modification des points
+        self.mark_rankings_for_update()
     
     def display_ranking(self, ranking_type: RankingType = RankingType.ATP, 
                        count: Optional[int] = 50, 

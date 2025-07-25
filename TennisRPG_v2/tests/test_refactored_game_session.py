@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'TennisRPG_v2'))
 
 try:
-    from TennisRPG_v2.core.game_session_refactored import GameSession
+    from TennisRPG_v2.core.game_session import GameSession
     from TennisRPG_v2.entities.player import Player, Gender
     from TennisRPG_v2.utils.constants import TIME_CONSTANTS
     

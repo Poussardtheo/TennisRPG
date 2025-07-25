@@ -12,6 +12,7 @@ from ..entities.ranking import RankingType
 from ..utils.constants import TIME_CONSTANTS, GAME_CONSTANTS
 from .game_session_ui import GameSessionUI
 from .game_session_state import GameSessionState
+from ..ui.history_menus import HistoryMenus
 
 
 class GameSessionController:
@@ -99,14 +100,14 @@ class GameSessionController:
         
         start_time = time.time()
         
-        # Simule 1 année préliminaire (réduit pour performance)
-        preliminary_start_year = TIME_CONSTANTS["GAME_START_YEAR"] - 1
-        for year in range(1):
+        # Simule 10 années préliminaires (réduit de 11 à 2 pour performance)
+        preliminary_start_year = TIME_CONSTANTS["GAME_START_YEAR"] - 2
+        for year in range(11):
             current_sim_year = preliminary_start_year + year
             self.ui.display_preliminary_simulation_year(current_sim_year)
             
-            for week in range(1, TIME_CONSTANTS["WEEKS_PER_YEAR"]*10 + 1):  # 52 semaines par an, 10 ans de simulation
-                self._simulate_week_preliminarily(week)
+            for week in range(1, TIME_CONSTANTS["WEEKS_PER_YEAR"] + 1):  # 52 semaines par an
+                self._simulate_week_preliminarily(week, current_sim_year)
                 
                 # Progress tous les 6 mois
                 if week % 26 == 0:
@@ -119,16 +120,27 @@ class GameSessionController:
         self.ui.display_preliminary_simulation_complete(simulation_time)
         self.state.set_preliminary_complete()
         
-    def _simulate_week_preliminarily(self, week: int) -> None:
+    def _simulate_week_preliminarily(self, week: int, sim_year: int) -> None:
         """Simule une semaine sans le joueur principal"""
+        # Met à jour la semaine courante dans le ranking manager pour synchroniser
+        if self.state.ranking_manager:
+            self.state.ranking_manager.current_week = week
+            
+        # DÉBUT DE SEMAINE : Retire les points qui expirent (système glissant 52 semaines)
+        if self.state.ranking_manager:
+            self.state.ranking_manager.expire_weekly_points()
+            
         # Simule tous les tournois de la semaine
         self.state.tournament_manager.simulate_week_tournaments(
-            week=week, 
+            week=week,
             all_players=self.state.all_players,
+            current_year=sim_year,
             ranking_manager=self.state.ranking_manager,
             atp_points_manager=self.state.atp_points_manager,
-            injury_manager=self.state.injury_manager
+            injury_manager=self.state.injury_manager,
+            history_manager=self.state.game_state.history_manager
         )
+        
         # Met à jour les classements
         self.state.update_weekly_rankings()
         
@@ -172,6 +184,8 @@ class GameSessionController:
             self._display_player_id_card()
         elif action == 'e':
             self._assign_attribute_points()
+        elif action == 'h':
+            self._display_tournament_history()
         elif action == 's':
             self._save_game()
         elif action == 'l':
@@ -272,6 +286,11 @@ class GameSessionController:
         if filename:
             self._load_game(filename)
             
+    def _display_tournament_history(self) -> None:
+        """Affiche le menu d'historique des tournois"""
+        history_menus = HistoryMenus(self.state.game_state.history_manager)
+        history_menus.show_main_history_menu(self.state.main_player, self.state.all_players)
+            
     def _load_game(self, filename: str) -> bool:
         """Charge une sauvegarde"""
         success = self.state.load_game(filename)
@@ -310,6 +329,10 @@ class GameSessionController:
             self.ui.display_no_activity_manager()
             return
         
+        # DÉBUT DE SEMAINE : Retire les points qui expirent (système glissant 52 semaines)
+        if self.state.ranking_manager:
+            self.state.ranking_manager.expire_weekly_points()
+        
         # Affiche les activités de la semaine
         self.state.activity_manager.display_weekly_activities(
             self.state.main_player, self.state.current_week
@@ -329,7 +352,7 @@ class GameSessionController:
         
         result = self.state.activity_manager.execute_activity(
             self.state.main_player, chosen_activity, self.state.current_week, 
-            self.state.all_players, self.state.atp_points_manager, self.state.injury_manager
+            self.state.all_players, self.state.current_year, self.state.atp_points_manager, self.state.injury_manager
         )
         
         # Affiche le résultat

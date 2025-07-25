@@ -9,6 +9,7 @@ from typing import Dict, Optional, Any, List
 from datetime import datetime
 
 from ..entities.player import Player
+from ..managers.history_manager import HistoryManager
 
 
 class GameState:
@@ -24,6 +25,7 @@ class GameState:
 		self.game_version: str = "2.0"
 		self.playtime_hours: float = 0.0
 		self.retirement_log: List[Dict] = []  # Historique des retraites
+		self.history_manager: HistoryManager = HistoryManager()  # Gestionnaire d'historique des tournois
 
 	def to_dict(self) -> Dict[str, Any]:
 		"""Convertit l'état en dictionnaire pour JSON"""
@@ -36,7 +38,8 @@ class GameState:
 			"save_date": self.save_date,
 			"game_version": self.game_version,
 			"playtime_hours": self.playtime_hours,
-			"retirement_log": self.retirement_log
+			"retirement_log": self.retirement_log,
+			"tournament_history": self.history_manager.to_dict()
 		}
 
 	@classmethod
@@ -62,6 +65,10 @@ class GameState:
 		state.game_version = data.get("game_version", "2.0")
 		state.playtime_hours = data.get("playtime_hours", 0.0)
 		state.retirement_log = data.get("retirement_log", [])
+		
+		# Charge l'historique des tournois
+		if data.get("tournament_history"):
+			state.history_manager.from_dict(data["tournament_history"], state.all_players)
 
 		return state
 
@@ -118,11 +125,11 @@ class SaveManager:
 			with open(filepath, 'w', encoding='utf-8') as f:
 				json.dump(game_state.to_dict(), f, indent=2, ensure_ascii=False)
 
-			print(f"✅ Jeu sauvegardé: {filename}")
+			print(f"Jeu sauvegardé: {filename}")
 			return True
 
 		except Exception as e:
-			print(f"❌ Erreur lors de la sauvegarde: {e}")
+			print(f"Erreur lors de la sauvegarde: {e}")
 			return False
 
 	def load_game(self, filename: str) -> Optional[GameState]:
@@ -143,18 +150,18 @@ class SaveManager:
 			filepath = os.path.join(self.save_directory, filename)
 
 			if not os.path.exists(filepath):
-				print(f"❌ Fichier de sauvegarde non trouvé: {filename}")
+				print(f"Fichier de sauvegarde non trouvé: {filename}")
 				return None
 
 			with open(filepath, 'r', encoding='utf-8') as f:
 				data = json.load(f)
 
 			game_state = GameState.from_dict(data)
-			print(f"✅ Jeu chargé: {filename}")
+			print(f"Jeu chargé: {filename}")
 			return game_state
 
 		except Exception as e:
-			print(f"❌ Erreur lors du chargement: {e}")
+			print(f"Erreur lors du chargement: {e}")
 			return None
 
 	def list_saves(self) -> List[Dict[str, Any]]:

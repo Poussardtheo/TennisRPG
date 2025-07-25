@@ -164,7 +164,7 @@ BASE_TRAINING_XP = {"min": 6, "max": 10}  # Réduit par rapport à l'ancien syst
 TIME_CONSTANTS = {
     "WEEKS_PER_YEAR": 52,
     "FATIGUE_NATURAL_RECOVERY": 3,
-    "GAME_START_YEAR": 2024      # Année de début du jeu
+    "GAME_START_YEAR": 2023      # Année de début du jeu (préliminaire)
 }
 
 # Facteurs de progression par âge

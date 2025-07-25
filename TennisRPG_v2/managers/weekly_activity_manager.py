@@ -122,10 +122,11 @@ class WeeklyActivityManager:
     """Gestionnaire des activités hebdomadaires"""
     
     def __init__(self, tournament_manager: TournamentManager, ranking_manager: RankingManager,
-                 injury_manager: Optional[InjuryManager] = None):
+                 injury_manager: Optional[InjuryManager] = None, history_manager=None):
         self.tournament_manager = tournament_manager
         self.ranking_manager = ranking_manager
         self.injury_manager = injury_manager or InjuryManager()
+        self.history_manager = history_manager
         
         # Activités de base (toujours disponibles)
         self.base_activities = [
@@ -222,26 +223,26 @@ class WeeklyActivityManager:
                 print("❌ Choix invalide, veuillez réessayer")
     
     def execute_activity(self, player: Player, activity: Activity, week: int, 
-                        all_players: Dict[str, Player], atp_points_manager=None, injury_manager=None) -> ActivityResult:
+                        all_players: Dict[str, Player], current_year: int, atp_points_manager=None, injury_manager=None) -> ActivityResult:
         """Exécute une activité choisie"""
         
         # Utilise l'injury_manager passé en paramètre ou celui par défaut
         active_injury_manager = injury_manager or self.injury_manager
         
         if isinstance(activity, TournamentActivity):
-            return self._execute_tournament_activity(player, activity, week, all_players, atp_points_manager, active_injury_manager)
+            return self._execute_tournament_activity(player, activity, week, all_players, current_year, atp_points_manager, active_injury_manager)
         else:
 
             # Exécute l'activité de base
             result = activity.execute(player, active_injury_manager)
 
             # Simule les autres tournois de la semaine (sans le joueur principal)
-            self._simulate_other_tournaments(player, week, all_players, atp_points_manager, active_injury_manager)
+            self._simulate_other_tournaments(player, week, all_players, current_year, atp_points_manager, active_injury_manager)
 
             return result
     
     def _execute_tournament_activity(self, player: Player, tournament_activity: TournamentActivity,
-                                   week: int, all_players: Dict[str, Player], atp_points_manager, injury_manager=None) -> ActivityResult:
+                                   week: int, all_players: Dict[str, Player], current_year: int, atp_points_manager=None, injury_manager=None) -> ActivityResult:
         """Exécute la participation à un tournoi"""
         tournament = tournament_activity.tournament
         
@@ -301,10 +302,14 @@ class WeeklyActivityManager:
         # Joue le tournoi (verbose car joueur principal présent)
         tournament_result = tournament.play_tournament(verbose=True, atp_points_manager=atp_points_manager, week=week, injury_manager=injury_manager)
         
+        # Enregistre dans l'historique si disponible
+        if self.history_manager and tournament_result:
+            self.history_manager.record_tournament_result(tournament_result, current_year, week)
+        
         # Simule les autres tournois de la semaine
         other_tournaments = [t for t in self.tournament_manager.get_tournaments_for_week(week) 
                            if t != tournament]
-        self._simulate_tournaments_list(other_tournaments, all_players, exclude_players=participants, atp_points_manager=atp_points_manager, week=week)
+        self._simulate_tournaments_list(other_tournaments, all_players, current_year, exclude_players=participants, atp_points_manager=atp_points_manager, week=week)
         
         # Met à jour les classements
         self.ranking_manager.update_weekly_rankings()
@@ -348,20 +353,20 @@ class WeeklyActivityManager:
             else:
                 print("❌ Choix invalide, veuillez réessayer")
     
-    def _simulate_other_tournaments(self, player: Player, week: int, all_players: Dict[str, Player], atp_points_manager=None, injury_manager=None) -> None:
+    def _simulate_other_tournaments(self, player: Player, week: int, all_players: Dict[str, Player], current_year: int, atp_points_manager=None, injury_manager=None) -> None:
         """Simule les autres tournois de la semaine (sans le joueur principal)"""
         tournaments = self.tournament_manager.get_tournaments_for_week(week)
 
         available_players = {name: p for name, p in all_players.items() 
                            if p != player and p.gender == player.gender}
 
-        self._simulate_tournaments_list(tournaments, available_players, atp_points_manager=atp_points_manager, week=week, injury_manager=injury_manager)
+        self._simulate_tournaments_list(tournaments, available_players, current_year, atp_points_manager=atp_points_manager, week=week, injury_manager=injury_manager)
 
         # Met à jour les classements
         self.ranking_manager.update_weekly_rankings()
 
     def _simulate_tournaments_list(self, tournaments: List[Tournament], 
-                                 available_players: Dict[str, Player], 
+                                 available_players: Dict[str, Player], current_year: int,
                                  exclude_players: List[Player] = None, atp_points_manager=None, week: int = None, injury_manager=None) -> None:
         """Simule une liste de tournois"""
         if exclude_players is None:
@@ -393,7 +398,11 @@ class WeeklyActivityManager:
 
 
                 # Joue le tournoi en mode silencieux
-                tournament.play_tournament(verbose=False, atp_points_manager=atp_points_manager, week=week, injury_manager=injury_manager or self.injury_manager)
+                result = tournament.play_tournament(verbose=False, atp_points_manager=atp_points_manager, week=week, injury_manager=injury_manager or self.injury_manager)
+                
+                # Enregistre dans l'historique si disponible
+                if self.history_manager and result:
+                    self.history_manager.record_tournament_result(result, current_year, week)
 
                 # Retire les participants du pool disponible
                 for participant in participants:

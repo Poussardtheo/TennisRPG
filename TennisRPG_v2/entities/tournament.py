@@ -248,7 +248,7 @@ class Tournament(ABC):
 		round_key = self._get_round_key_for_tournament(round_reached)
 		points = self.atp_points_config.get(round_key, 0)
 
-		if points > 0:
+		if points > 0 and atp_points_manager is not None:
 			atp_points_manager.add_tournament_points(player, week, points)
 
 		return points

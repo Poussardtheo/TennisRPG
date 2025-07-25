@@ -206,7 +206,8 @@ class TournamentManager:
         return random.random() < final_probability
     
     def simulate_week_tournaments(self, week: int, all_players: Dict[str, 'Player'], 
-                                ranking_manager=None, atp_points_manager=None, injury_manager=None) -> Dict[Tournament, 'TournamentResult']:
+                                current_year: int, ranking_manager=None, atp_points_manager=None, injury_manager=None, 
+                                history_manager=None) -> Dict[Tournament, 'TournamentResult']:
         """
         Simule tous les tournois d'une semaine
         
@@ -216,6 +217,8 @@ class TournamentManager:
             ranking_manager: Gestionnaire de classement
             atp_points_manager: Gestionnaire des points ATP
             injury_manager: Gestionnaire des blessures
+            history_manager: Gestionnaire d'historique (optionnel)
+            current_year: Année courante
             
         Returns:
             Dictionnaire des résultats par tournoi
@@ -244,6 +247,10 @@ class TournamentManager:
             if len(tournament.participants) >= 4:  # Minimum pour un tournoi
                 result = tournament.play_tournament(atp_points_manager=atp_points_manager, week=week, injury_manager=injury_manager)
                 results[tournament] = result
+                
+                # Enregistre automatiquement dans l'historique si disponible
+                if history_manager:
+                    history_manager.record_tournament_result(result, current_year, week)
             
             # CRUCIAL: Retire les participants du pool disponible
             for participant in participants:

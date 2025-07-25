@@ -163,6 +163,7 @@ class GameSessionUI(IGameUI):
         print("🏆 [A] Points ATP à défendre cette semaine")
         print("👤 [I] Carte d'identité de votre joueur")
         print("📈 [E] Attribuer des points d'attributs")
+        print("📚 [H] Historique des tournois")
         print("💾 [S] Sauvegarder le jeu")
         print("📂 [L] Charger une autre sauvegarde")
         print("🔄 [R] Voir les retraites récentes")

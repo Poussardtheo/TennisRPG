@@ -250,6 +250,10 @@ class EliminationTournament(Tournament):
 			elif round_eliminated == "quarterfinalist":
 				quarterfinalists.append(player)
 
+		# Ajoute le winner à all_results (il était manquant !)
+		all_results = self.eliminated_players.copy()
+		all_results[winner] = "winner"
+
 		return TournamentResult(
 			tournament_name=self.name,
 			category=self.category,
@@ -257,7 +261,7 @@ class EliminationTournament(Tournament):
 			finalist=finalist,
 			semifinalists=semifinalists,
 			quarterfinalists=quarterfinalists,
-			all_results=self.eliminated_players.copy(),
+			all_results=all_results,
 			match_results=self.match_results.copy()
 		)
 
@@ -523,6 +527,10 @@ class ATPFinals(Tournament):
 			elif round_eliminated == "semifinalist":
 				semifinalists.append(player)
 
+		# Ajoute le winner à all_results (il était manquant !)
+		all_results = self.eliminated_players.copy()
+		all_results[winner] = "winner"
+
 		return TournamentResult(
 			tournament_name=self.name,
 			category=self.category,
@@ -530,7 +538,7 @@ class ATPFinals(Tournament):
 			finalist=finalist,
 			semifinalists=semifinalists,
 			quarterfinalists=[],  # Pas de quarts aux ATP Finals
-			all_results=self.eliminated_players.copy(),
+			all_results=all_results,
 			match_results=self.match_results.copy()
 		)
 
