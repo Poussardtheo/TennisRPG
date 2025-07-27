@@ -287,12 +287,12 @@ class GameSessionUI(IGameUI):
         """Affiche le résultat de l'attribution automatique"""
         print(f"✅ {points_used} points attribués automatiquement selon votre archétype!")
         
-    def get_save_filename(self, main_player: Player, current_week: int, current_year: int) -> str:
+    def get_save_filename(self, main_player: Player) -> str:
         """Interface de choix du nom de sauvegarde"""
         print("\n💾 SAUVEGARDE DU JEU")
         print("-" * 20)
         
-        default_name = f"{main_player.first_name}_{main_player.last_name}_S{current_week}_{current_year}"
+        default_name = f"{main_player.first_name}_{main_player.last_name}"
         
         print(f"💡 Nom par défaut: {default_name}")
         custom_name = input("📝 Nom de sauvegarde (ENTRÉE pour défaut) : ").strip()

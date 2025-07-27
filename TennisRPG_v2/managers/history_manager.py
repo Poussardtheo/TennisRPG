@@ -25,6 +25,34 @@ class HistoryManager:
             year: Année du tournoi
             week: Semaine du tournoi
         """
+        # Vérification et correction des types de joueurs dans le résultat
+        from ..entities.player import Player
+        
+        def ensure_player(player):
+            """Assure qu'un objet est un Player"""
+            if player is None:
+                return None
+            if isinstance(player, dict):
+                return Player.from_dict(player)
+            return player
+        
+        # Corrige les joueurs dans le résultat
+        if result.winner and isinstance(result.winner, dict):
+            result.winner = Player.from_dict(result.winner)
+        if result.finalist and isinstance(result.finalist, dict):
+            result.finalist = Player.from_dict(result.finalist)
+        
+        # Corrige les listes de joueurs
+        result.semifinalists = [ensure_player(p) for p in result.semifinalists]
+        result.quarterfinalists = [ensure_player(p) for p in result.quarterfinalists]
+        
+        # Corrige all_results
+        corrected_all_results = {}
+        for player, round_reached in result.all_results.items():
+            corrected_player = ensure_player(player)
+            corrected_all_results[corrected_player] = round_reached
+        result.all_results = corrected_all_results
+        
         self.tournament_history[year][week].append(result)
     
     def get_player_history_for_year(self, player: Player, year: int) -> List[Tuple[int, TournamentResult]]:
@@ -245,15 +273,27 @@ class HistoryManager:
             for week, results in weeks.items():
                 history_dict[str(year)][str(week)] = []
                 for result in results:
-                    # Convertit TournamentResult en dictionnaire
+                    # Convertit TournamentResult en dictionnaire avec vérification de type
+                    def safe_to_dict(player):
+                        """Convertit un joueur en dict de manière sécurisée"""
+                        if player is None:
+                            return None
+                        if isinstance(player, dict):
+                            return player
+                        return player.to_dict()
+                    
+                    def safe_to_dict_list(players):
+                        """Convertit une liste de joueurs en dicts de manière sécurisée"""
+                        return [safe_to_dict(p) for p in players]
+                    
                     result_dict = {
                         "tournament_name": result.tournament_name,
                         "category": result.category.value,
-                        "winner": result.winner.to_dict() if result.winner else None,
-                        "finalist": result.finalist.to_dict() if result.finalist else None,
-                        "semifinalists": [p.to_dict() for p in result.semifinalists],
-                        "quarterfinalists": [p.to_dict() for p in result.quarterfinalists],
-                        "all_results": {p.full_name: round_reached for p, round_reached in result.all_results.items()},
+                        "winner": safe_to_dict(result.winner),
+                        "finalist": safe_to_dict(result.finalist),
+                        "semifinalists": safe_to_dict_list(result.semifinalists),
+                        "quarterfinalists": safe_to_dict_list(result.quarterfinalists),
+                        "all_results": {p.full_name if hasattr(p, 'full_name') else str(p): round_reached for p, round_reached in result.all_results.items()},
                         "match_results": []  # Pour l'instant, on ne sauvegarde pas les détails des matchs
                     }
                     history_dict[str(year)][str(week)].append(result_dict)

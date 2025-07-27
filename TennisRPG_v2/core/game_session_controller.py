@@ -26,6 +26,9 @@ class GameSessionController:
         """Démarre une nouvelle partie - orchestration complète"""
         self.ui.display_welcome()
         
+        # IMPORTANT: Remet à zéro tous les états pour éviter la contamination entre parties
+        self.state.reset_for_new_game()
+        
         # Démarre le chronométrage
         self.state.start_session_timing()
         
@@ -100,9 +103,9 @@ class GameSessionController:
         
         start_time = time.time()
         
-        # Simule 10 années préliminaires (réduit de 11 à 2 pour performance)
+        # Simule 2 années préliminaires (réduit de 11 à 2 pour performance)
         preliminary_start_year = TIME_CONSTANTS["GAME_START_YEAR"] - 2
-        for year in range(11):
+        for year in range(2):
             current_sim_year = preliminary_start_year + year
             self.ui.display_preliminary_simulation_year(current_sim_year)
             
@@ -154,7 +157,7 @@ class GameSessionController:
         # Ajoute le joueur principal au pool et aux managers
         self.state.add_main_player_to_managers()
         
-        # Réinitialise le temps
+        # Réinitialise le temps UNIQUEMENT pour une nouvelle partie
         self.state.reset_time_to_start()
         
         self.ui.display_career_start(self.state.main_player, self.state.current_year)
@@ -262,11 +265,7 @@ class GameSessionController:
         
     def _save_game(self) -> None:
         """Sauvegarde le jeu"""
-        filename = self.ui.get_save_filename(
-            self.state.main_player, 
-            self.state.current_week, 
-            self.state.current_year
-        )
+        filename = self.ui.get_save_filename(self.state.main_player)
         
         success = self.state.save_game(filename)
         self.ui.display_save_result(success)
@@ -309,6 +308,9 @@ class GameSessionController:
         
     def load_game_from_entry(self) -> bool:
         """Charge une partie depuis le menu d'entrée"""
+        # IMPORTANT: Remet à zéro tous les états avant de charger pour éviter la contamination
+        self.state.reset_for_new_game()
+        
         saves = self.state.get_save_files()
         self.state.display_saves_menu()
         

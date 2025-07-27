@@ -11,7 +11,7 @@ from pathlib import Path
 project_dir = Path(__file__).parent
 sys.path.insert(0, str(project_dir))
 
-from TennisRPG_v2.core.enhanced_save_manager import EnhancedSaveManager
+from TennisRPG_v2.core.save_manager import EnhancedSaveManager
 from TennisRPG_v2.core.serialization_utils import SerializationUtils, benchmark_serialization
 from TennisRPG_v2.core.save_manager import SaveManager
 from TennisRPG_v2.entities.player import Player

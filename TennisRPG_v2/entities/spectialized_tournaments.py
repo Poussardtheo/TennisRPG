@@ -115,7 +115,10 @@ class EliminationTournament(Tournament):
 					if verbose:
 						print(f"   ✅ {winner.full_name} gagne {match_result.sets_won}-{match_result.sets_lost}")
 					
-					# Enregistre l'élimination
+					# Enregistre l'élimination avec vérification de type
+					from .player import Player
+					if isinstance(loser, dict):
+						loser = Player.from_dict(loser)
 					last_rounds[loser] = round_num
 					self.eliminated_players[loser] = round_name
 					
@@ -237,12 +240,21 @@ class EliminationTournament(Tournament):
 
 	def _create_tournament_result(self, winner: 'Player') -> TournamentResult:
 		"""Crée le résultat final du tournoi"""
+		# Vérification et conversion du winner si nécessaire
+		from .player import Player
+		if isinstance(winner, dict):
+			winner = Player.from_dict(winner)
+		
 		# Identifie les finalistes, demi-finalistes, etc.
 		finalist = None
 		semifinalists = []
 		quarterfinalists = []
 
 		for player, round_eliminated in self.eliminated_players.items():
+			# Vérification et conversion des joueurs si nécessaire
+			if isinstance(player, dict):
+				player = Player.from_dict(player)
+			
 			if round_eliminated == "finalist":
 				finalist = player
 			elif round_eliminated == "semifinalist":
@@ -250,8 +262,15 @@ class EliminationTournament(Tournament):
 			elif round_eliminated == "quarterfinalist":
 				quarterfinalists.append(player)
 
-		# Ajoute le winner à all_results (il était manquant !)
-		all_results = self.eliminated_players.copy()
+		# Crée all_results avec conversion sécurisée
+		all_results = {}
+		for player, round_eliminated in self.eliminated_players.items():
+			# Assure que le joueur est un objet Player
+			if isinstance(player, dict):
+				player = Player.from_dict(player)
+			all_results[player] = round_eliminated
+		
+		# Ajoute le winner à all_results
 		all_results[winner] = "winner"
 
 		return TournamentResult(
@@ -442,8 +461,11 @@ class ATPFinals(Tournament):
 		# Les 2 premiers se qualifient
 		qualified = sorted_players[:2]
 
-		# Marque les autres comme éliminés
+		# Marque les autres comme éliminés avec vérification de type
 		for player in sorted_players[2:]:
+			from .player import Player
+			if isinstance(player, dict):
+				player = Player.from_dict(player)
 			self.eliminated_players[player] = "round_robin"
 
 		return qualified
@@ -469,9 +491,16 @@ class ATPFinals(Tournament):
 
 		self.match_results.extend([semi1, semi2])
 
-		# Enregistre les demi-finalistes éliminés
-		self.eliminated_players[semi1.loser] = "semifinalist"
-		self.eliminated_players[semi2.loser] = "semifinalist"
+		# Enregistre les demi-finalistes éliminés avec vérification de type
+		from .player import Player
+		loser1 = semi1.loser
+		loser2 = semi2.loser
+		if isinstance(loser1, dict):
+			loser1 = Player.from_dict(loser1)
+		if isinstance(loser2, dict):
+			loser2 = Player.from_dict(loser2)
+		self.eliminated_players[loser1] = "semifinalist"
+		self.eliminated_players[loser2] = "semifinalist"
 
 		# Attribue les points
 		atp_points_semi1 = self.assign_atp_points(semi1.loser, "semifinalist", atp_points_manager, week)
@@ -501,8 +530,12 @@ class ATPFinals(Tournament):
 
 		self.match_results.append(final_match)
 
-		# Enregistre le finaliste
-		self.eliminated_players[final_match.loser] = "finalist"
+		# Enregistre le finaliste avec vérification de type
+		from .player import Player
+		finalist_loser = final_match.loser
+		if isinstance(finalist_loser, dict):
+			finalist_loser = Player.from_dict(finalist_loser)
+		self.eliminated_players[finalist_loser] = "finalist"
 
 		# Attribue les points au finaliste
 		atp_points_finalist = self.assign_atp_points(final_match.loser, "finalist", atp_points_manager, week)
@@ -518,17 +551,33 @@ class ATPFinals(Tournament):
 
 	def _create_tournament_result(self, winner: 'Player') -> TournamentResult:
 		"""Crée le résultat final du tournoi"""
+		# Vérification et conversion du winner si nécessaire
+		from .player import Player
+		if isinstance(winner, dict):
+			winner = Player.from_dict(winner)
+		
 		finalist = None
 		semifinalists = []
 
 		for player, round_eliminated in self.eliminated_players.items():
+			# Vérification et conversion des joueurs si nécessaire
+			if isinstance(player, dict):
+				player = Player.from_dict(player)
+			
 			if round_eliminated == "finalist":
 				finalist = player
 			elif round_eliminated == "semifinalist":
 				semifinalists.append(player)
 
-		# Ajoute le winner à all_results (il était manquant !)
-		all_results = self.eliminated_players.copy()
+		# Crée all_results avec conversion sécurisée
+		all_results = {}
+		for player, round_eliminated in self.eliminated_players.items():
+			# Assure que le joueur est un objet Player
+			if isinstance(player, dict):
+				player = Player.from_dict(player)
+			all_results[player] = round_eliminated
+		
+		# Ajoute le winner à all_results
 		all_results[winner] = "winner"
 
 		return TournamentResult(

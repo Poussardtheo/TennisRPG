@@ -40,7 +40,7 @@ def test_imports():
         
         # Test core
         print("  📦 Test core...")
-        from core.save_manager import SaveManager, GameState
+        from core.enhanced_save_manager import SaveManager, GameState
         from core.game_session import GameSession
         print("    ✅ core OK")
         

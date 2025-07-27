@@ -16,7 +16,11 @@ class PlayerGenerator:
 	"""Générateur de joueurs automatiques"""
 
 	def __init__(self):
-		self.generated_names = set()  # Pour éviter les doublons
+		self.generated_names = set()  # Pour éviter les doublons dans cette instance
+
+	def reset_generated_names(self):
+		"""Remet à zéro la liste des noms générés pour une nouvelle partie"""
+		self.generated_names.clear()
 
 	def generate_player(self, gender: Gender, level_range: tuple = (1, 25), age_range: tuple = None, talent_level: TalentLevel = None) -> Player:
 		"""

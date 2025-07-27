@@ -178,14 +178,24 @@ class Tournament(ABC):
 		Returns:
 			True si ajouté avec succès
 		"""
+		# Vérification et conversion du joueur si nécessaire
+		from .player import Player
+		if isinstance(player, dict):
+			player = Player.from_dict(player)
+		
 		if len(self.participants) >= self.num_players:
 			return False
 
 		# Vérification robuste des doublons basée sur les attributs uniques
+		def get_player_key(p):
+			"""Récupère les attributs clés d'un joueur de manière sécurisée"""
+			if isinstance(p, dict):
+				return (p.get('first_name', ''), p.get('last_name', ''), p.get('country', ''))
+			return (p.first_name, p.last_name, p.country)
+		
+		player_key = get_player_key(player)
 		player_already_in = any(
-			p.first_name == player.first_name and 
-			p.last_name == player.last_name and 
-			p.country == player.country 
+			get_player_key(p) == player_key
 			for p in self.participants
 		)
 		
@@ -222,9 +232,15 @@ class Tournament(ABC):
 			)
 		else:
 			# Fallback sur ELO si pas de ranking_manager
+			def get_elo_safe(p):
+				"""Récupère l'ELO de manière sécurisée"""
+				if isinstance(p, dict):
+					return p.get('elo', 1500)
+				return p.elo
+			
 			sorted_players = sorted(
 				self.participants,
-				key=lambda p: p.elo,
+				key=get_elo_safe,
 				reverse=True
 			)
 
@@ -335,6 +351,12 @@ class Tournament(ABC):
 		Returns:
 			Résultat du match
 		"""
+		# Vérification et conversion des joueurs si nécessaire
+		from .player import Player
+		if isinstance(player1, dict):
+			player1 = Player.from_dict(player1)
+		if isinstance(player2, dict):
+			player2 = Player.from_dict(player2)
 		# Calcul des ELO ajustés pour la surface
 		elo1 = player1.get_elo(self.surface)
 		elo2 = player2.get_elo(self.surface)

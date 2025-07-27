@@ -139,11 +139,12 @@ class GameSession:
     def retirement_manager(self):
         """Retirement manager"""
         return self.state.retirement_manager
-        
+    
     @property
     def save_manager(self):
         """Save manager"""
         return self.state.save_manager
+        
         
     # === Méthodes déléguées pour compatibilité ===
     
@@ -246,18 +247,22 @@ def main():
             choice = input("\n🎯 Votre choix (1-3) : ").strip()
             
             if choice == '1':
-                # Nouvelle partie
+                # Nouvelle partie - Crée une instance complètement isolée
                 game = GameSession()
                 game.start_new_game()
-                break
+                # Après une partie, retourne au menu principal
+                # Ne pas break ici pour permettre de rejouer
+                
             elif choice == '2':
-                # Charger une partie
+                # Charger une partie - Crée une instance complètement isolée
                 game = GameSession()
                 if game.load_game_from_entry():
                     game._main_game_loop()
                 else:
                     continue
-                break
+                # Après une partie, retourne au menu principal
+                # Ne pas break ici pour permettre de rejouer
+                
             elif choice == '3':
                 print("\n👋 À bientôt !")
                 break
